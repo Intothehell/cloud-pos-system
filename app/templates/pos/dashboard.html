@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - POS System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+        <hr>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">Total Users</h5>
+                <h2>{{ users_count }}</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Today's Sales</h5>
+                <h2>$0.00</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Products</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h5 class="card-title">Transactions</h5>
+                <h2>0</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>Quick Actions</h5>
+                <a href="{{ url_for('pos.terminal') }}" class="btn btn-primary btn-lg w-100 mb-2">
+                    <i class="fas fa-cash-register"></i> Open POS Terminal
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5>System Info</h5>
+                <p><strong>Logged in as:</strong> {{ current_user.username }}</p>
+                <p><strong>Role:</strong> {{ current_user.role }}</p>
+                <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
