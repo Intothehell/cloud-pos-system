@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - Furniture Warehouse{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3><i class="fas fa-users"></i> Customer Management</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+        <i class="fas fa-plus"></i> Add Customer
+    </button>
+</div>
+
+<!-- Filters -->
+<div class="row mb-3">
+    <div class="col-md-4">
+        <input type="text" id="custSearch" class="form-control" placeholder="Search by name, phone or NIC..." onkeyup="filterTable()">
+    </div>
+    <div class="col-md-3">
+        <select id="typeFilter" class="form-control" onchange="filterTable()">
+            <option value="all">All Customers</option>
+            <option value="wholesale">Wholesale Only</option>
+            <option value="retail">Retail Only</option>
+        </select>
+    </div>
+</div>
+
+<!-- Customers Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="custTable">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>NIC</th>
+                        <th>Type</th>
+                        <th>Balance</th>
+                        <th>Limit</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td><strong>{{ customer.name }}</strong></td>
+                        <td>{{ customer.phone }}</td>
+                        <td>{{ customer.nic or '-' }}</td>
+                        <td><span class="badge bg-{{ 'warning' if customer.customer_type == 'wholesale' else 'info' }}">{{ customer.customer_type }}</span></td>
+                        <td class="{{ 'text-danger fw-bold' if customer.balance > 0 }}">${{ "%.2f"|format(customer.balance) }}</td>
+                        <td>${{ "%.0f"|format(customer.credit_limit) }}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="viewCustomer({{ customer.id }})">View</button>
+                            <button class="btn btn-sm btn-success" onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})">Pay</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5>Add New Customer</h5>
+            </div>
+            <form method="POST" action="{{ url_for('customer.add_customer') }}">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label>Full Name *</label>
+                            <input type="text" name="name" class="form-control mb-2" required>
+                            
+                            <label>Phone Number *</label>
+                            <input type="text" name="phone" class="form-control mb-2" required>
+                            
+                            <label>Email</label>
+                            <input type="email" name="email" class="form-control mb-2">
+                        </div>
+                        <div class="col-md-6">
+                            <label>National ID Card (NIC)</label>
+                            <input type="text" name="nic" class="form-control mb-2" placeholder="ID Card Number">
+                            
+                            <label>Address</label>
+                            <textarea name="address" class="form-control mb-2" rows="2"></textarea>
+                            
+                            <label>Customer Type</label>
+                            <select name="customer_type" class="form-control mb-2">
+                                <option value="retail">Retail</option>
+                                <option value="wholesale">Wholesale (Credit)</option>
+                            </select>
+                            
+                            <label>Credit Limit ($)</label>
+                            <input type="number" name="credit_limit" class="form-control" value="5000">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Customer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5>Record Payment</h5>
+            </div>
+            <form id="paymentForm" method="POST">
+                <div class="modal-body">
+                    <p><strong>Customer:</strong> <span id="payCustName"></span></p>
+                    <p><strong>Balance:</strong> <span id="payBalance"></span></p>
+                    
+                    <label>Amount *</label>
+                    <input type="number" name="amount" class="form-control mb-2" required step="0.01">
+                    
+                    <label>Payment Method</label>
+                    <select name="payment_method" class="form-control mb-2">
+                        <option value="cash">Cash</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="check">Check</option>
+                    </select>
+                    
+                    <label>Reference</label>
+                    <input type="text" name="reference" class="form-control" placeholder="Check number, transfer ID...">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Save Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Customer Modal -->
+<div class="modal fade" id="viewCustomerModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5>Customer Details</h5>
+            </div>
+            <div class="modal-body" id="customerDetails">
+                Loading...
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function filterTable() {
+    const search = document.getElementById('custSearch').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    const rows = document.querySelectorAll('#custTable tbody tr');
+    
+    rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        const isWholesale = row.querySelector('.badge').textContent.includes('wholesale');
+        const show = text.includes(search) && 
+                     (type === 'all' || (type === 'wholesale' && isWholesale) || (type === 'retail' && !isWholesale));
+        row.style.display = show ? '' : 'none';
+    });
+}
+
+function showPayment(id, name, balance) {
+    document.getElementById('paymentForm').action = '/customer/record-payment/' + id;
+    document.getElementById('payCustName').textContent = name;
+    document.getElementById('payBalance').textContent = '$' + balance.toFixed(2);
+    new bootstrap.Modal(document.getElementById('paymentModal')).show();
+}
+
+function viewCustomer(id) {
+    fetch('/api/customers/' + id + '/details')
+        .then(r => r.json())
+        .then(customer => {
+            document.getElementById('customerDetails').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>${customer.name}</h5>
+                        <p><strong>Phone:</strong> ${customer.phone}</p>
+                        <p><strong>Email:</strong> ${customer.email || '-'}</p>
+                        <p><strong>NIC:</strong> ${customer.nic || '-'}</p>
+                        <p><strong>Address:</strong> ${customer.address || '-'}</p>
+                        <p><strong>Type:</strong> <span class="badge bg-${customer.customer_type === 'wholesale' ? 'warning' : 'info'}">${customer.customer_type}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6>Credit Summary</h6>
+                                <p>Balance: <strong class="text-${customer.balance > 0 ? 'danger' : 'success'}">$${customer.balance.toFixed(2)}</strong></p>
+                                <p>Credit Limit: $${customer.credit_limit.toFixed(2)}</p>
+                                <p>Total Purchases: $${customer.total_purchases.toFixed(2)}</p>
+                                <p>Total Paid: $${customer.total_paid.toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h6>Payment History</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Date</th><th>Amount</th><th>Method</th></tr></thead>
+                    <tbody>
+                        ${customer.payment_history.length === 0 ? '<tr><td colspan="3">No payments</td></tr>' : 
+                          customer.payment_history.map(p => `<tr><td>${p.date}</td><td>$${p.amount.toFixed(2)}</td><td>${p.method}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+                <hr>
+                <h6>Recent Orders</h6>
+                <table class="table table-sm">
+                    <thead><tr><th>Order</th><th>Total</th><th>Status</th></tr></thead>
+                    <tbody>
+                        ${customer.recent_orders.length === 0 ? '<tr><td colspan="3">No orders</td></tr>' :
+                          customer.recent_orders.map(o => `<tr><td>${o.order_number}</td><td>$${o.total.toFixed(2)}</td><td>${o.payment_status}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            `;
+            new bootstrap.Modal(document.getElementById('viewCustomerModal')).show();
+        });
+}
+</script>
+{% endblock %}

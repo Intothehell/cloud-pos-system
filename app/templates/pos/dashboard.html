@@ -1,74 +1,184 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - POS System{% endblock %}
+{% block title %}Dashboard - Furniture Warehouse{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
-        <hr>
+<div class="container-fluid">
+    <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+    <hr>
+
+    <!-- Stats Cards -->
+    <div class="row" id="dashboardStats">
+        <div class="col-md-3 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Today's Sales</h5>
+                    <h2 id="todaySales">$0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Transactions</h5>
+                    <h2 id="transactionCount">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-warning">
+                <div class="card-body">
+                    <h5>Credit Outstanding</h5>
+                    <h2 id="totalCredit">$0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Low Stock Items</h5>
+                    <h2 id="lowStock">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4>Quick Actions</h4>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('pos.terminal') }}" class="text-decoration-none">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-cash-register fa-3x mb-2"></i>
+                        <h5>POS Terminal</h5>
+                        <small>Start New Sale</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('inventory.manage') }}" class="text-decoration-none">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-boxes fa-3x mb-2"></i>
+                        <h5>Inventory</h5>
+                        <small>Manage Stock</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('customer.list_customers') }}" class="text-decoration-none">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users fa-3x mb-2"></i>
+                        <h5>Customers</h5>
+                        <small>Credit Management</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('inventory.manage') }}#add" class="text-decoration-none">
+                <div class="card bg-warning h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-plus-circle fa-3x mb-2"></i>
+                        <h5>Add Product</h5>
+                        <small>New Inventory</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Today's Sales Table -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-receipt"></i> Today's Transactions</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Type</th>
+                                    <th>Total</th>
+                                    <th>Payment</th>
+                                    <th>Status</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="todayOrders">
+                                <tr><td colspan="6" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar"></i> Sales Summary</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Retail Sales:</strong> $<span id="retailSales">0</span></p>
+                    <p><strong>Wholesale Sales:</strong> $<span id="wholesaleSales">0</span></p>
+                    <hr>
+                    <p><strong>Products:</strong> <span id="productsCount">0</span></p>
+                    <p><strong>Wholesale Customers:</strong> <span id="wholesaleCustomers">0</span></p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-3 mb-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">Total Users</h5>
-                <h2>{{ users_count }}</h2>
-            </div>
-        </div>
-    </div>
+<script>
+function loadDashboard() {
+    fetch('/api/dashboard/stats')
+        .then(r => r.json())
+        .then(stats => {
+            document.getElementById('todaySales').textContent = '$' + stats.today_sales.toFixed(2);
+            document.getElementById('transactionCount').textContent = stats.transaction_count;
+            document.getElementById('totalCredit').textContent = '$' + stats.total_credit.toFixed(2);
+            document.getElementById('lowStock').textContent = stats.low_stock;
+            document.getElementById('retailSales').textContent = stats.retail_sales.toFixed(2);
+            document.getElementById('wholesaleSales').textContent = stats.wholesale_sales.toFixed(2);
+            document.getElementById('productsCount').textContent = stats.products_count;
+            document.getElementById('wholesaleCustomers').textContent = stats.wholesale_customers;
+        });
     
-    <div class="col-md-3 mb-3">
-        <div class="card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">Today's Sales</h5>
-                <h2>$0.00</h2>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="card bg-info text-white">
-            <div class="card-body">
-                <h5 class="card-title">Products</h5>
-                <h2>0</h2>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-3 mb-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body">
-                <h5 class="card-title">Transactions</h5>
-                <h2>0</h2>
-            </div>
-        </div>
-    </div>
-</div>
+    fetch('/api/orders/today')
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('todayOrders');
+            if (data.orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No sales today</td></tr>';
+            } else {
+                tbody.innerHTML = data.orders.map(o => `
+                    <tr>
+                        <td><strong>${o.order_number}</strong></td>
+                        <td><span class="badge bg-${o.type === 'wholesale' ? 'warning' : 'info'}">${o.type}</span></td>
+                        <td>$${o.total.toFixed(2)}</td>
+                        <td>${o.payment_method}</td>
+                        <td><span class="badge bg-${o.status === 'completed' ? 'success' : 'warning'}">${o.status}</span></td>
+                        <td>${o.time}</td>
+                    </tr>
+                `).join('');
+            }
+        });
+}
 
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5>Quick Actions</h5>
-                <a href="{{ url_for('pos.terminal') }}" class="btn btn-primary btn-lg w-100 mb-2">
-                    <i class="fas fa-cash-register"></i> Open POS Terminal
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5>System Info</h5>
-                <p><strong>Logged in as:</strong> {{ current_user.username }}</p>
-                <p><strong>Role:</strong> {{ current_user.role }}</p>
-                <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
-            </div>
-        </div>
-    </div>
-</div>
+// Load on page open
+loadDashboard();
+// Refresh every 30 seconds
+setInterval(loadDashboard, 30000);
+</script>
 {% endblock %}

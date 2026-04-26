@@ -2,78 +2,450 @@
 
 {% block title %}POS Terminal{% endblock %}
 
-{% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-cash-register"></i> POS Terminal</h2>
-        <hr>
-    </div>
-</div>
+{% block extra_css %}
+<style>
+    .barcode-input {
+        font-size: 22px;
+        padding: 12px;
+        border: 3px solid #007bff;
+        background: #f8f9fa;
+    }
+    .product-card {
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    .product-card:hover {
+        border-color: #007bff;
+        transform: translateY(-2px);
+    }
+    .customer-type-badge {
+        font-size: 12px;
+    }
+    @media (max-width: 768px) {
+        .barcode-input { font-size: 18px; }
+    }
+</style>
+{% endblock %}
 
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-body">
-                <h5>Products</h5>
-                <div class="input-group mb-3">
-                    <input type="text" id="barcodeInput" class="form-control form-control-lg" 
-                           placeholder="Scan barcode or search product..." autofocus>
-                    <button class="btn btn-primary" onclick="searchProducts()">
-                        <i class="fas fa-search"></i> Search
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4><i class="fas fa-warehouse"></i> Furniture Warehouse POS</h4>
+                <div>
+                    <span class="badge bg-info me-2" id="saleTypeBadge">Retail Sale</span>
+                    <button class="btn btn-sm btn-outline-info" onclick="toggleSaleType()">
+                        Switch to Wholesale
                     </button>
-                </div>
-                
-                <div id="productList" class="row">
-                    <p class="text-muted">Scan a barcode or search for products</p>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Current Sale</h5>
-            </div>
-            <div class="card-body" id="cartItems">
-                <p class="text-muted">Cart is empty</p>
-            </div>
-            <div class="card-footer">
-                <div id="cartTotal">
-                    <h4 class="text-end">Total: $0.00</h4>
+
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-7">
+            <!-- Barcode & Search -->
+            <div class="card mb-3">
+                <div class="card-body">
+                    <input type="text" id="barcodeInput" class="form-control barcode-input mb-2" 
+                           placeholder="📱 SCAN BARCODE HERE..." autofocus>
+                    <div class="input-group">
+                        <input type="text" id="searchInput" class="form-control" 
+                               placeholder="Search furniture...">
+                        <button class="btn btn-primary" onclick="searchProducts()">Search</button>
+                    </div>
                 </div>
-                <button class="btn btn-success btn-lg w-100 mt-2" onclick="processPayment()">
-                    <i class="fas fa-credit-card"></i> Pay Now
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="row mb-3" id="quickStats">
+                <div class="col-6 col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center p-2">
+                            <small>Stock Items</small>
+                            <h5 id="productsCount">-</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center p-2">
+                            <small>Today Sales</small>
+                            <h5 id="todaySales">-</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center p-2">
+                            <small>Credit Due</small>
+                            <h5 id="totalCredit">-</h5>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center p-2">
+                            <small>Low Stock</small>
+                            <h5 id="lowStock">-</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Product Grid -->
+            <div id="productGrid" class="row">
+                <div class="col-12 text-center text-muted py-5">
+                    <i class="fas fa-box-open fa-3x"></i>
+                    <p class="mt-2">Scan barcode or search for products</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-5">
+            <!-- Customer Selection -->
+            <div class="card mb-3">
+                <div class="card-header">
+                    <i class="fas fa-user"></i> Customer 
+                    <small class="text-muted">(Required for credit/wholesale)</small>
+                </div>
+                <div class="card-body p-2">
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="customerSearch" class="form-control" 
+                               placeholder="Search by phone or name...">
+                        <button class="btn btn-info" onclick="searchCustomer()">Find</button>
+                        <button class="btn btn-success" onclick="quickAddCustomer()">+ New</button>
+                    </div>
+                    <div id="selectedCustomer" class="mt-2">
+                        <span class="text-muted">Walk-in Retail Customer</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cart -->
+            <div class="card">
+                <div class="card-header bg-dark text-white d-flex justify-content-between">
+                    <span><i class="fas fa-shopping-cart"></i> Sale #<span id="saleType">Retail</span></span>
+                    <button class="btn btn-sm btn-danger" onclick="clearCart()">Clear</button>
+                </div>
+                <div id="cartItems" style="max-height: 300px; overflow-y: auto;">
+                    <div class="text-center text-muted py-4">Cart is empty</div>
+                </div>
+                <div class="card-footer bg-light">
+                    <table class="table table-sm mb-2">
+                        <tr><td>Subtotal:</td><td class="text-end">$<span id="subtotal">0.00</span></td></tr>
+                        <tr><td>Discount:</td><td class="text-end">$<span id="discount">0.00</span></td></tr>
+                        <tr><td>Tax (8%):</td><td class="text-end">$<span id="tax">0.00</span></td></tr>
+                        <tr class="fw-bold"><td>TOTAL:</td><td class="text-end">$<span id="total">0.00</span></td></tr>
+                    </table>
+                    
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success btn-lg" onclick="showCashPayment()">
+                            💵 CASH PAYMENT
+                        </button>
+                        <button class="btn btn-warning text-white btn-lg" onclick="processCreditSale()">
+                            📋 CREDIT SALE
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cash Modal -->
+<div class="modal fade" id="cashModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5>Cash Payment</h5>
+            </div>
+            <div class="modal-body text-center">
+                <h2>Total: $<span id="modalTotal">0.00</span></h2>
+                <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-3" 
+                       placeholder="Enter cash amount" oninput="calculateChange()">
+                <h3 class="mt-3">Change: $<span id="changeAmount">0.00</span></h3>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-success btn-lg" onclick="completeCashSale()">
+                    Complete & Open Drawer
                 </button>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Quick Add Customer Modal -->
+<div class="modal fade" id="quickCustomerModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5>Quick Add Customer</h5>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="qName" class="form-control mb-2" placeholder="Name*">
+                <input type="text" id="qPhone" class="form-control mb-2" placeholder="Phone*">
+                <select id="qType" class="form-control mb-2">
+                    <option value="retail">Retail Customer</option>
+                    <option value="wholesale">Wholesale Customer</option>
+                </select>
+                <input type="number" id="qCreditLimit" class="form-control" placeholder="Credit Limit" value="5000">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-info" onclick="saveQuickCustomer()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
 <script>
-// Focus on barcode input
-document.getElementById('barcodeInput').focus();
+let cart = [];
+let currentCustomer = null;
+let saleType = 'retail';
 
-// Re-focus when clicking anywhere
-document.addEventListener('click', function() {
-    document.getElementById('barcodeInput').focus();
-});
+// Load dashboard stats
+function loadStats() {
+    fetch('/api/dashboard/stats')
+        .then(r => r.json())
+        .then(stats => {
+            document.getElementById('productsCount').textContent = stats.products_count;
+            document.getElementById('todaySales').textContent = '$' + stats.today_sales.toFixed(0);
+            document.getElementById('totalCredit').textContent = '$' + stats.total_credit.toFixed(0);
+            document.getElementById('lowStock').textContent = stats.low_stock;
+        });
+}
 
-// Handle barcode input
+// Toggle Retail/Wholesale
+function toggleSaleType() {
+    saleType = saleType === 'retail' ? 'wholesale' : 'retail';
+    document.getElementById('saleType').textContent = saleType === 'retail' ? 'Retail' : 'Wholesale';
+    document.getElementById('saleTypeBadge').textContent = saleType === 'retail' ? 'Retail Sale' : 'Wholesale Sale';
+    document.getElementById('saleTypeBadge').className = saleType === 'retail' ? 'badge bg-info' : 'badge bg-warning text-dark';
+    
+    if (saleType === 'wholesale') {
+        document.querySelector('#saleTypeBadge + button').textContent = 'Switch to Retail';
+    } else {
+        document.querySelector('#saleTypeBadge + button').textContent = 'Switch to Wholesale';
+    }
+    
+    cart = [];
+    currentCustomer = null;
+    updateCartDisplay();
+    document.getElementById('selectedCustomer').innerHTML = '<span class="text-muted">Walk-in Customer</span>';
+}
+
+// Barcode scan
 document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
-        var barcode = this.value;
-        alert('Barcode scanned: ' + barcode + ' (Product search coming soon!)');
-        this.value = '';
+        const barcode = this.value.trim();
+        if (barcode) {
+            fetch(`/api/product/barcode/${barcode}`)
+                .then(r => r.json())
+                .then(product => {
+                    if (product.id) {
+                        product.price = saleType === 'wholesale' ? product.wholesale_price : product.retail_price;
+                        addToCart(product);
+                    } else {
+                        alert('Product not found!');
+                    }
+                });
+            this.value = '';
+        }
+    }
+});
+
+// Keep focus
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('button') && !e.target.closest('input[type=number]') && !e.target.closest('select')) {
+        document.getElementById('barcodeInput').focus();
     }
 });
 
 function searchProducts() {
-    alert('Product search feature coming soon!');
+    const query = document.getElementById('searchInput').value;
+    fetch(`/api/products/search?q=${query}&customer_type=${saleType}`)
+        .then(r => r.json())
+        .then(products => displayProducts(products));
 }
 
-function processPayment() {
-    alert('Payment processing coming soon!');
+function displayProducts(products) {
+    const grid = document.getElementById('productGrid');
+    if (products.length === 0) {
+        grid.innerHTML = '<div class="col-12 text-center py-3">No products found</div>';
+        return;
+    }
+    grid.innerHTML = products.map(p => `
+        <div class="col-6 col-md-4 mb-2">
+            <div class="card product-card p-2" onclick='addToCart(${JSON.stringify(p)})'>
+                <strong>${p.name}</strong><br>
+                <span class="text-success">$${p.price.toFixed(2)}</span><br>
+                <small class="text-muted">Stock: ${p.stock_quantity}</small>
+            </div>
+        </div>
+    `).join('');
 }
+
+function addToCart(product) {
+    const existing = cart.find(i => i.id === product.id);
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+        });
+    }
+    updateCartDisplay();
+}
+
+function updateCartDisplay() {
+    const div = document.getElementById('cartItems');
+    let subtotal = 0, discount = 0;
+    
+    if (cart.length === 0) {
+        div.innerHTML = '<div class="text-center text-muted py-4">Cart is empty</div>';
+    } else {
+        div.innerHTML = cart.map((item, i) => {
+            const total = item.price * item.quantity;
+            subtotal += total;
+            return `
+                <div class="d-flex justify-content-between p-2 border-bottom">
+                    <div>
+                        <strong>${item.name}</strong><br>
+                        <small>$${item.price.toFixed(2)} x ${item.quantity}</small>
+                    </div>
+                    <div>
+                        $${total.toFixed(2)}
+                        <button class="btn btn-sm btn-danger ms-2" onclick="removeFromCart(${i})">×</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    const tax = (subtotal - discount) * 0.08;
+    const total = subtotal - discount + tax;
+    
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+    document.getElementById('discount').textContent = discount.toFixed(2);
+    document.getElementById('tax').textContent = tax.toFixed(2);
+    document.getElementById('total').textContent = total.toFixed(2);
+}
+
+function removeFromCart(i) { cart.splice(i, 1); updateCartDisplay(); }
+function clearCart() { cart = []; updateCartDisplay(); }
+
+function showCashPayment() {
+    if (cart.length === 0) { alert('Cart empty!'); return; }
+    document.getElementById('modalTotal').textContent = document.getElementById('total').textContent;
+    document.getElementById('cashReceived').value = '';
+    document.getElementById('changeAmount').textContent = '0.00';
+    new bootstrap.Modal(document.getElementById('cashModal')).show();
+}
+
+function calculateChange() {
+    const total = parseFloat(document.getElementById('modalTotal').textContent);
+    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+    document.getElementById('changeAmount').textContent = (received - total).toFixed(2);
+}
+
+function completeCashSale() {
+    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+    const total = parseFloat(document.getElementById('total').textContent);
+    if (received < total) { alert('Insufficient!'); return; }
+    
+    processSale('cash', received);
+    bootstrap.Modal.getInstance(document.getElementById('cashModal')).hide();
+}
+
+function processCreditSale() {
+    if (cart.length === 0) { alert('Cart empty!'); return; }
+    if (!currentCustomer) { alert('Select customer for credit sale!'); return; }
+    processSale('credit', 0);
+}
+
+function processSale(method, cashReceived) {
+    fetch('/api/orders', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            items: cart,
+            payment_method: method,
+            cash_received: cashReceived,
+            customer_id: currentCustomer ? currentCustomer.id : null
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            if (method === 'cash') fetch('/api/open-drawer');
+            alert(`${saleType.toUpperCase()} Sale Complete!\nOrder: ${data.order_number}${data.change ? '\nChange: $' + data.change.toFixed(2) : ''}`);
+            cart = [];
+            currentCustomer = null;
+            updateCartDisplay();
+            document.getElementById('selectedCustomer').innerHTML = '<span class="text-muted">Walk-in Customer</span>';
+            loadStats();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    });
+}
+
+function searchCustomer() {
+    fetch(`/api/customers/search?q=${document.getElementById('customerSearch').value}`)
+        .then(r => r.json())
+        .then(customers => {
+            if (customers.length) {
+                currentCustomer = customers[0];
+                document.getElementById('selectedCustomer').innerHTML = `
+                    <div class="alert alert-${currentCustomer.type === 'wholesale' ? 'warning' : 'info'} p-2">
+                        <strong>${currentCustomer.name}</strong>
+                        <span class="badge bg-${currentCustomer.type === 'wholesale' ? 'warning' : 'info'}">${currentCustomer.type}</span><br>
+                        Balance: $${currentCustomer.balance.toFixed(2)}
+                    </div>`;
+            } else { alert('Not found'); }
+        });
+}
+
+function quickAddCustomer() {
+    new bootstrap.Modal(document.getElementById('quickCustomerModal')).show();
+}
+
+function saveQuickCustomer() {
+    const data = {
+        name: document.getElementById('qName').value,
+        phone: document.getElementById('qPhone').value,
+        customer_type: document.getElementById('qType').value,
+        credit_limit: document.getElementById('qCreditLimit').value
+    };
+    
+    fetch('/api/customers/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            currentCustomer = result.customer;
+            document.getElementById('selectedCustomer').innerHTML = `
+                <div class="alert alert-success p-2"><strong>${result.customer.name}</strong> added!</div>`;
+            bootstrap.Modal.getInstance(document.getElementById('quickCustomerModal')).hide();
+        }
+    });
+}
+
+// Init
+loadStats();
+document.getElementById('barcodeInput').focus();
+setInterval(loadStats, 30000); // Refresh stats every 30s
 </script>
 {% endblock %}

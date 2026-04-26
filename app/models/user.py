@@ -9,10 +9,12 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(50), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.String(20), default='cashier')
+    role = db.Column(db.String(20), default='staff')  # owner, manager, staff
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    
+    orders = db.relationship('Order', backref='cashier_rel', lazy=True, foreign_keys='Order.user_id')
     
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -21,7 +23,7 @@ class User(UserMixin, db.Model):
         return bcrypt.check_password_hash(self.password_hash, password)
     
     def __repr__(self):
-        return f'<User {self.username}>'
+        return f'<User {self.username} ({self.role})>'
 
 @login_manager.user_loader
 def load_user(user_id):
