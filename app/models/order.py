@@ -7,14 +7,21 @@ class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     order_number = db.Column(db.String(20), unique=True, index=True)
     order_type = db.Column(db.String(20), default='retail')  # retail, wholesale
+    sale_type = db.Column(db.String(20), default='retail')
     
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=True)
+    
+    # Customer info (for walk-in customers)
+    customer_name = db.Column(db.String(100))
+    customer_phone = db.Column(db.String(20))
+    customer_address = db.Column(db.Text)
     
     # Financials
     subtotal = db.Column(db.Float, default=0.0)
     tax_amount = db.Column(db.Float, default=0.0)
     discount_amount = db.Column(db.Float, default=0.0)
+    delivery_charge = db.Column(db.Float, default=0.0)
     total = db.Column(db.Float, default=0.0)
     
     # Payment
@@ -42,8 +49,8 @@ class Order(db.Model):
     def calculate_totals(self):
         self.subtotal = sum(item.line_total for item in self.items)
         self.discount_amount = sum(item.discount_amount for item in self.items)
-        self.tax_amount = (self.subtotal - self.discount_amount) * 0.08
-        self.total = self.subtotal - self.discount_amount + self.tax_amount
+        self.tax_amount = 0  # No tax
+        self.total = self.subtotal - self.discount_amount + (self.delivery_charge or 0)
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'

@@ -6,25 +6,30 @@
 <style>
     .barcode-input { font-size: 20px; padding: 10px; border: 3px solid #007bff; }
     .product-card { cursor: pointer; transition: all 0.2s; border: 2px solid #dee2e6; }
-    .product-card:hover { border-color: #007bff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .product-card:hover { border-color: #007bff; transform: translateY(-2px); }
+    .product-card.out-of-stock { opacity: 0.5; border-color: #dc3545; }
     .cart-item { border-bottom: 1px solid #eee; }
-    .qty-btn { width: 28px; height: 28px; padding: 0; font-size: 14px; line-height: 1; }
+    .qty-input { width: 50px; text-align: center; }
+    .customer-result { cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 3px; }
+    .customer-result:hover { background: #e3f2fd; border-color: #2196f3; }
+    .recent-item { cursor: pointer; padding: 5px 10px; border: 1px solid #dee2e6; border-radius: 3px; margin: 2px; display: inline-block; font-size: 12px; }
+    .recent-item:hover { background: #e3f2fd; }
+    .clock { font-size: 18px; font-weight: bold; color: #007bff; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
     <div class="row mb-2">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-cash-register"></i> Point of Sale</h5>
-                <div>
-                    <select id="customerTypeSelect" class="form-select form-select-sm d-inline" style="width: auto;" onchange="changeCustomerType()">
-                        <option value="retail">Retail Sale</option>
-                        <option value="wholesale">Wholesale/Bulk Sale</option>
-                    </select>
-                </div>
-            </div>
+        <div class="col-6">
+            <h5><i class="fas fa-cash-register"></i> Point of Sale</h5>
+        </div>
+        <div class="col-6 text-end">
+            <span class="clock" id="liveClock"></span>
+            <select id="customerTypeSelect" class="form-select form-select-sm d-inline ms-2" style="width: auto;" onchange="changeCustomerType()">
+                <option value="retail">Retail Sale</option>
+                <option value="wholesale">Wholesale/Bulk Sale</option>
+            </select>
         </div>
     </div>
 
@@ -34,64 +39,59 @@
             <div class="card mb-2">
                 <div class="card-body p-2">
                     <input type="text" id="barcodeInput" class="form-control barcode-input mb-2" 
-                           placeholder="📱 Scan barcode here..." tabindex="1">
+                           placeholder="Scan barcode here..." tabindex="1">
                     <div class="input-group">
-                        <input type="text" id="searchInput" class="form-control" 
-                               placeholder="Search products..." tabindex="2">
-                        <button class="btn btn-primary" onclick="searchProducts()" tabindex="3">
-                            <i class="fas fa-search"></i>
-                        </button>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." tabindex="2">
+                        <button class="btn btn-primary" onclick="searchProducts()" tabindex="3"><i class="fas fa-search"></i></button>
                     </div>
                 </div>
+            </div>
+
+            <!-- Recent Items -->
+            <div class="mb-2" id="recentItems" style="display: none;">
+                <small class="text-muted">Recent:</small>
+                <div id="recentItemsList"></div>
             </div>
 
             <div class="mb-2" id="categoryButtons">
                 <button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory('all')">All</button>
             </div>
 
-            <div id="productGrid" class="row" style="max-height: 400px; overflow-y: auto;">
+            <div id="productGrid" class="row" style="max-height: 380px; overflow-y: auto;">
                 <div class="col-12 text-center text-muted py-4">Scan barcode or search products</div>
             </div>
         </div>
 
         <!-- RIGHT: Cart -->
         <div class="col-lg-5">
-            <!-- Customer Info Section -->
-            <div class="card mb-2" id="customerSection">
-                <div class="card-header py-1">
-                    <small><i class="fas fa-user"></i> <span id="customerSectionTitle">Customer Details</span></small>
-                </div>
+            <div class="card mb-2">
+                <div class="card-header py-1"><small><i class="fas fa-user"></i> <span id="customerSectionTitle">Customer Details</span></small></div>
                 <div class="card-body p-2">
-                    <!-- For Wholesale: Search existing customer -->
                     <div id="wholesaleCustomerSearch" style="display: none;">
                         <div class="input-group input-group-sm mb-1">
                             <input type="text" id="wholesaleCustomerInput" class="form-control" 
-                                   placeholder="Search by phone/name..." tabindex="4">
+                                   placeholder="Search by name, phone or NIC..." tabindex="4">
                             <button class="btn btn-info btn-sm" onclick="searchWholesaleCustomer()">Find</button>
                             <button class="btn btn-success btn-sm" onclick="showAddCustomerForm()">+ New</button>
                         </div>
-                        <div id="selectedWholesaleCustomer" class="small"></div>
+                        <div id="customerSearchResults" style="max-height: 150px; overflow-y: auto;"></div>
+                        <div id="selectedWholesaleCustomer" class="small mt-1"></div>
                     </div>
                     
-                    <!-- For Retail: Enter customer details manually -->
                     <div id="retailCustomerForm">
                         <div class="row">
                             <div class="col-6">
-                                <input type="text" id="custName" class="form-control form-control-sm mb-1" 
-                                       placeholder="Customer Name" tabindex="4">
+                                <input type="text" id="custName" class="form-control form-control-sm mb-1" placeholder="Customer Name" tabindex="4">
                             </div>
                             <div class="col-6">
-                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" 
-                                       placeholder="Phone Number" tabindex="5">
+                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" placeholder="Phone Number" tabindex="5">
                             </div>
                         </div>
-                        <textarea id="custAddress" class="form-control form-control-sm mb-1" 
-                                  placeholder="Address (for delivery)" rows="2" tabindex="6"></textarea>
+                        <textarea id="custAddress" class="form-control form-control-sm mb-1" placeholder="Address (for delivery)" rows="2" tabindex="6"></textarea>
                     </div>
                 </div>
             </div>
 
-            <!-- Cart Items -->
             <div class="card">
                 <div class="card-header bg-dark text-white py-1 d-flex justify-content-between">
                     <small><i class="fas fa-shopping-cart"></i> Current Sale</small>
@@ -102,10 +102,7 @@
                 </div>
                 <div class="card-body p-2 bg-light">
                     <table class="table table-sm table-borderless mb-0">
-                        <tr>
-                            <td>Subtotal:</td>
-                            <td class="text-end">$<span id="subtotal">0.00</span></td>
-                        </tr>
+                        <tr><td>Subtotal:</td><td class="text-end">$<span id="subtotal">0.00</span></td></tr>
                         <tr>
                             <td><small>Discount (%):</small></td>
                             <td class="text-end">
@@ -113,44 +110,26 @@
                                        style="width: 60px;" value="0" min="0" max="100" onchange="updateCartDisplay()" tabindex="7">
                             </td>
                         </tr>
+                        <tr><td>Discount:</td><td class="text-end text-danger">-$<span id="discountAmount">0.00</span></td></tr>
                         <tr>
-                            <td>Discount Amount:</td>
-                            <td class="text-end text-danger">-$<span id="discountAmount">0.00</span></td>
-                        </tr>
-                        <tr>
-                            <td><small>Delivery Charge ($):</small></td>
+                            <td><small>Delivery ($):</small></td>
                             <td class="text-end">
                                 <input type="number" id="deliveryCharge" class="form-control form-control-sm d-inline text-end" 
                                        style="width: 70px;" value="0" min="0" step="0.01" onchange="updateCartDisplay()" tabindex="8">
                             </td>
                         </tr>
-                        <tr class="fw-bold fs-5">
-                            <td>TOTAL:</td>
-                            <td class="text-end">$<span id="total">0.00</span></td>
-                        </tr>
+                        <tr class="fw-bold fs-5"><td>TOTAL:</td><td class="text-end">$<span id="total">0.00</span></td></tr>
                     </table>
                     
-                    <div id="paymentButtons" class="d-grid gap-1 mt-2">
-                        <!-- Retail Payment Buttons (Default) -->
+                    <div class="d-grid gap-1 mt-2">
                         <div id="retailPayments">
-                            <button class="btn btn-success" onclick="processCashPayment()" tabindex="9">
-                                💵 CASH PAYMENT
-                            </button>
-                            <button class="btn btn-primary" onclick="processCardPayment()" tabindex="10">
-                                💳 CARD PAYMENT
-                            </button>
+                            <button class="btn btn-success" onclick="processCashPayment()">💵 CASH</button>
+                            <button class="btn btn-primary" onclick="processCardPayment()">💳 CARD</button>
                         </div>
-                        <!-- Wholesale Payment Buttons (Hidden by default) -->
                         <div id="wholesalePayments" style="display: none;">
-                            <button class="btn btn-success" onclick="processCashPayment()" tabindex="9">
-                                💵 CASH PAYMENT
-                            </button>
-                            <button class="btn btn-primary" onclick="processCardPayment()" tabindex="10">
-                                💳 CARD PAYMENT
-                            </button>
-                            <button class="btn btn-warning" onclick="processCreditPayment()" tabindex="11">
-                                📋 CREDIT SALE
-                            </button>
+                            <button class="btn btn-success" onclick="processCashPayment()">💵 CASH</button>
+                            <button class="btn btn-primary" onclick="processCardPayment()">💳 CARD</button>
+                            <button class="btn btn-warning" onclick="processCreditPayment()">📋 CREDIT</button>
                         </div>
                     </div>
                 </div>
@@ -159,11 +138,11 @@
     </div>
 </div>
 
-<!-- Cash Payment Modal -->
+<!-- Cash Modal -->
 <div class="modal fade" id="cashModal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white"><h5>💵 Cash Payment</h5></div>
+            <div class="modal-header bg-success text-white"><h5>Cash Payment</h5></div>
             <div class="modal-body text-center">
                 <h3>Total: $<span id="cashTotal">0.00</span></h3>
                 <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-2" 
@@ -172,15 +151,13 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success btn-lg" onclick="completeCashPayment()">
-                    Complete & Open Drawer
-                </button>
+                <button class="btn btn-success btn-lg" onclick="completeCashPayment()">Complete & Open Drawer</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Add Wholesale Customer Modal -->
+<!-- Add Customer Modal -->
 <div class="modal fade" id="addCustomerModal">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -195,20 +172,20 @@
                 <input type="number" id="wcCreditLimit" class="form-control" value="5000">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-info btn-sm" onclick="saveWholesaleCustomer()">Save Customer</button>
+                <button class="btn btn-info btn-sm" onclick="saveWholesaleCustomer()">Save</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Invoice/Bill Modal -->
+<!-- Invoice Modal -->
 <div class="modal fade" id="invoiceModal">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
-                <h5>📄 Bill/Invoice</h5>
+                <h5>Bill/Invoice</h5>
                 <div>
-                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">🖨️ Print</button>
+                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">Print</button>
                     <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -221,24 +198,35 @@
 let cart = [];
 let currentWholesaleCustomer = null;
 let customerType = 'retail';
+let recentProducts = [];
 
-// Customer type change
+// ===== CLOCK =====
+function updateClock() {
+    const now = new Date();
+    document.getElementById('liveClock').textContent = now.toLocaleString('en-US', { 
+        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ===== CUSTOMER TYPE =====
 function changeCustomerType() {
     customerType = document.getElementById('customerTypeSelect').value;
-    
     document.getElementById('wholesaleCustomerSearch').style.display = customerType === 'wholesale' ? 'block' : 'none';
     document.getElementById('retailCustomerForm').style.display = customerType === 'retail' ? 'block' : 'none';
     document.getElementById('retailPayments').style.display = customerType === 'retail' ? 'block' : 'none';
     document.getElementById('wholesalePayments').style.display = customerType === 'wholesale' ? 'block' : 'none';
     document.getElementById('customerSectionTitle').textContent = customerType === 'wholesale' ? 'Wholesale Customer' : 'Customer Details';
-    
     cart = [];
     currentWholesaleCustomer = null;
     updateCartDisplay();
     document.getElementById('selectedWholesaleCustomer').innerHTML = '';
+    document.getElementById('customerSearchResults').innerHTML = '';
 }
 
-// Barcode - ONLY works in barcode input
+// ===== BARCODE =====
 document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -250,12 +238,12 @@ document.getElementById('barcodeInput').addEventListener('keypress', function(e)
     }
 });
 
-// Prevent focus stealing
 document.addEventListener('click', function(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
         e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' ||
         e.target.closest('.product-card') || e.target.closest('.cart-item') ||
-        e.target.closest('.modal')) {
+        e.target.closest('.customer-result') || e.target.closest('.modal') ||
+        e.target.closest('.recent-item')) {
         return;
     }
     document.getElementById('barcodeInput').focus();
@@ -266,20 +254,34 @@ function lookupBarcode(barcode) {
         .then(r => r.json())
         .then(product => {
             if (product.id) {
-                const qty = prompt(`Enter quantity for ${product.name}:`, '1');
-                if (qty && parseInt(qty) > 0) {
-                    if (parseInt(qty) > product.stock_quantity) {
-                        alert(`Not enough stock! Only ${product.stock_quantity} available.`);
-                        return;
-                    }
-                    addToCart(product, parseInt(qty));
-                }
+                addToCart(product, 1);
+                addToRecent(product);
             } else {
                 alert('Product not found!');
             }
         });
 }
 
+// ===== RECENT ITEMS =====
+function addToRecent(product) {
+    recentProducts = recentProducts.filter(p => p.id !== product.id);
+    recentProducts.unshift(product);
+    if (recentProducts.length > 10) recentProducts.pop();
+    displayRecentItems();
+}
+
+function displayRecentItems() {
+    if (recentProducts.length === 0) {
+        document.getElementById('recentItems').style.display = 'none';
+        return;
+    }
+    document.getElementById('recentItems').style.display = 'block';
+    document.getElementById('recentItemsList').innerHTML = recentProducts.map(p => 
+        `<span class="recent-item" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1)">${p.name.substring(0, 15)}</span>`
+    ).join('');
+}
+
+// ===== PRODUCTS =====
 function searchProducts() {
     const query = document.getElementById('searchInput').value;
     fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_type=${customerType}`)
@@ -302,31 +304,35 @@ function displayProducts(products) {
         grid.innerHTML = '<div class="col-12 text-center text-muted py-3">No products</div>';
         return;
     }
-    grid.innerHTML = products.map(p => `
+    grid.innerHTML = products.map(p => {
+        const outOfStock = p.stock_quantity <= 0;
+        return `
         <div class="col-6 col-md-4 col-lg-3 mb-2">
-            <div class="card product-card p-1" onclick='selectProduct(${JSON.stringify(p)})'>
-                <small><strong>${p.name.substring(0, 20)}</strong></small><br>
+            <div class="card product-card p-1 ${outOfStock ? 'out-of-stock' : ''}" 
+                 onclick="${outOfStock ? '' : `addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1);addToRecent(${JSON.stringify(p).replace(/"/g, '&quot;')})`}">
+                <small><strong>${p.name.substring(0, 18)}</strong></small><br>
                 <small class="text-success">$${p.price.toFixed(2)}</small>
-                <small class="text-muted float-end">Qty: ${p.stock_quantity}</small>
+                <small class="text-${outOfStock ? 'danger' : 'muted'} float-end">
+                    ${outOfStock ? 'OUT OF STOCK' : 'Qty:'+p.stock_quantity}
+                </small>
             </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
-function selectProduct(product) {
-    const qty = prompt(`Quantity for ${product.name}:`, '1');
-    if (qty && parseInt(qty) > 0) {
-        if (parseInt(qty) > product.stock_quantity) {
-            alert(`Not enough stock! Only ${product.stock_quantity} available.`);
-            return;
-        }
-        addToCart(product, parseInt(qty));
-    }
-}
-
+// ===== CART =====
 function addToCart(product, qty) {
+    if (product.stock_quantity <= 0) {
+        alert('Product out of stock!');
+        return;
+    }
+    
     const existing = cart.find(i => i.id === product.id);
     if (existing) {
+        if (existing.quantity + qty > product.stock_quantity) {
+            alert(`Only ${product.stock_quantity} available!`);
+            return;
+        }
         existing.quantity += qty;
     } else {
         cart.push({
@@ -334,7 +340,6 @@ function addToCart(product, qty) {
             name: product.name,
             price: product.price || product.retail_price,
             quantity: qty,
-            barcode: product.barcode,
             maxStock: product.stock_quantity
         });
     }
@@ -349,8 +354,23 @@ function changeQty(index, change) {
     else { item.quantity = newQty; updateCartDisplay(); }
 }
 
+function manualQtyChange(index, input) {
+    const newQty = parseInt(input.value);
+    const item = cart[index];
+    if (isNaN(newQty) || newQty <= 0) {
+        input.value = item.quantity;
+    } else if (newQty > item.maxStock) {
+        alert(`Max stock: ${item.maxStock}`);
+        input.value = item.maxStock;
+        item.quantity = item.maxStock;
+    } else {
+        item.quantity = newQty;
+    }
+    updateCartDisplay();
+}
+
 function removeFromCart(index) { cart.splice(index, 1); updateCartDisplay(); }
-function clearCart() { if (confirm('Clear cart?')) { cart = []; updateCartDisplay(); } }
+function clearCart() { cart = []; updateCartDisplay(); }
 
 function updateCartDisplay() {
     const div = document.getElementById('cartItems');
@@ -366,10 +386,11 @@ function updateCartDisplay() {
                 <div class="cart-item d-flex align-items-center p-2">
                     <div class="flex-grow-1">
                         <small><strong>${item.name}</strong></small><br>
-                        <small>$${item.price.toFixed(2)}</small>
+                        <small>$${item.price.toFixed(2)} each</small>
                     </div>
                     <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, -1)">-</button>
-                    <span class="mx-1">${item.quantity}</span>
+                    <input type="number" class="qty-input mx-1" value="${item.quantity}" min="1" max="${item.maxStock}"
+                           onchange="manualQtyChange(${i}, this)" style="width:45px;">
                     <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, 1)">+</button>
                     <strong class="ms-2">$${total.toFixed(2)}</strong>
                     <button class="btn btn-sm text-danger ms-1" onclick="removeFromCart(${i})">×</button>
@@ -387,6 +408,39 @@ function updateCartDisplay() {
     document.getElementById('total').textContent = total.toFixed(2);
 }
 
+// ===== CUSTOMER SEARCH =====
+function searchWholesaleCustomer() {
+    const q = document.getElementById('wholesaleCustomerInput').value;
+    if (!q) return;
+    fetch(`/api/customers/search?q=${encodeURIComponent(q)}`)
+        .then(r => r.json())
+        .then(customers => {
+            const div = document.getElementById('customerSearchResults');
+            if (!customers.length) {
+                div.innerHTML = '<div class="text-muted p-2">Not found. Add new.</div>';
+                return;
+            }
+            div.innerHTML = customers.map(c => `
+                <div class="customer-result" onclick="selectWholesaleCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">
+                    <strong>${c.name}</strong> | ${c.phone}<br>
+                    <small>Balance: $${c.balance.toFixed(2)} | Limit: $${c.credit_limit.toFixed(2)}</small>
+                </div>
+            `).join('');
+        });
+}
+
+document.getElementById('wholesaleCustomerInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); searchWholesaleCustomer(); }
+});
+
+function selectWholesaleCustomer(customer) {
+    currentWholesaleCustomer = customer;
+    document.getElementById('selectedWholesaleCustomer').innerHTML = `
+        <div class="alert alert-success p-1 small">${customer.name} | Bal: $${customer.balance.toFixed(2)}</div>`;
+    document.getElementById('customerSearchResults').innerHTML = '';
+    document.getElementById('wholesaleCustomerInput').value = '';
+}
+
 // ===== PAYMENTS =====
 function getCustomerInfo() {
     if (customerType === 'retail') {
@@ -399,15 +453,14 @@ function getCustomerInfo() {
         return {
             name: currentWholesaleCustomer ? currentWholesaleCustomer.name : 'Wholesale Customer',
             phone: currentWholesaleCustomer ? currentWholesaleCustomer.phone : '',
-            address: currentWholesaleCustomer ? currentWholesaleCustomer.address : ''
+            address: currentWholesaleCustomer ? (currentWholesaleCustomer.address || '') : ''
         };
     }
 }
 
 function processCashPayment() {
-    if (!cart.length) { alert('Cart empty!'); return; }
-    const total = parseFloat(document.getElementById('total').textContent);
-    document.getElementById('cashTotal').textContent = total.toFixed(2);
+    if (!cart.length) { alert('Cart is empty!'); return; }
+    document.getElementById('cashTotal').textContent = document.getElementById('total').textContent;
     document.getElementById('cashReceived').value = '';
     document.getElementById('changeAmount').textContent = '0.00';
     new bootstrap.Modal(document.getElementById('cashModal')).show();
@@ -428,13 +481,13 @@ function completeCashPayment() {
 }
 
 function processCardPayment() {
-    if (!cart.length) { alert('Cart empty!'); return; }
+    if (!cart.length) { alert('Cart is empty!'); return; }
     processSale('card', 0);
 }
 
 function processCreditPayment() {
-    if (!cart.length) { alert('Cart empty!'); return; }
-    if (!currentWholesaleCustomer) { alert('Select a wholesale customer!'); return; }
+    if (!cart.length) { alert('Cart is empty!'); return; }
+    if (!currentWholesaleCustomer) { alert('Select wholesale customer!'); return; }
     processSale('credit', 0);
 }
 
@@ -463,7 +516,7 @@ function processSale(paymentMethod, cashReceived) {
     .then(data => {
         if (data.success) {
             if (paymentMethod === 'cash') fetch('/api/open-drawer');
-            showInvoice(data.order, custInfo);
+            showInvoiceModal(data.order, custInfo);
             resetSale();
         } else {
             alert('Error: ' + data.error);
@@ -485,86 +538,44 @@ function resetSale() {
 }
 
 // ===== INVOICE =====
-function showInvoice(order, custInfo) {
+function showInvoiceModal(order, custInfo) {
     document.getElementById('invoiceContent').innerHTML = `
-        <div style="font-family: monospace; font-size: 13px; max-width: 400px; margin: 0 auto;">
-            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px;">
-                <h4>🏪 FURNITURE WAREHOUSE</h4>
-                <p>123 Main Street, City</p>
-                <p>Tel: 555-123-4567</p>
-                <p><strong>INVOICE: ${order.order_number}</strong></p>
-                <p>Date: ${order.created_at}</p>
+        <div id="printableInvoice" style="font-family:monospace;font-size:13px;max-width:400px;margin:0 auto;">
+            <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;">
+                <h4>FURNITURE WAREHOUSE</h4>
+                <p>Invoice: ${order.order_number}</p><p>Date: ${order.created_at}</p>
             </div>
-            
             <p><strong>Customer:</strong> ${custInfo.name}</p>
             ${custInfo.phone ? `<p><strong>Phone:</strong> ${custInfo.phone}</p>` : ''}
             ${custInfo.address ? `<p><strong>Address:</strong> ${custInfo.address}</p>` : ''}
-            <p><strong>Type:</strong> ${order.sale_type === 'wholesale' ? 'Wholesale/Bulk' : 'Retail'}</p>
-            
-            <table style="width: 100%; border-top: 1px solid #000; margin: 10px 0;">
-                <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-                ${order.items.map(i => `
-                    <tr>
-                        <td>${i.name}</td>
-                        <td>${i.quantity}</td>
-                        <td>$${i.price.toFixed(2)}</td>
-                        <td>$${i.total.toFixed(2)}</td>
-                    </tr>
-                `).join('')}
+            <table style="width:100%;margin:10px 0;"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+            ${order.items.map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>$${i.price.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}
             </table>
-            
-            <div style="border-top: 1px solid #000;">
-                <p>Subtotal: $${order.subtotal.toFixed(2)}</p>
-                <p>Discount: -$${order.discount.toFixed(2)}</p>
-                <p>Delivery: $${order.delivery.toFixed(2)}</p>
-                <h3>TOTAL: $${order.total.toFixed(2)}</h3>
-            </div>
-            
+            <div style="border-top:1px solid #000;"><p>Subtotal: $${order.subtotal.toFixed(2)}</p>
+            <p>Discount: -$${order.discount.toFixed(2)}</p><p>Delivery: $${order.delivery.toFixed(2)}</p>
+            <h3>TOTAL: $${order.total.toFixed(2)}</h3></div>
             <p><strong>Payment:</strong> ${order.payment_method.toUpperCase()}</p>
-            <p><strong>Status:</strong> <span class="badge bg-${order.payment_status === 'completed' ? 'success' : 'warning'}">${order.payment_status.toUpperCase()}</span></p>
+            <p><strong>Status:</strong> ${order.payment_status.toUpperCase()}</p>
             ${order.change ? `<p>Change: $${order.change.toFixed(2)}</p>` : ''}
-            
-            <div style="text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px;">
-                <p>Thank you for your purchase!</p>
-            </div>
-        </div>
-    `;
+        </div>`;
     new bootstrap.Modal(document.getElementById('invoiceModal')).show();
-    setTimeout(() => window.open(`/api/orders/${order.order_number}/bill`, '_blank'), 500);
 }
 
 function printInvoice() {
-    const win = window.open('', '_blank');
-    win.document.write(`<html><head><title>Invoice</title></head><body>${document.getElementById('invoiceContent').innerHTML}</body></html>`);
+    const content = document.getElementById('printableInvoice').innerHTML;
+    const win = window.open('', '_blank', 'width=400,height=600');
+    win.document.write(`<html><head><title>Bill</title></head><body>${content}<script>window.print();<\/script></body></html>`);
     win.document.close();
-    win.print();
 }
 
-// ===== WHOLESALE CUSTOMER =====
-function searchWholesaleCustomer() {
-    const q = document.getElementById('wholesaleCustomerInput').value;
-    fetch(`/api/customers/search?q=${q}`)
-        .then(r => r.json())
-        .then(customers => {
-            if (customers.length) {
-                currentWholesaleCustomer = customers[0];
-                document.getElementById('selectedWholesaleCustomer').innerHTML = `
-                    <div class="alert alert-success p-1 small">
-                        <strong>${currentWholesaleCustomer.name}</strong> | 
-                        Balance: $${currentWholesaleCustomer.balance.toFixed(2)}
-                    </div>`;
-            } else { alert('Not found. Add new customer.'); }
-        });
-}
-
+// ===== ADD CUSTOMER =====
 function showAddCustomerForm() {
     new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
 }
 
 function saveWholesaleCustomer() {
     fetch('/api/customers/add', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        method: 'POST', headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
             name: document.getElementById('wcName').value,
             phone: document.getElementById('wcPhone').value,
@@ -579,27 +590,25 @@ function saveWholesaleCustomer() {
     .then(result => {
         if (result.success) {
             currentWholesaleCustomer = result.customer;
-            document.getElementById('selectedWholesaleCustomer').innerHTML = `
-                <div class="alert alert-success p-1 small"><strong>${result.customer.name}</strong> added</div>`;
+            document.getElementById('selectedWholesaleCustomer').innerHTML = 
+                `<div class="alert alert-success p-1 small">${result.customer.name} added</div>`;
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
         }
     });
 }
 
-// Init
-loadCategories();
-document.getElementById('barcodeInput').focus();
-
+// ===== INIT =====
 function loadCategories() {
     fetch('/api/products/categories')
         .then(r => r.json())
         .then(cats => {
             const div = document.getElementById('categoryButtons');
             div.innerHTML = '<button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory(\'all\')">All</button>';
-            if (Array.isArray(cats)) {
-                cats.forEach(c => div.innerHTML += `<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory('${c}')">${c}</button>`);
-            }
+            if (Array.isArray(cats)) cats.forEach(c => div.innerHTML += `<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory('${c}')">${c}</button>`);
         });
 }
+
+loadCategories();
+document.getElementById('barcodeInput').focus();
 </script>
 {% endblock %}

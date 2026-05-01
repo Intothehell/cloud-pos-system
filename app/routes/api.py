@@ -66,6 +66,16 @@ def get_all_products():
         'is_active': p.is_active
     } for p in products])
 
+@api_bp.route('/products/categories')
+@login_required
+def get_categories():
+    """Get all product categories"""
+    categories = db.session.query(Product.category).filter(
+        Product.category.isnot(None),
+        Product.is_active == True
+    ).distinct().all()
+    return jsonify([cat[0] for cat in categories if cat[0]])
+
 @api_bp.route('/products/add', methods=['POST'])
 @login_required
 def add_product():
@@ -189,7 +199,12 @@ def create_order():
             user_id=current_user.id,
             order_type=order_type,
             payment_method=data.get('payment_method', 'cash'),
-            notes=data.get('notes', '')
+            notes=data.get('notes', ''),
+            customer_name=data.get('customer_name', ''),
+            customer_phone=data.get('customer_phone', ''),
+            customer_address=data.get('customer_address', ''),
+            delivery_charge=float(data.get('delivery_charge', 0)),
+            sale_type=data.get('sale_type', 'retail')
         )
         order.generate_order_number()
         
@@ -197,7 +212,6 @@ def create_order():
             order.customer_id = data['customer_id']
         
         discount_percent = float(data.get('discount_percent', 0))
-        delivery_charge = float(data.get('delivery_charge', 0))
         
         for item_data in data.get('items', []):
             product = Product.query.get(item_data['id'])
@@ -235,15 +249,11 @@ def create_order():
             )
             db.session.add(movement)
         
-        # Calculate subtotal & discount
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
         order.discount_amount = sum(item.discount_amount for item in order.items)
+        order.tax_amount = 0
+        order.total = order.subtotal - order.discount_amount + order.delivery_charge
         
-        # Calculate total with delivery charge (NO TAX)
-        order.tax_amount = 0  # No tax
-        order.total = order.subtotal - order.discount_amount + delivery_charge
-        
-        # Handle payments
         if data.get('payment_method') == 'cash':
             order.cash_received = float(data.get('cash_received', 0))
             order.change_given = order.cash_received - order.total
@@ -269,11 +279,12 @@ def create_order():
                 'total': order.total,
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
-                'delivery': delivery_charge,
+                'delivery': order.delivery_charge,
                 'change': order.change_given,
                 'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
                 'payment_status': order.payment_status,
+                'sale_type': order.sale_type,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'items': [{
                     'name': item.product_name,
@@ -287,7 +298,7 @@ def create_order():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-    
+
 @api_bp.route('/orders/today')
 @login_required
 def today_orders():
@@ -310,6 +321,71 @@ def today_orders():
         } for o in orders]
     })
 
+@api_bp.route('/orders/all')
+@login_required
+def get_all_orders():
+    """Get all orders for bill history page"""
+    if current_user.role not in ['owner', 'manager']:
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    date = request.args.get('date', '')
+    sale_type = request.args.get('type', 'all')
+    payment = request.args.get('payment', 'all')
+    
+    query = Order.query
+    
+    if date:
+        query = query.filter(db.func.date(Order.created_at) == date)
+    if sale_type != 'all':
+        query = query.filter(Order.order_type == sale_type)
+    if payment != 'all':
+        query = query.filter(Order.payment_method == payment)
+    
+    orders = query.order_by(Order.created_at.desc()).limit(100).all()
+    
+    return jsonify({
+        'orders': [{
+            'order_number': o.order_number,
+            'created_at': o.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'customer_name': o.customer_name or 'Walk-in',
+            'customer_phone': o.customer_phone or '',
+            'sale_type': o.order_type or 'retail',
+            'item_count': len(o.items),
+            'total': o.total,
+            'payment_method': o.payment_method,
+            'payment_status': o.payment_status
+        } for o in orders],
+        'total_sales': sum(o.total for o in orders)
+    })
+
+@api_bp.route('/orders/<order_number>/details')
+@login_required
+def order_details(order_number):
+    """Get full order details"""
+    order = Order.query.filter_by(order_number=order_number).first()
+    if not order:
+        return jsonify({'error': 'Not found'}), 404
+    
+    return jsonify({
+        'order_number': order.order_number,
+        'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'sale_type': order.order_type or 'retail',
+        'payment_method': order.payment_method,
+        'payment_status': order.payment_status,
+        'customer_name': order.customer_name or 'Walk-in',
+        'customer_phone': order.customer_phone or '',
+        'subtotal': order.subtotal,
+        'discount': order.discount_amount,
+        'delivery': order.delivery_charge or 0,
+        'total': order.total,
+        'items': [{
+            'name': item.product_name,
+            'quantity': item.quantity,
+            'price': item.product_price,
+            'total': item.line_total
+        } for item in order.items]
+    })
+
 @api_bp.route('/orders/<order_number>/bill')
 @login_required
 def get_bill(order_number):
@@ -318,11 +394,7 @@ def get_bill(order_number):
     if not order:
         return jsonify({'error': 'Order not found'}), 404
     
-    customer_name = 'Walk-in Customer'
-    if order.customer_id:
-        customer = Customer.query.get(order.customer_id)
-        if customer:
-            customer_name = customer.name
+    customer_name = order.customer_name or 'Walk-in Customer'
     
     return render_template('pos/bill.html', order=order, customer_name=customer_name)
 
@@ -382,7 +454,6 @@ def customer_details(customer_id):
     """Get customer full details with payment history"""
     customer = Customer.query.get_or_404(customer_id)
     
-    # Get recent orders
     orders = Order.query.filter_by(customer_id=customer_id)\
         .order_by(Order.created_at.desc()).limit(20).all()
     
