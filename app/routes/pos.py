@@ -1,6 +1,27 @@
+<<<<<<< HEAD
+=======
+from flask import Blueprint, render_template
+from flask_login import login_required
+from app.models.user import User
+
+pos_bp = Blueprint('pos', __name__)
+
+@pos_bp.route('/dashboard')
+@login_required
+def dashboard():
+    users_count = User.query.count()
+    return render_template('pos/dashboard.html', users_count=users_count)
+
+@pos_bp.route('/terminal')
+@login_required
+def terminal():
+    """POS Terminal"""
+    return render_template('pos/terminal.html')
+>>>>>>> 63a0515518e06011422f8f6330026106586034b5
 from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 from app.models.user import User
+from app.models.product import Product
 from app.models.order import Order
 from app.models.product import Product
 from app import db
@@ -17,13 +38,15 @@ def index():
 @pos_bp.route('/dashboard')
 @login_required
 def dashboard():
-    return render_template('pos/dashboard.html')
+    users_count = User.query.count()
+    return render_template('pos/dashboard.html', users_count=users_count)
 
 @pos_bp.route('/terminal')
 @login_required
 def terminal():
     return render_template('pos/terminal.html')
 
+<<<<<<< HEAD
 # ============ NEW ROUTES ============
 
 @pos_bp.route('/sales-detail')
@@ -103,3 +126,12 @@ def api_all_transactions():
             'notes': o.notes or ''
         } for o in orders]
     })
+=======
+@pos_bp.route('/bills')
+@login_required
+def bills():
+    if current_user.role not in ['owner', 'manager']:
+        return "Access denied", 403
+    today = datetime.now().strftime('%Y-%m-%d')
+    return render_template('pos/bills.html', today=today)
+>>>>>>> 63a0515518e06011422f8f6330026106586034b5

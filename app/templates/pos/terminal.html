@@ -4,151 +4,154 @@
 
 {% block extra_css %}
 <style>
-    .barcode-input {
-        font-size: 22px;
-        padding: 12px;
-        border: 3px solid #007bff;
-        background: #f8f9fa;
-    }
-    .product-card {
-        cursor: pointer;
-        border: 2px solid transparent;
-    }
-    .product-card:hover {
-        border-color: #007bff;
-        transform: translateY(-2px);
-    }
-    .customer-type-badge {
-        font-size: 12px;
-    }
-    @media (max-width: 768px) {
-        .barcode-input { font-size: 18px; }
-    }
+    .barcode-input { font-size: 20px; padding: 10px; border: 3px solid #007bff; }
+    .product-card { cursor: pointer; transition: all 0.2s; border: 2px solid #dee2e6; }
+    .product-card:hover { border-color: #007bff; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .cart-item { border-bottom: 1px solid #eee; }
+    .qty-btn { width: 28px; height: 28px; padding: 0; font-size: 14px; line-height: 1; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="row mb-3">
+    <div class="row mb-2">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h4><i class="fas fa-warehouse"></i> Furniture Warehouse POS</h4>
+                <h5><i class="fas fa-cash-register"></i> Point of Sale</h5>
                 <div>
-                    <span class="badge bg-info me-2" id="saleTypeBadge">Retail Sale</span>
-                    <button class="btn btn-sm btn-outline-info" onclick="toggleSaleType()">
-                        Switch to Wholesale
-                    </button>
+                    <select id="customerTypeSelect" class="form-select form-select-sm d-inline" style="width: auto;" onchange="changeCustomerType()">
+                        <option value="retail">Retail Sale</option>
+                        <option value="wholesale">Wholesale/Bulk Sale</option>
+                    </select>
                 </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <!-- Left Column -->
+        <!-- LEFT: Products -->
         <div class="col-lg-7">
-            <!-- Barcode & Search -->
-            <div class="card mb-3">
-                <div class="card-body">
+            <div class="card mb-2">
+                <div class="card-body p-2">
                     <input type="text" id="barcodeInput" class="form-control barcode-input mb-2" 
-                           placeholder="📱 SCAN BARCODE HERE..." autofocus>
+                           placeholder="📱 Scan barcode here..." tabindex="1">
                     <div class="input-group">
                         <input type="text" id="searchInput" class="form-control" 
-                               placeholder="Search furniture...">
-                        <button class="btn btn-primary" onclick="searchProducts()">Search</button>
+                               placeholder="Search products..." tabindex="2">
+                        <button class="btn btn-primary" onclick="searchProducts()" tabindex="3">
+                            <i class="fas fa-search"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <!-- Quick Stats -->
-            <div class="row mb-3" id="quickStats">
-                <div class="col-6 col-md-3">
-                    <div class="card bg-primary text-white">
-                        <div class="card-body text-center p-2">
-                            <small>Stock Items</small>
-                            <h5 id="productsCount">-</h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card bg-success text-white">
-                        <div class="card-body text-center p-2">
-                            <small>Today Sales</small>
-                            <h5 id="todaySales">-</h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card bg-warning text-white">
-                        <div class="card-body text-center p-2">
-                            <small>Credit Due</small>
-                            <h5 id="totalCredit">-</h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="card bg-info text-white">
-                        <div class="card-body text-center p-2">
-                            <small>Low Stock</small>
-                            <h5 id="lowStock">-</h5>
-                        </div>
-                    </div>
-                </div>
+
+            <div class="mb-2" id="categoryButtons">
+                <button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory('all')">All</button>
             </div>
-            
-            <!-- Product Grid -->
-            <div id="productGrid" class="row">
-                <div class="col-12 text-center text-muted py-5">
-                    <i class="fas fa-box-open fa-3x"></i>
-                    <p class="mt-2">Scan barcode or search for products</p>
-                </div>
+
+            <div id="productGrid" class="row" style="max-height: 400px; overflow-y: auto;">
+                <div class="col-12 text-center text-muted py-4">Scan barcode or search products</div>
             </div>
         </div>
-        
-        <!-- Right Column -->
+
+        <!-- RIGHT: Cart -->
         <div class="col-lg-5">
-            <!-- Customer Selection -->
-            <div class="card mb-3">
-                <div class="card-header">
-                    <i class="fas fa-user"></i> Customer 
-                    <small class="text-muted">(Required for credit/wholesale)</small>
+            <!-- Customer Info Section -->
+            <div class="card mb-2" id="customerSection">
+                <div class="card-header py-1">
+                    <small><i class="fas fa-user"></i> <span id="customerSectionTitle">Customer Details</span></small>
                 </div>
                 <div class="card-body p-2">
-                    <div class="input-group input-group-sm">
-                        <input type="text" id="customerSearch" class="form-control" 
-                               placeholder="Search by phone or name...">
-                        <button class="btn btn-info" onclick="searchCustomer()">Find</button>
-                        <button class="btn btn-success" onclick="quickAddCustomer()">+ New</button>
+                    <!-- For Wholesale: Search existing customer -->
+                    <div id="wholesaleCustomerSearch" style="display: none;">
+                        <div class="input-group input-group-sm mb-1">
+                            <input type="text" id="wholesaleCustomerInput" class="form-control" 
+                                   placeholder="Search by phone/name..." tabindex="4">
+                            <button class="btn btn-info btn-sm" onclick="searchWholesaleCustomer()">Find</button>
+                            <button class="btn btn-success btn-sm" onclick="showAddCustomerForm()">+ New</button>
+                        </div>
+                        <div id="selectedWholesaleCustomer" class="small"></div>
                     </div>
-                    <div id="selectedCustomer" class="mt-2">
-                        <span class="text-muted">Walk-in Retail Customer</span>
+                    
+                    <!-- For Retail: Enter customer details manually -->
+                    <div id="retailCustomerForm">
+                        <div class="row">
+                            <div class="col-6">
+                                <input type="text" id="custName" class="form-control form-control-sm mb-1" 
+                                       placeholder="Customer Name" tabindex="4">
+                            </div>
+                            <div class="col-6">
+                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" 
+                                       placeholder="Phone Number" tabindex="5">
+                            </div>
+                        </div>
+                        <textarea id="custAddress" class="form-control form-control-sm mb-1" 
+                                  placeholder="Address (for delivery)" rows="2" tabindex="6"></textarea>
                     </div>
                 </div>
             </div>
-            
-            <!-- Cart -->
+
+            <!-- Cart Items -->
             <div class="card">
-                <div class="card-header bg-dark text-white d-flex justify-content-between">
-                    <span><i class="fas fa-shopping-cart"></i> Sale #<span id="saleType">Retail</span></span>
-                    <button class="btn btn-sm btn-danger" onclick="clearCart()">Clear</button>
+                <div class="card-header bg-dark text-white py-1 d-flex justify-content-between">
+                    <small><i class="fas fa-shopping-cart"></i> Current Sale</small>
+                    <button class="btn btn-sm btn-outline-light py-0" onclick="clearCart()">Clear</button>
                 </div>
-                <div id="cartItems" style="max-height: 300px; overflow-y: auto;">
-                    <div class="text-center text-muted py-4">Cart is empty</div>
+                <div id="cartItems" style="max-height: 200px; overflow-y: auto;">
+                    <div class="text-center text-muted py-3">Cart is empty</div>
                 </div>
-                <div class="card-footer bg-light">
-                    <table class="table table-sm mb-2">
-                        <tr><td>Subtotal:</td><td class="text-end">$<span id="subtotal">0.00</span></td></tr>
-                        <tr><td>Discount:</td><td class="text-end">$<span id="discount">0.00</span></td></tr>
-                        <tr><td>Tax (8%):</td><td class="text-end">$<span id="tax">0.00</span></td></tr>
-                        <tr class="fw-bold"><td>TOTAL:</td><td class="text-end">$<span id="total">0.00</span></td></tr>
+                <div class="card-body p-2 bg-light">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td>Subtotal:</td>
+                            <td class="text-end">$<span id="subtotal">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td><small>Discount (%):</small></td>
+                            <td class="text-end">
+                                <input type="number" id="discountPercent" class="form-control form-control-sm d-inline text-end" 
+                                       style="width: 60px;" value="0" min="0" max="100" onchange="updateCartDisplay()" tabindex="7">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Discount Amount:</td>
+                            <td class="text-end text-danger">-$<span id="discountAmount">0.00</span></td>
+                        </tr>
+                        <tr>
+                            <td><small>Delivery Charge ($):</small></td>
+                            <td class="text-end">
+                                <input type="number" id="deliveryCharge" class="form-control form-control-sm d-inline text-end" 
+                                       style="width: 70px;" value="0" min="0" step="0.01" onchange="updateCartDisplay()" tabindex="8">
+                            </td>
+                        </tr>
+                        <tr class="fw-bold fs-5">
+                            <td>TOTAL:</td>
+                            <td class="text-end">$<span id="total">0.00</span></td>
+                        </tr>
                     </table>
                     
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-success btn-lg" onclick="showCashPayment()">
-                            💵 CASH PAYMENT
-                        </button>
-                        <button class="btn btn-warning text-white btn-lg" onclick="processCreditSale()">
-                            📋 CREDIT SALE
-                        </button>
+                    <div id="paymentButtons" class="d-grid gap-1 mt-2">
+                        <!-- Retail Payment Buttons (Default) -->
+                        <div id="retailPayments">
+                            <button class="btn btn-success" onclick="processCashPayment()" tabindex="9">
+                                💵 CASH PAYMENT
+                            </button>
+                            <button class="btn btn-primary" onclick="processCardPayment()" tabindex="10">
+                                💳 CARD PAYMENT
+                            </button>
+                        </div>
+                        <!-- Wholesale Payment Buttons (Hidden by default) -->
+                        <div id="wholesalePayments" style="display: none;">
+                            <button class="btn btn-success" onclick="processCashPayment()" tabindex="9">
+                                💵 CASH PAYMENT
+                            </button>
+                            <button class="btn btn-primary" onclick="processCardPayment()" tabindex="10">
+                                💳 CARD PAYMENT
+                            </button>
+                            <button class="btn btn-warning" onclick="processCreditPayment()" tabindex="11">
+                                📋 CREDIT SALE
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -156,22 +159,20 @@
     </div>
 </div>
 
-<!-- Cash Modal -->
+<!-- Cash Payment Modal -->
 <div class="modal fade" id="cashModal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5>Cash Payment</h5>
-            </div>
+            <div class="modal-header bg-success text-white"><h5>💵 Cash Payment</h5></div>
             <div class="modal-body text-center">
-                <h2>Total: $<span id="modalTotal">0.00</span></h2>
-                <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-3" 
-                       placeholder="Enter cash amount" oninput="calculateChange()">
-                <h3 class="mt-3">Change: $<span id="changeAmount">0.00</span></h3>
+                <h3>Total: $<span id="cashTotal">0.00</span></h3>
+                <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-2" 
+                       placeholder="Enter cash amount" step="0.01" oninput="calculateChange()">
+                <h3 class="mt-2">Change: $<span id="changeAmount">0.00</span></h3>
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success btn-lg" onclick="completeCashSale()">
+                <button class="btn btn-success btn-lg" onclick="completeCashPayment()">
                     Complete & Open Drawer
                 </button>
             </div>
@@ -179,273 +180,426 @@
     </div>
 </div>
 
-<!-- Quick Add Customer Modal -->
-<div class="modal fade" id="quickCustomerModal">
+<!-- Add Wholesale Customer Modal -->
+<div class="modal fade" id="addCustomerModal">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5>Quick Add Customer</h5>
-            </div>
+            <div class="modal-header bg-info text-white"><h6>Add Wholesale Customer</h6></div>
             <div class="modal-body">
-                <input type="text" id="qName" class="form-control mb-2" placeholder="Name*">
-                <input type="text" id="qPhone" class="form-control mb-2" placeholder="Phone*">
-                <select id="qType" class="form-control mb-2">
-                    <option value="retail">Retail Customer</option>
-                    <option value="wholesale">Wholesale Customer</option>
-                </select>
-                <input type="number" id="qCreditLimit" class="form-control" placeholder="Credit Limit" value="5000">
+                <input type="text" id="wcName" class="form-control mb-1" placeholder="Full Name*">
+                <input type="text" id="wcPhone" class="form-control mb-1" placeholder="Phone*">
+                <input type="text" id="wcNic" class="form-control mb-1" placeholder="NIC Number">
+                <textarea id="wcAddress" class="form-control mb-1" placeholder="Address" rows="2"></textarea>
+                <input type="email" id="wcEmail" class="form-control mb-1" placeholder="Email">
+                <label>Credit Limit ($):</label>
+                <input type="number" id="wcCreditLimit" class="form-control" value="5000">
             </div>
             <div class="modal-footer">
-                <button class="btn btn-info" onclick="saveQuickCustomer()">Save</button>
+                <button class="btn btn-info btn-sm" onclick="saveWholesaleCustomer()">Save Customer</button>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
+<!-- Invoice/Bill Modal -->
+<div class="modal fade" id="invoiceModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5>📄 Bill/Invoice</h5>
+                <div>
+                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">🖨️ Print</button>
+                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+            <div class="modal-body" id="invoiceContent"></div>
+        </div>
+    </div>
+</div>
+
 <script>
 let cart = [];
-let currentCustomer = null;
-let saleType = 'retail';
+let currentWholesaleCustomer = null;
+let customerType = 'retail';
 
-// Load dashboard stats
-function loadStats() {
-    fetch('/api/dashboard/stats')
-        .then(r => r.json())
-        .then(stats => {
-            document.getElementById('productsCount').textContent = stats.products_count;
-            document.getElementById('todaySales').textContent = '$' + stats.today_sales.toFixed(0);
-            document.getElementById('totalCredit').textContent = '$' + stats.total_credit.toFixed(0);
-            document.getElementById('lowStock').textContent = stats.low_stock;
-        });
-}
-
-// Toggle Retail/Wholesale
-function toggleSaleType() {
-    saleType = saleType === 'retail' ? 'wholesale' : 'retail';
-    document.getElementById('saleType').textContent = saleType === 'retail' ? 'Retail' : 'Wholesale';
-    document.getElementById('saleTypeBadge').textContent = saleType === 'retail' ? 'Retail Sale' : 'Wholesale Sale';
-    document.getElementById('saleTypeBadge').className = saleType === 'retail' ? 'badge bg-info' : 'badge bg-warning text-dark';
+// Customer type change
+function changeCustomerType() {
+    customerType = document.getElementById('customerTypeSelect').value;
     
-    if (saleType === 'wholesale') {
-        document.querySelector('#saleTypeBadge + button').textContent = 'Switch to Retail';
-    } else {
-        document.querySelector('#saleTypeBadge + button').textContent = 'Switch to Wholesale';
-    }
+    document.getElementById('wholesaleCustomerSearch').style.display = customerType === 'wholesale' ? 'block' : 'none';
+    document.getElementById('retailCustomerForm').style.display = customerType === 'retail' ? 'block' : 'none';
+    document.getElementById('retailPayments').style.display = customerType === 'retail' ? 'block' : 'none';
+    document.getElementById('wholesalePayments').style.display = customerType === 'wholesale' ? 'block' : 'none';
+    document.getElementById('customerSectionTitle').textContent = customerType === 'wholesale' ? 'Wholesale Customer' : 'Customer Details';
     
     cart = [];
-    currentCustomer = null;
+    currentWholesaleCustomer = null;
     updateCartDisplay();
-    document.getElementById('selectedCustomer').innerHTML = '<span class="text-muted">Walk-in Customer</span>';
+    document.getElementById('selectedWholesaleCustomer').innerHTML = '';
 }
 
-// Barcode scan
+// Barcode - ONLY works in barcode input
 document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
+        e.preventDefault();
         const barcode = this.value.trim();
         if (barcode) {
-            fetch(`/api/product/barcode/${barcode}`)
-                .then(r => r.json())
-                .then(product => {
-                    if (product.id) {
-                        product.price = saleType === 'wholesale' ? product.wholesale_price : product.retail_price;
-                        addToCart(product);
-                    } else {
-                        alert('Product not found!');
-                    }
-                });
+            lookupBarcode(barcode);
             this.value = '';
         }
     }
 });
 
-// Keep focus
+// Prevent focus stealing
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('button') && !e.target.closest('input[type=number]') && !e.target.closest('select')) {
-        document.getElementById('barcodeInput').focus();
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
+        e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' ||
+        e.target.closest('.product-card') || e.target.closest('.cart-item') ||
+        e.target.closest('.modal')) {
+        return;
     }
+    document.getElementById('barcodeInput').focus();
 });
+
+function lookupBarcode(barcode) {
+    fetch(`/api/product/barcode/${encodeURIComponent(barcode)}`)
+        .then(r => r.json())
+        .then(product => {
+            if (product.id) {
+                const qty = prompt(`Enter quantity for ${product.name}:`, '1');
+                if (qty && parseInt(qty) > 0) {
+                    if (parseInt(qty) > product.stock_quantity) {
+                        alert(`Not enough stock! Only ${product.stock_quantity} available.`);
+                        return;
+                    }
+                    addToCart(product, parseInt(qty));
+                }
+            } else {
+                alert('Product not found!');
+            }
+        });
+}
 
 function searchProducts() {
     const query = document.getElementById('searchInput').value;
-    fetch(`/api/products/search?q=${query}&customer_type=${saleType}`)
+    fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_type=${customerType}`)
         .then(r => r.json())
         .then(products => displayProducts(products));
 }
 
+function filterCategory(cat) {
+    if (cat === 'all') searchProducts();
+    else {
+        fetch(`/api/products/search?category=${encodeURIComponent(cat)}&customer_type=${customerType}`)
+            .then(r => r.json())
+            .then(products => displayProducts(products));
+    }
+}
+
 function displayProducts(products) {
     const grid = document.getElementById('productGrid');
-    if (products.length === 0) {
-        grid.innerHTML = '<div class="col-12 text-center py-3">No products found</div>';
+    if (!products.length) {
+        grid.innerHTML = '<div class="col-12 text-center text-muted py-3">No products</div>';
         return;
     }
     grid.innerHTML = products.map(p => `
-        <div class="col-6 col-md-4 mb-2">
-            <div class="card product-card p-2" onclick='addToCart(${JSON.stringify(p)})'>
-                <strong>${p.name}</strong><br>
-                <span class="text-success">$${p.price.toFixed(2)}</span><br>
-                <small class="text-muted">Stock: ${p.stock_quantity}</small>
+        <div class="col-6 col-md-4 col-lg-3 mb-2">
+            <div class="card product-card p-1" onclick='selectProduct(${JSON.stringify(p)})'>
+                <small><strong>${p.name.substring(0, 20)}</strong></small><br>
+                <small class="text-success">$${p.price.toFixed(2)}</small>
+                <small class="text-muted float-end">Qty: ${p.stock_quantity}</small>
             </div>
         </div>
     `).join('');
 }
 
-function addToCart(product) {
+function selectProduct(product) {
+    const qty = prompt(`Quantity for ${product.name}:`, '1');
+    if (qty && parseInt(qty) > 0) {
+        if (parseInt(qty) > product.stock_quantity) {
+            alert(`Not enough stock! Only ${product.stock_quantity} available.`);
+            return;
+        }
+        addToCart(product, parseInt(qty));
+    }
+}
+
+function addToCart(product, qty) {
     const existing = cart.find(i => i.id === product.id);
     if (existing) {
-        existing.quantity++;
+        existing.quantity += qty;
     } else {
         cart.push({
             id: product.id,
             name: product.name,
-            price: product.price,
-            quantity: 1
+            price: product.price || product.retail_price,
+            quantity: qty,
+            barcode: product.barcode,
+            maxStock: product.stock_quantity
         });
     }
     updateCartDisplay();
 }
 
+function changeQty(index, change) {
+    const item = cart[index];
+    const newQty = item.quantity + change;
+    if (newQty <= 0) { removeFromCart(index); }
+    else if (newQty > item.maxStock) { alert(`Max stock: ${item.maxStock}`); }
+    else { item.quantity = newQty; updateCartDisplay(); }
+}
+
+function removeFromCart(index) { cart.splice(index, 1); updateCartDisplay(); }
+function clearCart() { if (confirm('Clear cart?')) { cart = []; updateCartDisplay(); } }
+
 function updateCartDisplay() {
     const div = document.getElementById('cartItems');
-    let subtotal = 0, discount = 0;
+    let subtotal = 0;
     
-    if (cart.length === 0) {
-        div.innerHTML = '<div class="text-center text-muted py-4">Cart is empty</div>';
+    if (!cart.length) {
+        div.innerHTML = '<div class="text-center text-muted py-3">Cart is empty</div>';
     } else {
         div.innerHTML = cart.map((item, i) => {
             const total = item.price * item.quantity;
             subtotal += total;
             return `
-                <div class="d-flex justify-content-between p-2 border-bottom">
-                    <div>
-                        <strong>${item.name}</strong><br>
-                        <small>$${item.price.toFixed(2)} x ${item.quantity}</small>
+                <div class="cart-item d-flex align-items-center p-2">
+                    <div class="flex-grow-1">
+                        <small><strong>${item.name}</strong></small><br>
+                        <small>$${item.price.toFixed(2)}</small>
                     </div>
-                    <div>
-                        $${total.toFixed(2)}
-                        <button class="btn btn-sm btn-danger ms-2" onclick="removeFromCart(${i})">×</button>
-                    </div>
-                </div>
-            `;
+                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, -1)">-</button>
+                    <span class="mx-1">${item.quantity}</span>
+                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, 1)">+</button>
+                    <strong class="ms-2">$${total.toFixed(2)}</strong>
+                    <button class="btn btn-sm text-danger ms-1" onclick="removeFromCart(${i})">×</button>
+                </div>`;
         }).join('');
     }
     
-    const tax = (subtotal - discount) * 0.08;
-    const total = subtotal - discount + tax;
+    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+    const discountAmount = subtotal * (discountPercent / 100);
+    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
+    const total = subtotal - discountAmount + deliveryCharge;
     
     document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-    document.getElementById('discount').textContent = discount.toFixed(2);
-    document.getElementById('tax').textContent = tax.toFixed(2);
+    document.getElementById('discountAmount').textContent = discountAmount.toFixed(2);
     document.getElementById('total').textContent = total.toFixed(2);
 }
 
-function removeFromCart(i) { cart.splice(i, 1); updateCartDisplay(); }
-function clearCart() { cart = []; updateCartDisplay(); }
+// ===== PAYMENTS =====
+function getCustomerInfo() {
+    if (customerType === 'retail') {
+        return {
+            name: document.getElementById('custName').value || 'Walk-in Customer',
+            phone: document.getElementById('custPhone').value || '',
+            address: document.getElementById('custAddress').value || ''
+        };
+    } else {
+        return {
+            name: currentWholesaleCustomer ? currentWholesaleCustomer.name : 'Wholesale Customer',
+            phone: currentWholesaleCustomer ? currentWholesaleCustomer.phone : '',
+            address: currentWholesaleCustomer ? currentWholesaleCustomer.address : ''
+        };
+    }
+}
 
-function showCashPayment() {
-    if (cart.length === 0) { alert('Cart empty!'); return; }
-    document.getElementById('modalTotal').textContent = document.getElementById('total').textContent;
+function processCashPayment() {
+    if (!cart.length) { alert('Cart empty!'); return; }
+    const total = parseFloat(document.getElementById('total').textContent);
+    document.getElementById('cashTotal').textContent = total.toFixed(2);
     document.getElementById('cashReceived').value = '';
     document.getElementById('changeAmount').textContent = '0.00';
     new bootstrap.Modal(document.getElementById('cashModal')).show();
 }
 
 function calculateChange() {
-    const total = parseFloat(document.getElementById('modalTotal').textContent);
+    const total = parseFloat(document.getElementById('cashTotal').textContent);
     const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-    document.getElementById('changeAmount').textContent = (received - total).toFixed(2);
+    document.getElementById('changeAmount').textContent = Math.max(0, received - total).toFixed(2);
 }
 
-function completeCashSale() {
+function completeCashPayment() {
     const received = parseFloat(document.getElementById('cashReceived').value) || 0;
     const total = parseFloat(document.getElementById('total').textContent);
     if (received < total) { alert('Insufficient!'); return; }
-    
     processSale('cash', received);
     bootstrap.Modal.getInstance(document.getElementById('cashModal')).hide();
 }
 
-function processCreditSale() {
-    if (cart.length === 0) { alert('Cart empty!'); return; }
-    if (!currentCustomer) { alert('Select customer for credit sale!'); return; }
+function processCardPayment() {
+    if (!cart.length) { alert('Cart empty!'); return; }
+    processSale('card', 0);
+}
+
+function processCreditPayment() {
+    if (!cart.length) { alert('Cart empty!'); return; }
+    if (!currentWholesaleCustomer) { alert('Select a wholesale customer!'); return; }
     processSale('credit', 0);
 }
 
-function processSale(method, cashReceived) {
+function processSale(paymentMethod, cashReceived) {
+    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
+    const custInfo = getCustomerInfo();
+    
     fetch('/api/orders', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            items: cart,
-            payment_method: method,
+            items: cart.map(item => ({id: item.id, quantity: item.quantity})),
+            payment_method: paymentMethod,
             cash_received: cashReceived,
-            customer_id: currentCustomer ? currentCustomer.id : null
+            discount_percent: discountPercent,
+            delivery_charge: deliveryCharge,
+            customer_id: currentWholesaleCustomer ? currentWholesaleCustomer.id : null,
+            customer_name: custInfo.name,
+            customer_phone: custInfo.phone,
+            customer_address: custInfo.address,
+            sale_type: customerType
         })
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            if (method === 'cash') fetch('/api/open-drawer');
-            alert(`${saleType.toUpperCase()} Sale Complete!\nOrder: ${data.order_number}${data.change ? '\nChange: $' + data.change.toFixed(2) : ''}`);
-            cart = [];
-            currentCustomer = null;
-            updateCartDisplay();
-            document.getElementById('selectedCustomer').innerHTML = '<span class="text-muted">Walk-in Customer</span>';
-            loadStats();
+            if (paymentMethod === 'cash') fetch('/api/open-drawer');
+            showInvoice(data.order, custInfo);
+            resetSale();
         } else {
             alert('Error: ' + data.error);
         }
     });
 }
 
-function searchCustomer() {
-    fetch(`/api/customers/search?q=${document.getElementById('customerSearch').value}`)
+function resetSale() {
+    cart = [];
+    currentWholesaleCustomer = null;
+    document.getElementById('discountPercent').value = '0';
+    document.getElementById('deliveryCharge').value = '0';
+    document.getElementById('custName').value = '';
+    document.getElementById('custPhone').value = '';
+    document.getElementById('custAddress').value = '';
+    document.getElementById('selectedWholesaleCustomer').innerHTML = '';
+    updateCartDisplay();
+    document.getElementById('barcodeInput').focus();
+}
+
+// ===== INVOICE =====
+function showInvoice(order, custInfo) {
+    document.getElementById('invoiceContent').innerHTML = `
+        <div style="font-family: monospace; font-size: 13px; max-width: 400px; margin: 0 auto;">
+            <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px;">
+                <h4>🏪 FURNITURE WAREHOUSE</h4>
+                <p>123 Main Street, City</p>
+                <p>Tel: 555-123-4567</p>
+                <p><strong>INVOICE: ${order.order_number}</strong></p>
+                <p>Date: ${order.created_at}</p>
+            </div>
+            
+            <p><strong>Customer:</strong> ${custInfo.name}</p>
+            ${custInfo.phone ? `<p><strong>Phone:</strong> ${custInfo.phone}</p>` : ''}
+            ${custInfo.address ? `<p><strong>Address:</strong> ${custInfo.address}</p>` : ''}
+            <p><strong>Type:</strong> ${order.sale_type === 'wholesale' ? 'Wholesale/Bulk' : 'Retail'}</p>
+            
+            <table style="width: 100%; border-top: 1px solid #000; margin: 10px 0;">
+                <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                ${order.items.map(i => `
+                    <tr>
+                        <td>${i.name}</td>
+                        <td>${i.quantity}</td>
+                        <td>$${i.price.toFixed(2)}</td>
+                        <td>$${i.total.toFixed(2)}</td>
+                    </tr>
+                `).join('')}
+            </table>
+            
+            <div style="border-top: 1px solid #000;">
+                <p>Subtotal: $${order.subtotal.toFixed(2)}</p>
+                <p>Discount: -$${order.discount.toFixed(2)}</p>
+                <p>Delivery: $${order.delivery.toFixed(2)}</p>
+                <h3>TOTAL: $${order.total.toFixed(2)}</h3>
+            </div>
+            
+            <p><strong>Payment:</strong> ${order.payment_method.toUpperCase()}</p>
+            <p><strong>Status:</strong> <span class="badge bg-${order.payment_status === 'completed' ? 'success' : 'warning'}">${order.payment_status.toUpperCase()}</span></p>
+            ${order.change ? `<p>Change: $${order.change.toFixed(2)}</p>` : ''}
+            
+            <div style="text-align: center; margin-top: 20px; border-top: 1px dashed #000; padding-top: 10px;">
+                <p>Thank you for your purchase!</p>
+            </div>
+        </div>
+    `;
+    new bootstrap.Modal(document.getElementById('invoiceModal')).show();
+    setTimeout(() => window.open(`/api/orders/${order.order_number}/bill`, '_blank'), 500);
+}
+
+function printInvoice() {
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Invoice</title></head><body>${document.getElementById('invoiceContent').innerHTML}</body></html>`);
+    win.document.close();
+    win.print();
+}
+
+// ===== WHOLESALE CUSTOMER =====
+function searchWholesaleCustomer() {
+    const q = document.getElementById('wholesaleCustomerInput').value;
+    fetch(`/api/customers/search?q=${q}`)
         .then(r => r.json())
         .then(customers => {
             if (customers.length) {
-                currentCustomer = customers[0];
-                document.getElementById('selectedCustomer').innerHTML = `
-                    <div class="alert alert-${currentCustomer.type === 'wholesale' ? 'warning' : 'info'} p-2">
-                        <strong>${currentCustomer.name}</strong>
-                        <span class="badge bg-${currentCustomer.type === 'wholesale' ? 'warning' : 'info'}">${currentCustomer.type}</span><br>
-                        Balance: $${currentCustomer.balance.toFixed(2)}
+                currentWholesaleCustomer = customers[0];
+                document.getElementById('selectedWholesaleCustomer').innerHTML = `
+                    <div class="alert alert-success p-1 small">
+                        <strong>${currentWholesaleCustomer.name}</strong> | 
+                        Balance: $${currentWholesaleCustomer.balance.toFixed(2)}
                     </div>`;
-            } else { alert('Not found'); }
+            } else { alert('Not found. Add new customer.'); }
         });
 }
 
-function quickAddCustomer() {
-    new bootstrap.Modal(document.getElementById('quickCustomerModal')).show();
+function showAddCustomerForm() {
+    new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
 }
 
-function saveQuickCustomer() {
-    const data = {
-        name: document.getElementById('qName').value,
-        phone: document.getElementById('qPhone').value,
-        customer_type: document.getElementById('qType').value,
-        credit_limit: document.getElementById('qCreditLimit').value
-    };
-    
+function saveWholesaleCustomer() {
     fetch('/api/customers/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+            name: document.getElementById('wcName').value,
+            phone: document.getElementById('wcPhone').value,
+            nic: document.getElementById('wcNic').value,
+            address: document.getElementById('wcAddress').value,
+            email: document.getElementById('wcEmail').value,
+            credit_limit: document.getElementById('wcCreditLimit').value,
+            customer_type: 'wholesale'
+        })
     })
     .then(r => r.json())
     .then(result => {
         if (result.success) {
-            currentCustomer = result.customer;
-            document.getElementById('selectedCustomer').innerHTML = `
-                <div class="alert alert-success p-2"><strong>${result.customer.name}</strong> added!</div>`;
-            bootstrap.Modal.getInstance(document.getElementById('quickCustomerModal')).hide();
+            currentWholesaleCustomer = result.customer;
+            document.getElementById('selectedWholesaleCustomer').innerHTML = `
+                <div class="alert alert-success p-1 small"><strong>${result.customer.name}</strong> added</div>`;
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
         }
     });
 }
 
 // Init
-loadStats();
+loadCategories();
 document.getElementById('barcodeInput').focus();
-setInterval(loadStats, 30000); // Refresh stats every 30s
+
+function loadCategories() {
+    fetch('/api/products/categories')
+        .then(r => r.json())
+        .then(cats => {
+            const div = document.getElementById('categoryButtons');
+            div.innerHTML = '<button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory(\'all\')">All</button>';
+            if (Array.isArray(cats)) {
+                cats.forEach(c => div.innerHTML += `<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory('${c}')">${c}</button>`);
+            }
+        });
+}
 </script>
 {% endblock %}
