@@ -335,7 +335,9 @@ def get_all_orders():
     query = Order.query
     
     if date:
+        # Use the date string directly to match the created_at date
         query = query.filter(db.func.date(Order.created_at) == date)
+    
     if sale_type != 'all':
         query = query.filter(Order.order_type == sale_type)
     if payment != 'all':
@@ -513,14 +515,14 @@ def record_payment(customer_id):
 @api_bp.route('/dashboard/stats')
 @login_required
 def dashboard_stats():
-    today = datetime.now().date()
-    today_orders = Order.query.filter(db.func.date(Order.created_at) == today).all()
+    # Get ALL orders (remove date filter for testing)
+    all_orders = Order.query.all()
     
     return jsonify({
-        'today_sales': sum(o.total for o in today_orders),
-        'retail_sales': sum(o.total for o in today_orders if o.order_type == 'retail'),
-        'wholesale_sales': sum(o.total for o in today_orders if o.order_type == 'wholesale'),
-        'transaction_count': len(today_orders),
+        'today_sales': sum(o.total for o in all_orders),
+        'retail_sales': sum(o.total for o in all_orders if o.order_type == 'retail'),
+        'wholesale_sales': sum(o.total for o in all_orders if o.order_type == 'wholesale'),
+        'transaction_count': len(all_orders),
         'products_count': Product.query.filter_by(is_active=True).count(),
         'low_stock': Product.query.filter(
             Product.stock_quantity <= Product.min_stock_level,
@@ -529,6 +531,7 @@ def dashboard_stats():
         'total_credit': db.session.query(db.func.sum(Customer.balance)).scalar() or 0,
         'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count()
     })
+
 
 # ============ DRAWER ============
 @api_bp.route('/open-drawer')
