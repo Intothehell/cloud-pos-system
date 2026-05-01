@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block title %}Bill History{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h4><i class="fas fa-file-invoice"></i> Bill History</h4>
+    <hr>
+    
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <label>Filter by Date</label>
+            <input type="date" id="filterDate" class="form-control" onchange="loadBills()" value="{{ today }}">
+        </div>
+        <div class="col-md-3">
+            <label>Sale Type</label>
+            <select id="filterType" class="form-control" onchange="loadBills()">
+                <option value="all">All Sales</option>
+                <option value="retail">Retail</option>
+                <option value="wholesale">Wholesale</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>Payment Method</label>
+            <select id="filterPayment" class="form-control" onchange="loadBills()">
+                <option value="all">All Payments</option>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="credit">Credit</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary form-control" onclick="loadBills()">
+                <i class="fas fa-search"></i> Search
+            </button>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalBills">0</h4>
+                    <small>Total Bills</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h4 id="totalSales">$0</h4>
+                    <small>Total Sales</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <h4 id="pendingPayments">0</h4>
+                    <small>Pending Payments</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h4 id="pendingAmount">$0</h4>
+                    <small>Pending Amount</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bills Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date/Time</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billsTable">
+                        <tr><td colspan="9" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- View Bill Modal -->
+<div class="modal fade" id="viewInvoiceModal">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5>Invoice Details</h5>
+                <div>
+                    <button class="btn btn-sm btn-light me-1" onclick="printBill()">🖨️ Print</button>
+                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+            <div class="modal-body" id="viewInvoiceContent"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadBills() {
+    const date = document.getElementById('filterDate').value;
+    const type = document.getElementById('filterType').value;
+    const payment = document.getElementById('filterPayment').value;
+    
+    fetch(`/api/orders/all?date=${date}&type=${type}&payment=${payment}`)
+        .then(r => r.json())
+        .then(data => {
+            const tbody = document.getElementById('billsTable');
+            
+            document.getElementById('totalBills').textContent = data.orders.length;
+            document.getElementById('totalSales').textContent = '$' + data.total_sales.toFixed(2);
+            
+            const pending = data.orders.filter(o => o.payment_status === 'pending');
+            document.getElementById('pendingPayments').textContent = pending.length;
+            document.getElementById('pendingAmount').textContent = '$' + pending.reduce((s, o) => s + o.total, 0).toFixed(2);
+            
+            if (!data.orders.length) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">No bills found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.orders.map(o => `
+                <tr>
+                    <td><strong>${o.order_number}</strong></td>
+                    <td><small>${o.created_at}</small></td>
+                    <td>${o.customer_name || 'Walk-in'}</td>
+                    <td><span class="badge bg-${o.sale_type === 'wholesale' ? 'warning' : 'info'}">${o.sale_type || 'retail'}</span></td>
+                    <td>${o.item_count}</td>
+                    <td><strong>$${o.total.toFixed(2)}</strong></td>
+                    <td>${o.payment_method.toUpperCase()}</td>
+                    <td><span class="badge bg-${o.payment_status === 'completed' ? 'success' : 'warning'}">${o.payment_status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="viewBill('${o.order_number}')">View</button>
+                    </td>
+                </tr>
+            `).join('');
+        });
+}
+
+function viewBill(orderNumber) {
+    fetch(`/api/orders/${orderNumber}/details`)
+        .then(r => r.json())
+        .then(order => {
+            document.getElementById('viewInvoiceContent').innerHTML = `
+                <div style="font-family: monospace; font-size: 13px; max-width: 400px; margin: 0 auto;">
+                    <div style="text-align: center; border-bottom: 1px dashed #000;">
+                        <h4>FURNITURE WAREHOUSE</h4>
+                        <p>Invoice: ${order.order_number}</p>
+                        <p>Date: ${order.created_at}</p>
+                    </div>
+                    <p><strong>Customer:</strong> ${order.customer_name}</p>
+                    <p><strong>Phone:</strong> ${order.customer_phone || 'N/A'}</p>
+                    <p><strong>Type:</strong> ${order.sale_type}</p>
+                    
+                    <table style="width: 100%; margin: 10px 0;">
+                        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                        ${order.items.map(i => `
+                            <tr>
+                                <td>${i.name}</td>
+                                <td>${i.quantity}</td>
+                                <td>$${i.price.toFixed(2)}</td>
+                                <td>$${i.total.toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </table>
+                    
+                    <div style="border-top: 1px solid #000;">
+                        <p>Subtotal: $${order.subtotal.toFixed(2)}</p>
+                        <p>Discount: -$${order.discount.toFixed(2)}</p>
+                        <p>Delivery: $${order.delivery.toFixed(2)}</p>
+                        <h3>TOTAL: $${order.total.toFixed(2)}</h3>
+                    </div>
+                    <p><strong>Payment:</strong> ${order.payment_method.toUpperCase()}</p>
+                    <p><strong>Status:</strong> ${order.payment_status.toUpperCase()}</p>
+                </div>
+            `;
+            new bootstrap.Modal(document.getElementById('viewInvoiceModal')).show();
+        });
+}
+
+function printBill() {
+    const content = document.getElementById('viewInvoiceContent').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Bill</title></head><body>${content}</body></html>`);
+    win.document.close();
+    win.print();
+}
+
+// Load on page open
+loadBills();
+</script>
+{% endblock %}
