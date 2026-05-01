@@ -4,16 +4,97 @@
     <title>Bill #{{ order.order_number }}</title>
     <style>
         @media print {
-            body { width: 80mm; font-family: 'Courier New', monospace; font-size: 12px; }
+            body { 
+                width: 80mm; 
+                font-family: 'Courier New', monospace; 
+                font-size: 11px;
+                margin: 0;
+                padding: 5px;
+            }
             .no-print { display: none; }
         }
-        body { font-family: 'Courier New', monospace; max-width: 300px; margin: 0 auto; padding: 10px; }
-        .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; }
-        .items { width: 100%; border-collapse: collapse; margin: 10px 0; }
-        .items td { padding: 3px 0; }
-        .total { border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; margin: 10px 0; }
-        .footer { text-align: center; margin-top: 20px; }
-        .btn-print { display: block; margin: 20px auto; padding: 10px 30px; font-size: 16px; }
+        body { 
+            font-family: 'Courier New', monospace; 
+            max-width: 350px; 
+            margin: 0 auto; 
+            padding: 15px;
+            background: #fff;
+        }
+        .header { 
+            text-align: center; 
+            border-bottom: 1px dashed #000; 
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .header h3 { margin: 0; font-size: 16px; }
+        .header p { margin: 2px 0; font-size: 11px; }
+        .customer-info {
+            border-bottom: 1px dashed #000;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .items { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin: 10px 0;
+            font-size: 11px;
+        }
+        .items th { 
+            border-bottom: 1px solid #000;
+            text-align: left;
+            padding: 3px 0;
+        }
+        .items td { 
+            padding: 2px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        .items .text-right { text-align: right; }
+        .totals { 
+            border-top: 1px dashed #000; 
+            border-bottom: 1px dashed #000; 
+            padding: 8px 0; 
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        .totals p { margin: 3px 0; }
+        .totals .grand-total { 
+            font-size: 16px; 
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        .payment-info {
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        .footer { 
+            text-align: center; 
+            margin-top: 20px;
+            font-size: 11px;
+            border-top: 1px dashed #000;
+            padding-top: 10px;
+        }
+        .btn-print { 
+            display: block; 
+            margin: 20px auto; 
+            padding: 10px 30px; 
+            font-size: 16px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-print:hover { background: #0056b3; }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .status-completed { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
@@ -21,54 +102,95 @@
         <h3>🏪 FURNITURE WAREHOUSE</h3>
         <p>123 Main Street, City</p>
         <p>Tel: (555) 123-4567</p>
-        <p>{{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+        <p>{{ order.created_at.strftime('%Y-%m-%d %I:%M %p') }}</p>
     </div>
     
-    <p><strong>Bill #:</strong> {{ order.order_number }}</p>
-    <p><strong>Type:</strong> {{ order.order_type.upper() }}</p>
-    <p><strong>Customer:</strong> {{ customer_name }}</p>
-    <p><strong>Cashier:</strong> {{ order.cashier_rel.username if order.cashier_rel else 'N/A' }}</p>
+    <p style="text-align: center; font-weight: bold; font-size: 14px;">
+        INVOICE #{{ order.order_number }}
+    </p>
     
+    <!-- Customer Information -->
+    <div class="customer-info">
+        <p><strong>Customer:</strong> {{ customer_name }}</p>
+        {% if order.customer_phone %}
+        <p><strong>Phone:</strong> {{ order.customer_phone }}</p>
+        {% endif %}
+        {% if order.customer_address %}
+        <p><strong>Address:</strong> {{ order.customer_address }}</p>
+        {% endif %}
+        <p><strong>Sale Type:</strong> {{ order.order_type.upper() if order.order_type else 'RETAIL' }}</p>
+        <p><strong>Cashier:</strong> {{ order.cashier_rel.username if order.cashier_rel else 'N/A' }}</p>
+    </div>
+    
+    <!-- Items Table -->
     <table class="items">
-        <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-        {% for item in order.items %}
-        <tr>
-            <td>{{ item.product_name[:15] }}</td>
-            <td>{{ item.quantity }}</td>
-            <td>${{ "%.2f"|format(item.product_price) }}</td>
-            <td>${{ "%.2f"|format(item.line_total) }}</td>
-        </tr>
-        {% endfor %}
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Price</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items %}
+            <tr>
+                <td>{{ item.product_name[:20] }}{% if item.product_name|length > 20 %}...{% endif %}</td>
+                <td class="text-right">{{ item.quantity }}</td>
+                <td class="text-right">${{ "%.2f"|format(item.product_price) }}</td>
+                <td class="text-right">${{ "%.2f"|format(item.line_total) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
     </table>
     
-    <div class="total">
-        <p>Subtotal: ${{ "%.2f"|format(order.subtotal) }}</p>
-        <p>Discount: ${{ "%.2f"|format(order.discount_amount) }}</p>
-        <p>Tax (8%): ${{ "%.2f"|format(order.tax_amount) }}</p>
-        <h3>TOTAL: ${{ "%.2f"|format(order.total) }}</h3>
+    <!-- Totals -->
+    <div class="totals">
+        <p>Subtotal: <span style="float: right;">${{ "%.2f"|format(order.subtotal) }}</span></p>
+        {% if order.discount_amount and order.discount_amount > 0 %}
+        <p>Discount: <span style="float: right; color: red;">-${{ "%.2f"|format(order.discount_amount) }}</span></p>
+        {% endif %}
+        {% if order.delivery_charge and order.delivery_charge > 0 %}
+        <p>Delivery Charge: <span style="float: right;">${{ "%.2f"|format(order.delivery_charge) }}</span></p>
+        {% endif %}
+        <p class="grand-total">TOTAL: <span style="float: right;">${{ "%.2f"|format(order.total) }}</span></p>
     </div>
     
-    <p><strong>Payment:</strong> {{ order.payment_method.upper() }}</p>
-    {% if order.cash_received %}
-    <p>Cash Received: ${{ "%.2f"|format(order.cash_received) }}</p>
-    <p>Change: ${{ "%.2f"|format(order.change_given) }}</p>
-    {% endif %}
-    <p><strong>Status:</strong> {{ order.payment_status.upper() }}</p>
+    <!-- Payment Info -->
+    <div class="payment-info">
+        <p><strong>Payment Method:</strong> {{ order.payment_method.upper() }}</p>
+        
+        {% if order.payment_method == 'cash' and order.cash_received %}
+        <p>Cash Received: <span style="float: right;">${{ "%.2f"|format(order.cash_received) }}</span></p>
+        <p>Change: <span style="float: right;">${{ "%.2f"|format(order.change_given) }}</span></p>
+        {% endif %}
+        
+        <p>
+            <strong>Status:</strong> 
+            <span class="status-badge status-{{ 'completed' if order.payment_status == 'completed' else 'pending' }}">
+                {{ order.payment_status.upper() }}
+            </span>
+        </p>
+    </div>
     
+    <!-- Footer -->
     <div class="footer">
         <p>Thank you for your purchase!</p>
         <p>Please come again</p>
+        {% if order.payment_status == 'pending' %}
+        <p style="color: red; font-weight: bold;">⚠ PAYMENT PENDING</p>
+        {% endif %}
+        <p style="font-size: 10px;">Printed: {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     </div>
     
     <button class="btn-print no-print" onclick="window.print()">🖨️ PRINT BILL</button>
     
     <script>
-        // Auto print on open
         window.onload = function() {
             setTimeout(function() {
                 window.print();
-            }, 500);
-        }
+            }, 300);
+        };
     </script>
 </body>
 </html>

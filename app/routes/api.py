@@ -189,13 +189,15 @@ def create_order():
             user_id=current_user.id,
             order_type=order_type,
             payment_method=data.get('payment_method', 'cash'),
-            cash_received=data.get('cash_received'),
             notes=data.get('notes', '')
         )
         order.generate_order_number()
         
         if data.get('customer_id'):
             order.customer_id = data['customer_id']
+        
+        discount_percent = float(data.get('discount_percent', 0))
+        delivery_charge = float(data.get('delivery_charge', 0))
         
         for item_data in data.get('items', []):
             product = Product.query.get(item_data['id'])
@@ -204,7 +206,7 @@ def create_order():
             
             qty = int(item_data.get('quantity', 1))
             if product.stock_quantity < qty:
-                return jsonify({'error': f'Insufficient stock for {product.name}'}), 400
+                return jsonify({'error': f'Not enough stock for {product.name}'}), 400
             
             price = product.wholesale_price if customer_type == 'wholesale' else product.retail_price
             
@@ -214,12 +216,12 @@ def create_order():
                 product_barcode=product.barcode,
                 product_price=price,
                 quantity=qty,
-                discount_percent=float(item_data.get('discount_percent', 0))
+                discount_percent=discount_percent
             )
             
-            discount_amount = price * qty * (order_item.discount_percent / 100)
-            order_item.discount_amount = discount_amount
-            order_item.line_total = (price * qty) - discount_amount
+            item_discount = price * qty * (discount_percent / 100)
+            order_item.discount_amount = item_discount
+            order_item.line_total = (price * qty) - item_discount
             
             order.items.append(order_item)
             product.stock_quantity -= qty
@@ -233,11 +235,17 @@ def create_order():
             )
             db.session.add(movement)
         
-        order.calculate_totals()
+        # Calculate subtotal & discount
+        order.subtotal = sum(item.product_price * item.quantity for item in order.items)
+        order.discount_amount = sum(item.discount_amount for item in order.items)
         
-        # Handle payment
-        if data.get('payment_method') == 'cash' and data.get('cash_received'):
-            order.cash_received = float(data['cash_received'])
+        # Calculate total with delivery charge (NO TAX)
+        order.tax_amount = 0  # No tax
+        order.total = order.subtotal - order.discount_amount + delivery_charge
+        
+        # Handle payments
+        if data.get('payment_method') == 'cash':
+            order.cash_received = float(data.get('cash_received', 0))
             order.change_given = order.cash_received - order.total
             order.payment_status = 'completed'
         elif data.get('payment_method') == 'card':
@@ -260,9 +268,10 @@ def create_order():
                 'order_number': order.order_number,
                 'total': order.total,
                 'subtotal': order.subtotal,
-                'tax': order.tax_amount,
                 'discount': order.discount_amount,
+                'delivery': delivery_charge,
                 'change': order.change_given,
+                'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
                 'payment_status': order.payment_status,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
@@ -278,7 +287,7 @@ def create_order():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
+    
 @api_bp.route('/orders/today')
 @login_required
 def today_orders():
