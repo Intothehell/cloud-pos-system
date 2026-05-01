@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions Detail{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-list-alt"></i> Today's Transactions</h2>
+        <div>
+            <a href="{{ url_for('pos.sales_detail') }}" class="btn btn-info me-2">
+                <i class="fas fa-chart-pie"></i> Sales Summary
+            </a>
+            <a href="{{ url_for('pos.dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-3">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 id="totalTrans">0</h3>
+                    <small>Total Transactions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 id="completedTrans">0</h3>
+                    <small>Completed</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <h3 id="pendingTrans">0</h3>
+                    <small>Pending (Credit)</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 id="totalAmount">$0</h3>
+                    <small>Total Amount</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="text" id="searchOrders" class="form-control" 
+                           placeholder="Search by order #, cashier, customer..." onkeyup="filterTable()">
+                </div>
+                <div class="col-md-2">
+                    <select id="typeFilter" class="form-control" onchange="filterTable()">
+                        <option value="all">All Types</option>
+                        <option value="retail">Retail</option>
+                        <option value="wholesale">Wholesale</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="paymentFilter" class="form-control" onchange="filterTable()">
+                        <option value="all">All Payments</option>
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="credit">Credit</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-control" onchange="filterTable()">
+                        <option value="all">All Status</option>
+                        <option value="completed">Completed</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-outline-primary w-100" onclick="window.print()">
+                        <i class="fas fa-print"></i> Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Order #</th>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Cashier</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Subtotal</th>
+                            <th>Tax</th>
+                            <th>Discount</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsBody">
+                        <tr><td colspan="14" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allTransactions = [];
+
+function loadTransactions() {
+    fetch('/api/transactions/all')
+        .then(r => r.json())
+        .then(data => {
+            allTransactions = data.orders;
+            
+            // Update stats
+            document.getElementById('totalTrans').textContent = data.orders.length;
+            document.getElementById('completedTrans').textContent = data.orders.filter(o => o.payment_status === 'completed').length;
+            document.getElementById('pendingTrans').textContent = data.orders.filter(o => o.payment_status === 'pending').length;
+            document.getElementById('totalAmount').textContent = '$' + data.orders.reduce((sum, o) => sum + o.total, 0).toFixed(2);
+            
+            displayTransactions(allTransactions);
+        });
+}
+
+function displayTransactions(orders) {
+    const tbody = document.getElementById('transactionsBody');
+    
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted py-4">No transactions today</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = orders.map((o, i) => `
+        <tr class="${o.type === 'wholesale' ? 'table-warning' : ''}">
+            <td>${i + 1}</td>
+            <td><strong>${o.order_number}</strong></td>
+            <td><small>${o.time}</small></td>
+            <td><span class="badge bg-${o.type === 'wholesale' ? 'warning' : 'info'}">${o.type}</span></td>
+            <td>${o.cashier}</td>
+            <td>${o.customer}</td>
+            <td>
+                <button class="btn btn-sm btn-link" onclick='showItems(${JSON.stringify(o.items)})'>
+                    ${o.items_count} items
+                </button>
+            </td>
+            <td>$${o.subtotal.toFixed(2)}</td>
+            <td>$${o.tax.toFixed(2)}</td>
+            <td>$${o.discount.toFixed(2)}</td>
+            <td><strong>$${o.total.toFixed(2)}</strong></td>
+            <td><span class="badge bg-${o.payment_method === 'cash' ? 'success' : o.payment_method === 'card' ? 'primary' : 'warning'}">${o.payment_method}</span></td>
+            <td><span class="badge bg-${o.payment_status === 'completed' ? 'success' : 'warning'}">${o.payment_status}</span></td>
+            <td>
+                <a href="/api/orders/${o.order_number}/bill" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-print"></i> Bill
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function showItems(items) {
+    let html = '<ul class="list-group">';
+    items.forEach(item => {
+        html += `<li class="list-group-item d-flex justify-content-between">
+            ${item.name} x${item.quantity} 
+            <span>$${item.total.toFixed(2)}</span>
+        </li>`;
+    });
+    html += '</ul>';
+    
+    // Show in a simple alert for now
+    const win = window.open('', 'Items', 'width=400,height=300');
+    win.document.body.innerHTML = html;
+}
+
+function filterTable() {
+    const search = document.getElementById('searchOrders').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    const payment = document.getElementById('paymentFilter').value;
+    const status = document.getElementById('statusFilter').value;
+    
+    let filtered = allTransactions;
+    
+    if (search) {
+        filtered = filtered.filter(o => 
+            o.order_number.toLowerCase().includes(search) ||
+            o.cashier.toLowerCase().includes(search) ||
+            o.customer.toLowerCase().includes(search)
+        );
+    }
+    if (type !== 'all') filtered = filtered.filter(o => o.type === type);
+    if (payment !== 'all') filtered = filtered.filter(o => o.payment_method === payment);
+    if (status !== 'all') filtered = filtered.filter(o => o.payment_status === status);
+    
+    displayTransactions(filtered);
+}
+
+loadTransactions();
+setInterval(loadTransactions, 30000);
+</script>
+{% endblock %}

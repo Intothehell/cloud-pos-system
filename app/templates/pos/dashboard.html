@@ -11,122 +11,139 @@
             <small>You are logged in as <strong>{{ current_user.role.upper() }}</strong></small>
         </div>
         <div class="text-end">
-            <h3 class="mb-0" style="font-family: 'Compact', monospace; color: #000; padding: 5px 15px; border-radius: 5px;">
+            <h3 class="mb-0" style="font-family: 'Courier New', monospace; background: #000; color: #00ff00; padding: 5px 15px; border-radius: 5px;">
                 <span id="dashClock">00:00:00</span>
             </h3>
             <small id="dashDate" class="text-muted"></small>
         </div>
     </div>
 
-    <!-- Stats Row 1 -->
+    <!-- Stats Row 1 - ALL CLICKABLE -->
     <div class="row mb-4">
+        <!-- Today's Sales - Clickable -->
         <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h6>Today's Sales</h6>
-                    <h2 id="todaySales">$0.00</h2>
+            <a href="{{ url_for('pos.sales_detail') }}" class="text-decoration-none">
+                <div class="card bg-primary text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <div class="card-body">
+                        <h6>💰 Today's Sales</h6>
+                        <h2 id="todaySales">$0.00</h2>
+                        <small>Click to view details →</small>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
+        
+        <!-- Transactions - Clickable -->
         <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h6>Today's Transactions</h6>
-                    <h2 id="transactionCount">0</h2>
+            <a href="{{ url_for('pos.transactions_detail') }}" class="text-decoration-none">
+                <div class="card bg-success text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <div class="card-body">
+                        <h6>📊 Today's Transactions</h6>
+                        <h2 id="transactionCount">0</h2>
+                        <small>Click to view all →</small>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
+        
+        <!-- Credit Outstanding -->
         <div class="col-md-3">
-            <div class="card bg-warning">
-                <div class="card-body">
-                    <h6>Credit Outstanding</h6>
-                    <h2 id="totalCredit">$0.00</h2>
+            <a href="{{ url_for('customer.list_customers') }}" class="text-decoration-none">
+                <div class="card bg-warning" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <div class="card-body">
+                        <h6>💳 Credit Outstanding</h6>
+                        <h2 id="totalCredit">$0.00</h2>
+                        <small>Click to view customers →</small>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
+        
+        <!-- Low Stock - Clickable -->
         <div class="col-md-3">
-            <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h6>Low Stock Items</h6>
-                    <h2 id="lowStock">0</h2>
+            <a href="{{ url_for('inventory.manage') }}" class="text-decoration-none">
+                <div class="card bg-danger text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)';"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                    <div class="card-body">
+                        <h6>⚠️ Low Stock Items</h6>
+                        <h2 id="lowStock">0</h2>
+                        <small>Click to manage inventory →</small>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
     </div>
 
     <!-- Quick Actions Row -->
     <div class="row mb-4">
-        <!-- SALES SUMMARY CARD - CLICKABLE (NEW) -->
-        <div class="col-md-3">
-            <a href="{{ url_for('pos.sales_detail') }}" class="text-decoration-none">
-                <div class="card border-primary h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chart-pie fa-3x text-primary mb-2"></i>
-                        <h5 class="text-primary">Sales Summary</h5>
-                        <small class="text-muted">View detailed sales report</small>
-                        <br>
-                        <span class="badge bg-primary mt-2">Click to View →</span>
-                    </div>
-                </div>
-            </a>
+        <div class="col-12">
+            <h5 class="border-bottom pb-2">Quick Actions</h5>
         </div>
-        
-        <!-- POS Terminal -->
         <div class="col-md-3">
             <a href="{{ url_for('pos.terminal') }}" class="text-decoration-none">
-                <div class="card bg-info text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-info text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)';"
+                     onmouseout="this.style.transform='translateY(0)';">
                     <div class="card-body text-center">
-                        <i class="fas fa-cash-register fa-3x mb-2"></i>
-                        <h5>POS Terminal</h5>
-                        <small>Start New Sale</small>
+                        <i class="fas fa-cash-register fa-2x mb-2"></i>
+                        <h6>POS Terminal</h6>
                     </div>
                 </div>
             </a>
         </div>
-        
-        <!-- Inventory -->
         <div class="col-md-3">
             <a href="{{ url_for('inventory.manage') }}" class="text-decoration-none">
-                <div class="card bg-success text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-success text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)';"
+                     onmouseout="this.style.transform='translateY(0)';">
                     <div class="card-body text-center">
-                        <i class="fas fa-boxes fa-3x mb-2"></i>
-                        <h5>Inventory</h5>
-                        <small>Manage Stock</small>
+                        <i class="fas fa-boxes fa-2x mb-2"></i>
+                        <h6>Inventory</h6>
                     </div>
                 </div>
             </a>
         </div>
-        
-        <!-- Customers -->
         <div class="col-md-3">
             <a href="{{ url_for('customer.list_customers') }}" class="text-decoration-none">
-                <div class="card bg-secondary text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-secondary text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)';"
+                     onmouseout="this.style.transform='translateY(0)';">
                     <div class="card-body text-center">
-                        <i class="fas fa-users fa-3x mb-2"></i>
-                        <h5>Customers</h5>
-                        <small>Credit Management</small>
+                        <i class="fas fa-users fa-2x mb-2"></i>
+                        <h6>Customers</h6>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('pos.sales_detail') }}" class="text-decoration-none">
+                <div class="card bg-dark text-white" style="cursor: pointer; transition: all 0.3s;"
+                     onmouseover="this.style.transform='translateY(-3px)';"
+                     onmouseout="this.style.transform='translateY(0)';">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-bar fa-2x mb-2"></i>
+                        <h6>Sales Report</h6>
                     </div>
                 </div>
             </a>
         </div>
     </div>
 
-    <!-- RECENT TRANSACTIONS - KEPT AS REQUESTED -->
+    <!-- RECENT TRANSACTIONS TABLE -->
     <div class="row">
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
                     <h5 class="mb-0"><i class="fas fa-history"></i> Recent Transactions (Today)</h5>
-                    <a href="{{ url_for('pos.sales_detail') }}" class="btn btn-sm btn-light">
-                        View All Details →
+                    <a href="{{ url_for('pos.transactions_detail') }}" class="btn btn-sm btn-light">
+                        View All Transactions →
                     </a>
                 </div>
                 <div class="card-body p-0">
@@ -171,7 +188,6 @@ setInterval(updateDashClock, 1000);
 
 // Load Dashboard Data
 function loadDashboard() {
-    // Load stats
     fetch('/api/dashboard/stats')
         .then(r => r.json())
         .then(stats => {
@@ -181,24 +197,22 @@ function loadDashboard() {
             document.getElementById('lowStock').textContent = stats.low_stock;
         });
     
-    // Load recent orders
     fetch('/api/orders/today')
         .then(r => r.json())
         .then(data => {
             const tbody = document.getElementById('todayOrders');
             if (data.orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No sales yet today</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-3">No sales yet today</td></tr>';
             } else {
-                // Show last 10 transactions
                 const recentOrders = data.orders.slice(0, 10);
                 tbody.innerHTML = recentOrders.map(o => `
                     <tr>
                         <td><strong>${o.order_number}</strong></td>
                         <td><small>${o.time}</small></td>
                         <td><span class="badge bg-${o.type === 'wholesale' ? 'warning' : 'info'}">${o.type}</span></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
+                        <td>${o.cashier}</td>
+                        <td>${o.customer}</td>
+                        <td>${o.items_count}</td>
                         <td><strong>$${o.total.toFixed(2)}</strong></td>
                         <td><span class="badge bg-${o.payment_method === 'cash' ? 'success' : o.payment_method === 'card' ? 'primary' : 'warning'}">${o.payment_method}</span></td>
                         <td><span class="badge bg-${o.status === 'completed' ? 'success' : 'warning'}">${o.status}</span></td>
@@ -214,7 +228,6 @@ function loadDashboard() {
 }
 
 loadDashboard();
-setInterval(loadDashboard, 30000); // Refresh every 30 seconds
+setInterval(loadDashboard, 30000);
 </script>
-
 {% endblock %}
