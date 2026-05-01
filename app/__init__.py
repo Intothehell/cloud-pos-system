@@ -27,12 +27,15 @@ def create_app():
     from app.routes.customer import customer_bp
     from app.routes.api import api_bp
     from app.routes.inventory import inventory_bp
-    
+    # In the import section (around line 30):
+    from app.routes.reports import reports_bp
+
     # Register blueprints
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(pos_bp, url_prefix='/pos')
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(api_bp, url_prefix='/api')
+    app.register_blueprint(reports_bp, url_prefix='/reports')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
     # Create tables and seed data

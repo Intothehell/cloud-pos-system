@@ -303,7 +303,10 @@ def today_orders():
             'total': o.total,
             'payment_method': o.payment_method,
             'status': o.payment_status,
-            'time': o.created_at.strftime('%H:%M:%S')
+            'time': o.created_at.strftime('%H:%M:%S'),
+            'cashier': o.cashier_rel.username if o.cashier_rel else 'N/A',
+            'customer': o.customer_rel.name if o.customer_rel else 'Walk-in',
+            'items_count': len(o.items)
         } for o in orders]
     })
 
