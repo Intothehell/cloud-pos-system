@@ -4,81 +4,51 @@
 
 {% block content %}
 <div class="container-fluid">
-    <!-- Welcome Section -->
-    <div class="alert alert-info d-flex justify-content-between align-items-center mb-3">
-        <div>
-            <h4 class="mb-0"><i class="fas fa-hand-wave"></i> Welcome, {{ current_user.username }}!</h4>
-            <small>You are logged in as <strong>{{ current_user.role.upper() }}</strong></small>
-        </div>
-        <div class="text-end">
-            <h3 class="mb-0" style="font-family: 'Compact', monospace; color: #000; padding: 5px 15px; border-radius: 5px;">
-                <span id="dashClock">00:00:00</span>
-            </h3>
-            <small id="dashDate" class="text-muted"></small>
-        </div>
-    </div>
+    <h2><i class="fas fa-tachometer-alt"></i> Dashboard</h2>
+    <hr>
 
-    <!-- Stats Row 1 -->
+    <!-- Stats Cards -->
     <div class="row mb-4">
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h6>Today's Sales</h6>
-                    <h2 id="todaySales">$0.00</h2>
+                <div class="card-body text-center">
+                    <h3>{{ users_count }}</h3>
+                    <small>Users</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h6>Today's Transactions</h6>
-                    <h2 id="transactionCount">0</h2>
+                <div class="card-body text-center">
+                    <h3>$0</h3>
+                    <small>Today Sales</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <div class="card bg-warning">
-                <div class="card-body">
-                    <h6>Credit Outstanding</h6>
-                    <h2 id="totalCredit">$0.00</h2>
+                <div class="card-body text-center">
+                    <h3>0</h3>
+                    <small>Credit Due</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <div class="card bg-danger text-white">
-                <div class="card-body">
-                    <h6>Low Stock Items</h6>
-                    <h2 id="lowStock">0</h2>
+                <div class="card-body text-center">
+                    <h3>0</h3>
+                    <small>Low Stock</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions Row -->
+    <!-- Quick Actions -->
     <div class="row mb-4">
-        <!-- SALES SUMMARY CARD - CLICKABLE (NEW) -->
-        <div class="col-md-3">
-            <a href="{{ url_for('pos.sales_detail') }}" class="text-decoration-none">
-                <div class="card border-primary h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chart-pie fa-3x text-primary mb-2"></i>
-                        <h5 class="text-primary">Sales Summary</h5>
-                        <small class="text-muted">View detailed sales report</small>
-                        <br>
-                        <span class="badge bg-primary mt-2">Click to View →</span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        
-        <!-- POS Terminal -->
-        <div class="col-md-3">
+        <div class="col-12"><h4>Quick Actions</h4></div>
+        <div class="col-md-3 mb-3">
             <a href="{{ url_for('pos.terminal') }}" class="text-decoration-none">
-                <div class="card bg-info text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-info text-white h-100">
                     <div class="card-body text-center">
                         <i class="fas fa-cash-register fa-3x mb-2"></i>
                         <h5>POS Terminal</h5>
@@ -87,13 +57,9 @@
                 </div>
             </a>
         </div>
-        
-        <!-- Inventory -->
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <a href="{{ url_for('inventory.manage') }}" class="text-decoration-none">
-                <div class="card bg-success text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-success text-white h-100">
                     <div class="card-body text-center">
                         <i class="fas fa-boxes fa-3x mb-2"></i>
                         <h5>Inventory</h5>
@@ -102,13 +68,9 @@
                 </div>
             </a>
         </div>
-        
-        <!-- Customers -->
-        <div class="col-md-3">
+        <div class="col-md-3 mb-3">
             <a href="{{ url_for('customer.list_customers') }}" class="text-decoration-none">
-                <div class="card bg-secondary text-white h-100" style="cursor: pointer; transition: all 0.3s;"
-                     onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 5px 15px rgba(0,0,0,0.3)';"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';">
+                <div class="card bg-primary text-white h-100">
                     <div class="card-body text-center">
                         <i class="fas fa-users fa-3x mb-2"></i>
                         <h5>Customers</h5>
@@ -117,104 +79,50 @@
                 </div>
             </a>
         </div>
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('pos.bills') }}" class="text-decoration-none">
+                <div class="card bg-dark text-white h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-file-invoice fa-3x mb-2"></i>
+                        <h5>Bill History</h5>
+                        <small>View All Bills</small>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 
-    <!-- RECENT TRANSACTIONS - KEPT AS REQUESTED -->
+    <!-- System Info -->
     <div class="row">
-        <div class="col-12">
+        <div class="col-md-4">
             <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center bg-dark text-white">
-                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Transactions (Today)</h5>
-                    <a href="{{ url_for('pos.sales_detail') }}" class="btn btn-sm btn-light">
-                        View All Details →
-                    </a>
+                <div class="card-header"><i class="fas fa-user"></i> Your Info</div>
+                <div class="card-body">
+                    <p><strong>Username:</strong> {{ current_user.username }}</p>
+                    <p><strong>Role:</strong> <span class="badge bg-{{ 'danger' if current_user.role == 'owner' else 'info' }}">{{ current_user.role }}</span></p>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Order #</th>
-                                    <th>Time</th>
-                                    <th>Type</th>
-                                    <th>Cashier</th>
-                                    <th>Customer</th>
-                                    <th>Items</th>
-                                    <th>Total</th>
-                                    <th>Payment</th>
-                                    <th>Status</th>
-                                    <th>Bill</th>
-                                </tr>
-                            </thead>
-                            <tbody id="todayOrders">
-                                <tr><td colspan="10" class="text-center text-muted">Loading...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-info-circle"></i> Quick Links</div>
+                <div class="card-body">
+                    <a href="{{ url_for('pos.terminal') }}" class="btn btn-primary btn-sm mb-1">Open POS</a>
+                    <a href="{{ url_for('inventory.manage') }}" class="btn btn-success btn-sm mb-1">Inventory</a>
+                    <a href="{{ url_for('customer.list_customers') }}" class="btn btn-info btn-sm mb-1">Customers</a>
+                    <a href="{{ url_for('pos.bills') }}" class="btn btn-dark btn-sm mb-1">Bills</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header"><i class="fas fa-clock"></i> System Status</div>
+                <div class="card-body">
+                    <p><span class="badge bg-success">Online</span> POS System Active</p>
+                    <p><small class="text-muted">Logged in as {{ current_user.username }}</small></p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
-<script>
-// Digital Clock
-function updateDashClock() {
-    const now = new Date();
-    document.getElementById('dashClock').textContent = 
-        now.toLocaleTimeString('en-US', { hour12: false });
-    document.getElementById('dashDate').textContent = 
-        now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-}
-updateDashClock();
-setInterval(updateDashClock, 1000);
-
-// Load Dashboard Data
-function loadDashboard() {
-    // Load stats
-    fetch('/api/dashboard/stats')
-        .then(r => r.json())
-        .then(stats => {
-            document.getElementById('todaySales').textContent = '$' + stats.today_sales.toFixed(2);
-            document.getElementById('transactionCount').textContent = stats.transaction_count;
-            document.getElementById('totalCredit').textContent = '$' + stats.total_credit.toFixed(2);
-            document.getElementById('lowStock').textContent = stats.low_stock;
-        });
-    
-    // Load recent orders
-    fetch('/api/orders/today')
-        .then(r => r.json())
-        .then(data => {
-            const tbody = document.getElementById('todayOrders');
-            if (data.orders.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No sales yet today</td></tr>';
-            } else {
-                // Show last 10 transactions
-                const recentOrders = data.orders.slice(0, 10);
-                tbody.innerHTML = recentOrders.map(o => `
-                    <tr>
-                        <td><strong>${o.order_number}</strong></td>
-                        <td><small>${o.time}</small></td>
-                        <td><span class="badge bg-${o.type === 'wholesale' ? 'warning' : 'info'}">${o.type}</span></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td><strong>$${o.total.toFixed(2)}</strong></td>
-                        <td><span class="badge bg-${o.payment_method === 'cash' ? 'success' : o.payment_method === 'card' ? 'primary' : 'warning'}">${o.payment_method}</span></td>
-                        <td><span class="badge bg-${o.status === 'completed' ? 'success' : 'warning'}">${o.status}</span></td>
-                        <td>
-                            <a href="/api/orders/${o.order_number}/bill" target="_blank" class="btn btn-sm btn-outline-dark">
-                                🖨️
-                            </a>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        });
-}
-
-loadDashboard();
-setInterval(loadDashboard, 30000); // Refresh every 30 seconds
-</script>
-
 {% endblock %}
