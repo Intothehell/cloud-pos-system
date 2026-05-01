@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}Sales Details - Furniture Warehouse{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-chart-bar"></i> Sales Details</h2>
+        <a href="{{ url_for('pos.dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4" id="salesSummary">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3 id="totalSales">$0</h3>
+                    <small>Total Sales</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3 id="retailSales">$0</h3>
+                    <small>Retail</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <h3 id="wholesaleSales">$0</h3>
+                    <small>Wholesale</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3 id="cashSales">$0</h3>
+                    <small>Cash</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h3 id="cardSales">$0</h3>
+                    <small>Card</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3 id="creditSales">$0</h3>
+                    <small>Credit</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Count -->
+    <div class="alert alert-info">
+        <strong>Total Transactions Today:</strong> <span id="transactionCount">0</span>
+    </div>
+
+    <!-- Search Filter -->
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <input type="text" id="searchOrders" class="form-control" 
+                   placeholder="Search by order number, cashier, or customer..." 
+                   onkeyup="filterOrders()">
+        </div>
+        <div class="col-md-2">
+            <select id="typeFilter" class="form-control" onchange="filterOrders()">
+                <option value="all">All Types</option>
+                <option value="retail">Retail</option>
+                <option value="wholesale">Wholesale</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select id="paymentFilter" class="form-control" onchange="filterOrders()">
+                <option value="all">All Payments</option>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="credit">Credit</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">All Today's Transactions</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Type</th>
+                            <th>Time</th>
+                            <th>Cashier</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Subtotal</th>
+                            <th>Tax</th>
+                            <th>Discount</th>
+                            <th>Total</th>
+                            <th>Payment</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody">
+                        <tr><td colspan="13" class="text-center">Loading...</td></tr>
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="9" class="text-end">Grand Total:</td>
+                            <td id="grandTotal">$0.00</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allOrders = [];
+
+function loadSalesDetail() {
+    fetch('/api/sales/detail')
+        .then(r => r.json())
+        .then(data => {
+            allOrders = data.orders;
+            
+            // Update summary cards
+            document.getElementById('totalSales').textContent = '$' + data.summary.total_sales.toFixed(2);
+            document.getElementById('retailSales').textContent = '$' + data.summary.retail_sales.toFixed(2);
+            document.getElementById('wholesaleSales').textContent = '$' + data.summary.wholesale_sales.toFixed(2);
+            document.getElementById('cashSales').textContent = '$' + data.summary.cash_sales.toFixed(2);
+            document.getElementById('cardSales').textContent = '$' + data.summary.card_sales.toFixed(2);
+            document.getElementById('creditSales').textContent = '$' + data.summary.credit_sales.toFixed(2);
+            document.getElementById('transactionCount').textContent = data.summary.transaction_count;
+            document.getElementById('grandTotal').textContent = '$' + data.summary.total_sales.toFixed(2);
+            
+            displayOrders(allOrders);
+        });
+}
+
+function displayOrders(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="13" class="text-center text-muted">No sales today</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = orders.map(o => `
+        <tr class="${o.type === 'wholesale' ? 'table-warning' : ''}">
+            <td><strong>${o.order_number}</strong></td>
+            <td><span class="badge bg-${o.type === 'wholesale' ? 'warning' : 'info'}">${o.type}</span></td>
+            <td>${o.time}</td>
+            <td>${o.cashier}</td>
+            <td>${o.customer}</td>
+            <td>${o.items_count}</td>
+            <td>$${o.subtotal.toFixed(2)}</td>
+            <td>$${o.tax.toFixed(2)}</td>
+            <td>$${o.discount.toFixed(2)}</td>
+            <td><strong>$${o.total.toFixed(2)}</strong></td>
+            <td><span class="badge bg-${o.payment_method === 'cash' ? 'success' : o.payment_method === 'card' ? 'primary' : 'warning'}">${o.payment_method}</span></td>
+            <td><span class="badge bg-${o.payment_status === 'completed' ? 'success' : 'warning'}">${o.payment_status}</span></td>
+            <td>
+                <a href="/api/orders/${o.order_number}/bill" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-print"></i> Bill
+                </a>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function filterOrders() {
+    const search = document.getElementById('searchOrders').value.toLowerCase();
+    const type = document.getElementById('typeFilter').value;
+    const payment = document.getElementById('paymentFilter').value;
+    
+    let filtered = allOrders;
+    
+    if (search) {
+        filtered = filtered.filter(o => 
+            o.order_number.toLowerCase().includes(search) ||
+            o.cashier.toLowerCase().includes(search) ||
+            o.customer.toLowerCase().includes(search)
+        );
+    }
+    
+    if (type !== 'all') {
+        filtered = filtered.filter(o => o.type === type);
+    }
+    
+    if (payment !== 'all') {
+        filtered = filtered.filter(o => o.payment_method === payment);
+    }
+    
+    displayOrders(filtered);
+}
+
+// Load on page open
+loadSalesDetail();
+// Refresh every 30 seconds
+setInterval(loadSalesDetail, 30000);
+</script>
+{% endblock %}
