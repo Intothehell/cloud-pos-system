@@ -4,29 +4,35 @@
 
 {% block extra_css %}
 <style>
-    .barcode-input { font-size: 20px; padding: 10px; border: 3px solid #007bff; }
-    .product-card { cursor: pointer; transition: all 0.2s; border: 2px solid #dee2e6; }
-    .product-card:hover { border-color: #007bff; transform: translateY(-2px); }
-    .product-card.out-of-stock { opacity: 0.5; border-color: #dc3545; }
-    .cart-item { border-bottom: 1px solid #eee; }
-    .qty-input { width: 50px; text-align: center; }
-    .customer-result { cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 3px; }
+    .barcode-input { font-size: 20px; padding: 12px; border: 3px solid #007bff; background: #fff; }
+    .product-card { cursor: pointer; transition: all 0.2s; border: 2px solid #dee2e6; padding: 8px; }
+    .product-card:hover { border-color: #007bff; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    .out-of-stock { opacity: 0.5; border-color: #dc3545 !important; background: #fff5f5; }
+    .low-stock { border-color: #ffc107 !important; background: #fffdf5; }
+    .cart-item { border-bottom: 1px solid #eee; padding: 8px 0; }
+    .qty-input { width: 50px; text-align: center; border: 1px solid #ddd; border-radius: 3px; }
+    .customer-result { cursor: pointer; padding: 8px 12px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 4px; transition: all 0.2s; }
     .customer-result:hover { background: #e3f2fd; border-color: #2196f3; }
-    .recent-item { cursor: pointer; padding: 5px 10px; border: 1px solid #dee2e6; border-radius: 3px; margin: 2px; display: inline-block; font-size: 12px; }
-    .recent-item:hover { background: #e3f2fd; }
-    .clock { font-size: 18px; font-weight: bold; color: #007bff; }
+    .recent-item { cursor: pointer; padding: 4px 10px; border: 1px solid #007bff; border-radius: 15px; margin: 2px; display: inline-block; font-size: 11px; background: #e3f2fd; color: #007bff; }
+    .recent-item:hover { background: #007bff; color: #fff; }
+    .clock { font-size: 16px; font-weight: bold; color: #007bff; background: #e3f2fd; padding: 5px 15px; border-radius: 20px; }
+    .badge-low { animation: blink 1s infinite; }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Header with Clock -->
     <div class="row mb-2">
-        <div class="col-6">
+        <div class="col-md-4">
             <h5><i class="fas fa-cash-register"></i> Point of Sale</h5>
         </div>
-        <div class="col-6 text-end">
-            <span class="clock" id="liveClock"></span>
-            <select id="customerTypeSelect" class="form-select form-select-sm d-inline ms-2" style="width: auto;" onchange="changeCustomerType()">
+        <div class="col-md-4 text-center">
+            <span class="clock" id="liveClock">--</span>
+        </div>
+        <div class="col-md-4 text-end">
+            <select id="customerTypeSelect" class="form-select form-select-sm d-inline" style="width: auto;" onchange="changeCustomerType()">
                 <option value="retail">Retail Sale</option>
                 <option value="wholesale">Wholesale/Bulk Sale</option>
             </select>
@@ -36,27 +42,35 @@
     <div class="row">
         <!-- LEFT: Products -->
         <div class="col-lg-7">
+            <!-- Barcode Search -->
             <div class="card mb-2">
                 <div class="card-body p-2">
                     <input type="text" id="barcodeInput" class="form-control barcode-input mb-2" 
-                           placeholder="Scan barcode here..." tabindex="1">
+                           placeholder="📱 SCAN BARCODE HERE..." autofocus>
                     <div class="input-group">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." tabindex="2">
-                        <button class="btn btn-primary" onclick="searchProducts()" tabindex="3"><i class="fas fa-search"></i></button>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search by name...">
+                        <button class="btn btn-primary" onclick="searchProducts()"><i class="fas fa-search"></i></button>
                     </div>
                 </div>
             </div>
 
             <!-- Recent Items -->
-            <div class="mb-2" id="recentItems" style="display: none;">
-                <small class="text-muted">Recent:</small>
+            <div class="mb-2" id="recentSection" style="display:none;">
+                <small class="text-muted"><i class="fas fa-history"></i> Recent:</small>
                 <div id="recentItemsList"></div>
             </div>
 
+            <!-- Category Buttons -->
             <div class="mb-2" id="categoryButtons">
                 <button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory('all')">All</button>
             </div>
 
+            <!-- Low Stock Alert -->
+            <div id="lowStockAlert" class="alert alert-warning py-1 mb-2" style="display:none;">
+                <small><i class="fas fa-exclamation-triangle"></i> <span id="lowStockCount">0</span> items low in stock!</small>
+            </div>
+
+            <!-- Product Grid -->
             <div id="productGrid" class="row" style="max-height: 380px; overflow-y: auto;">
                 <div class="col-12 text-center text-muted py-4">Scan barcode or search products</div>
             </div>
@@ -64,13 +78,13 @@
 
         <!-- RIGHT: Cart -->
         <div class="col-lg-5">
+            <!-- Customer Section -->
             <div class="card mb-2">
                 <div class="card-header py-1"><small><i class="fas fa-user"></i> <span id="customerSectionTitle">Customer Details</span></small></div>
                 <div class="card-body p-2">
                     <div id="wholesaleCustomerSearch" style="display: none;">
                         <div class="input-group input-group-sm mb-1">
-                            <input type="text" id="wholesaleCustomerInput" class="form-control" 
-                                   placeholder="Search by name, phone or NIC..." tabindex="4">
+                            <input type="text" id="wholesaleCustomerInput" class="form-control" placeholder="Search name, phone or NIC...">
                             <button class="btn btn-info btn-sm" onclick="searchWholesaleCustomer()">Find</button>
                             <button class="btn btn-success btn-sm" onclick="showAddCustomerForm()">+ New</button>
                         </div>
@@ -81,17 +95,18 @@
                     <div id="retailCustomerForm">
                         <div class="row">
                             <div class="col-6">
-                                <input type="text" id="custName" class="form-control form-control-sm mb-1" placeholder="Customer Name" tabindex="4">
+                                <input type="text" id="custName" class="form-control form-control-sm mb-1" placeholder="Customer Name">
                             </div>
                             <div class="col-6">
-                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" placeholder="Phone Number" tabindex="5">
+                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" placeholder="Phone Number">
                             </div>
                         </div>
-                        <textarea id="custAddress" class="form-control form-control-sm mb-1" placeholder="Address (for delivery)" rows="2" tabindex="6"></textarea>
+                        <textarea id="custAddress" class="form-control form-control-sm mb-1" placeholder="Address (for delivery)" rows="2"></textarea>
                     </div>
                 </div>
             </div>
 
+            <!-- Cart -->
             <div class="card">
                 <div class="card-header bg-dark text-white py-1 d-flex justify-content-between">
                     <small><i class="fas fa-shopping-cart"></i> Current Sale</small>
@@ -107,7 +122,7 @@
                             <td><small>Discount (%):</small></td>
                             <td class="text-end">
                                 <input type="number" id="discountPercent" class="form-control form-control-sm d-inline text-end" 
-                                       style="width: 60px;" value="0" min="0" max="100" onchange="updateCartDisplay()" tabindex="7">
+                                       style="width: 60px;" value="0" min="0" max="100" onchange="updateCartDisplay()">
                             </td>
                         </tr>
                         <tr><td>Discount:</td><td class="text-end text-danger">-$<span id="discountAmount">0.00</span></td></tr>
@@ -115,7 +130,7 @@
                             <td><small>Delivery ($):</small></td>
                             <td class="text-end">
                                 <input type="number" id="deliveryCharge" class="form-control form-control-sm d-inline text-end" 
-                                       style="width: 70px;" value="0" min="0" step="0.01" onchange="updateCartDisplay()" tabindex="8">
+                                       style="width: 70px;" value="0" min="0" step="0.01" onchange="updateCartDisplay()">
                             </td>
                         </tr>
                         <tr class="fw-bold fs-5"><td>TOTAL:</td><td class="text-end">$<span id="total">0.00</span></td></tr>
@@ -142,7 +157,7 @@
 <div class="modal fade" id="cashModal">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white"><h5>Cash Payment</h5></div>
+            <div class="modal-header bg-success text-white"><h5>💵 Cash Payment</h5></div>
             <div class="modal-body text-center">
                 <h3>Total: $<span id="cashTotal">0.00</span></h3>
                 <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-2" 
@@ -167,7 +182,6 @@
                 <input type="text" id="wcPhone" class="form-control mb-1" placeholder="Phone*">
                 <input type="text" id="wcNic" class="form-control mb-1" placeholder="NIC Number">
                 <textarea id="wcAddress" class="form-control mb-1" placeholder="Address" rows="2"></textarea>
-                <input type="email" id="wcEmail" class="form-control mb-1" placeholder="Email">
                 <label>Credit Limit ($):</label>
                 <input type="number" id="wcCreditLimit" class="form-control" value="5000">
             </div>
@@ -183,9 +197,9 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-dark text-white">
-                <h5>Bill/Invoice</h5>
+                <h5>📄 Bill/Invoice</h5>
                 <div>
-                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">Print</button>
+                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">🖨️ Print</button>
                     <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
@@ -199,17 +213,45 @@ let cart = [];
 let currentWholesaleCustomer = null;
 let customerType = 'retail';
 let recentProducts = [];
+let allProducts = [];
 
 // ===== CLOCK =====
 function updateClock() {
-    const now = new Date();
-    document.getElementById('liveClock').textContent = now.toLocaleString('en-US', { 
-        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
-    });
+    var now = new Date();
+    var timeStr = now.toLocaleDateString('en-US', {weekday:'short', year:'numeric', month:'short', day:'numeric'}) + ' ' + 
+                  now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    document.getElementById('liveClock').textContent = timeStr;
 }
 updateClock();
 setInterval(updateClock, 1000);
+
+// ===== INIT =====
+function init() {
+    loadCategories();
+    loadAllProducts();
+    checkLowStock();
+    document.getElementById('barcodeInput').focus();
+}
+
+function loadAllProducts() {
+    fetch('/api/products/all')
+        .then(r => r.json())
+        .then(products => {
+            allProducts = products;
+            displayProducts(products);
+        });
+}
+
+function checkLowStock() {
+    fetch('/api/dashboard/stats')
+        .then(r => r.json())
+        .then(stats => {
+            if (stats.low_stock > 0) {
+                document.getElementById('lowStockAlert').style.display = 'block';
+                document.getElementById('lowStockCount').textContent = stats.low_stock;
+            }
+        });
+}
 
 // ===== CUSTOMER TYPE =====
 function changeCustomerType() {
@@ -226,18 +268,38 @@ function changeCustomerType() {
     document.getElementById('customerSearchResults').innerHTML = '';
 }
 
-// ===== BARCODE =====
-document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
+// ===== BARCODE SCANNER =====
+document.getElementById('barcodeInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
         e.preventDefault();
-        const barcode = this.value.trim();
+        var barcode = this.value.trim();
         if (barcode) {
-            lookupBarcode(barcode);
+            console.log('Scanning barcode:', barcode);
+            fetch('/api/product/barcode/' + encodeURIComponent(barcode))
+                .then(function(r) { return r.json(); })
+                .then(function(product) {
+                    console.log('Product found:', product);
+                    if (product.id) {
+                        if (product.stock_quantity <= 0) {
+                            alert('⚠️ Product OUT OF STOCK!');
+                            return;
+                        }
+                        addToCart(product, 1);
+                        addToRecent(product);
+                    } else {
+                        alert('❌ Product not found! Barcode: ' + barcode);
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Error:', err);
+                    alert('Error finding product. Check console.');
+                });
             this.value = '';
         }
     }
 });
 
+// Keep focus on barcode input
 document.addEventListener('click', function(e) {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
         e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' ||
@@ -249,88 +311,92 @@ document.addEventListener('click', function(e) {
     document.getElementById('barcodeInput').focus();
 });
 
-function lookupBarcode(barcode) {
-    fetch(`/api/product/barcode/${encodeURIComponent(barcode)}`)
-        .then(r => r.json())
-        .then(product => {
-            if (product.id) {
-                addToCart(product, 1);
-                addToRecent(product);
-            } else {
-                alert('Product not found!');
-            }
-        });
-}
-
 // ===== RECENT ITEMS =====
 function addToRecent(product) {
-    recentProducts = recentProducts.filter(p => p.id !== product.id);
-    recentProducts.unshift(product);
-    if (recentProducts.length > 10) recentProducts.pop();
+    recentProducts = recentProducts.filter(function(p) { return p.id !== product.id; });
+    recentProducts.unshift({
+        id: product.id, 
+        name: product.name, 
+        price: product.price || product.retail_price, 
+        stock_quantity: product.stock_quantity
+    });
+    if (recentProducts.length > 8) recentProducts.pop();
     displayRecentItems();
 }
 
 function displayRecentItems() {
+    var section = document.getElementById('recentSection');
+    var list = document.getElementById('recentItemsList');
+    
     if (recentProducts.length === 0) {
-        document.getElementById('recentItems').style.display = 'none';
+        section.style.display = 'none';
         return;
     }
-    document.getElementById('recentItems').style.display = 'block';
-    document.getElementById('recentItemsList').innerHTML = recentProducts.map(p => 
-        `<span class="recent-item" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1)">${p.name.substring(0, 15)}</span>`
-    ).join('');
+    
+    section.style.display = 'block';
+    list.innerHTML = recentProducts.map(function(p) { 
+        return '<span class="recent-item" onclick="addToCart({id:' + p.id + ', name:\'' + p.name.replace(/'/g, "\\'") + '\', price:' + p.price + ', stock_quantity:' + p.stock_quantity + '}, 1);event.stopPropagation();">' +
+               p.name.substring(0, 15) + ' $' + p.price.toFixed(2) + '</span>';
+    }).join('');
 }
 
-// ===== PRODUCTS =====
+// ===== PRODUCT SEARCH =====
 function searchProducts() {
-    const query = document.getElementById('searchInput').value;
-    fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_type=${customerType}`)
-        .then(r => r.json())
-        .then(products => displayProducts(products));
+    var query = document.getElementById('searchInput').value;
+    if (!query) {
+        displayProducts(allProducts);
+        return;
+    }
+    fetch('/api/products/search?q=' + encodeURIComponent(query) + '&customer_type=' + customerType)
+        .then(function(r) { return r.json(); })
+        .then(function(products) { displayProducts(products); });
 }
 
 function filterCategory(cat) {
-    if (cat === 'all') searchProducts();
-    else {
-        fetch(`/api/products/search?category=${encodeURIComponent(cat)}&customer_type=${customerType}`)
-            .then(r => r.json())
-            .then(products => displayProducts(products));
+    if (cat === 'all') {
+        displayProducts(allProducts);
+    } else {
+        var filtered = allProducts.filter(function(p) { return p.category === cat; });
+        displayProducts(filtered);
     }
 }
 
 function displayProducts(products) {
-    const grid = document.getElementById('productGrid');
-    if (!products.length) {
-        grid.innerHTML = '<div class="col-12 text-center text-muted py-3">No products</div>';
+    var grid = document.getElementById('productGrid');
+    
+    if (!products || products.length === 0) {
+        grid.innerHTML = '<div class="col-12 text-center text-muted py-3">No products found</div>';
         return;
     }
-    grid.innerHTML = products.map(p => {
-        const outOfStock = p.stock_quantity <= 0;
-        return `
-        <div class="col-6 col-md-4 col-lg-3 mb-2">
-            <div class="card product-card p-1 ${outOfStock ? 'out-of-stock' : ''}" 
-                 onclick="${outOfStock ? '' : `addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1);addToRecent(${JSON.stringify(p).replace(/"/g, '&quot;')})`}">
-                <small><strong>${p.name.substring(0, 18)}</strong></small><br>
-                <small class="text-success">$${p.price.toFixed(2)}</small>
-                <small class="text-${outOfStock ? 'danger' : 'muted'} float-end">
-                    ${outOfStock ? 'OUT OF STOCK' : 'Qty:'+p.stock_quantity}
-                </small>
-            </div>
-        </div>`;
+    
+    grid.innerHTML = products.map(function(p) {
+        var price = customerType === 'wholesale' ? p.wholesale_price : p.retail_price;
+        var outOfStock = (p.stock_quantity || 0) <= 0;
+        var lowStock = (p.stock_quantity || 0) > 0 && (p.stock_quantity || 0) <= (p.min_stock_level || 5);
+        var cardClass = outOfStock ? 'out-of-stock' : (lowStock ? 'low-stock' : '');
+        var clickHandler = outOfStock ? '' : 'onclick="addToCart({id:' + p.id + ', name:\'' + (p.name||'').replace(/'/g, "\\'") + '\', price:' + price + ', stock_quantity:' + (p.stock_quantity||0) + '}, 1); addToRecent({id:' + p.id + ', name:\'' + (p.name||'').replace(/'/g, "\\'") + '\', price:' + price + ', stock_quantity:' + (p.stock_quantity||0) + '})"';
+        
+        return '<div class="col-6 col-md-4 col-lg-3 mb-2">' +
+            '<div class="card product-card p-1 ' + cardClass + '" ' + clickHandler + '>' +
+            '<small><strong>' + (p.name||'').substring(0, 18) + '</strong></small><br>' +
+            '<small class="text-success">$' + price.toFixed(2) + '</small>' +
+            '<small class="float-end text-' + (outOfStock ? 'danger fw-bold' : lowStock ? 'warning fw-bold' : 'muted') + '">' +
+            (outOfStock ? '⛔ OUT' : lowStock ? '⚠️ ' + p.stock_quantity : 'Qty:' + (p.stock_quantity||0)) + '</small>' +
+            '</div></div>';
     }).join('');
 }
 
 // ===== CART =====
 function addToCart(product, qty) {
-    if (product.stock_quantity <= 0) {
-        alert('Product out of stock!');
+    if (!product.stock_quantity || product.stock_quantity <= 0) {
+        alert('⚠️ Product is OUT OF STOCK!');
         return;
     }
     
-    const existing = cart.find(i => i.id === product.id);
+    var existing = cart.find(function(i) { return i.id === product.id; });
     if (existing) {
         if (existing.quantity + qty > product.stock_quantity) {
-            alert(`Only ${product.stock_quantity} available!`);
+            alert('⚠️ Only ' + product.stock_quantity + ' available!');
             return;
         }
         existing.quantity += qty;
@@ -338,70 +404,63 @@ function addToCart(product, qty) {
         cart.push({
             id: product.id,
             name: product.name,
-            price: product.price || product.retail_price,
+            price: product.price || 0,
             quantity: qty,
-            maxStock: product.stock_quantity
+            maxStock: product.stock_quantity || 0
         });
     }
     updateCartDisplay();
+    document.getElementById('barcodeInput').focus();
 }
 
 function changeQty(index, change) {
-    const item = cart[index];
-    const newQty = item.quantity + change;
-    if (newQty <= 0) { removeFromCart(index); }
-    else if (newQty > item.maxStock) { alert(`Max stock: ${item.maxStock}`); }
-    else { item.quantity = newQty; updateCartDisplay(); }
+    var item = cart[index];
+    var newQty = item.quantity + change;
+    if (newQty <= 0) { cart.splice(index, 1); }
+    else if (newQty > item.maxStock) { alert('⚠️ Max stock: ' + item.maxStock); }
+    else { item.quantity = newQty; }
+    updateCartDisplay();
 }
 
 function manualQtyChange(index, input) {
-    const newQty = parseInt(input.value);
-    const item = cart[index];
-    if (isNaN(newQty) || newQty <= 0) {
-        input.value = item.quantity;
-    } else if (newQty > item.maxStock) {
-        alert(`Max stock: ${item.maxStock}`);
-        input.value = item.maxStock;
-        item.quantity = item.maxStock;
-    } else {
-        item.quantity = newQty;
-    }
+    var newQty = parseInt(input.value);
+    var item = cart[index];
+    if (isNaN(newQty) || newQty <= 0) { input.value = item.quantity; }
+    else if (newQty > item.maxStock) { alert('⚠️ Max stock: ' + item.maxStock); input.value = item.maxStock; item.quantity = item.maxStock; }
+    else { item.quantity = newQty; }
     updateCartDisplay();
 }
 
 function removeFromCart(index) { cart.splice(index, 1); updateCartDisplay(); }
-function clearCart() { cart = []; updateCartDisplay(); }
+
+function clearCart() { 
+    if(confirm('Clear cart?')) { cart = []; updateCartDisplay(); } 
+}
 
 function updateCartDisplay() {
-    const div = document.getElementById('cartItems');
-    let subtotal = 0;
+    var div = document.getElementById('cartItems');
+    var subtotal = 0;
     
     if (!cart.length) {
         div.innerHTML = '<div class="text-center text-muted py-3">Cart is empty</div>';
     } else {
-        div.innerHTML = cart.map((item, i) => {
-            const total = item.price * item.quantity;
+        div.innerHTML = cart.map(function(item, i) {
+            var total = item.price * item.quantity;
             subtotal += total;
-            return `
-                <div class="cart-item d-flex align-items-center p-2">
-                    <div class="flex-grow-1">
-                        <small><strong>${item.name}</strong></small><br>
-                        <small>$${item.price.toFixed(2)} each</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, -1)">-</button>
-                    <input type="number" class="qty-input mx-1" value="${item.quantity}" min="1" max="${item.maxStock}"
-                           onchange="manualQtyChange(${i}, this)" style="width:45px;">
-                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, 1)">+</button>
-                    <strong class="ms-2">$${total.toFixed(2)}</strong>
-                    <button class="btn btn-sm text-danger ms-1" onclick="removeFromCart(${i})">×</button>
-                </div>`;
+            return '<div class="cart-item d-flex align-items-center">' +
+                '<div class="flex-grow-1"><small><strong>' + item.name + '</strong></small><br><small>$' + item.price.toFixed(2) + ' each</small></div>' +
+                '<button class="btn btn-sm btn-outline-secondary" style="width:25px;height:25px;padding:0;" onclick="changeQty(' + i + ', -1)">-</button>' +
+                '<input type="number" class="qty-input mx-1" value="' + item.quantity + '" min="1" max="' + item.maxStock + '" onchange="manualQtyChange(' + i + ', this)" style="width:45px;">' +
+                '<button class="btn btn-sm btn-outline-secondary" style="width:25px;height:25px;padding:0;" onclick="changeQty(' + i + ', 1)">+</button>' +
+                '<strong class="ms-2">$' + total.toFixed(2) + '</strong>' +
+                '<button class="btn btn-sm text-danger ms-1" onclick="removeFromCart(' + i + ')">×</button></div>';
         }).join('');
     }
     
-    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
-    const discountAmount = subtotal * (discountPercent / 100);
-    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
-    const total = subtotal - discountAmount + deliveryCharge;
+    var discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+    var discountAmount = subtotal * (discountPercent / 100);
+    var deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
+    var total = subtotal - discountAmount + deliveryCharge;
     
     document.getElementById('subtotal').textContent = subtotal.toFixed(2);
     document.getElementById('discountAmount').textContent = discountAmount.toFixed(2);
@@ -410,22 +469,21 @@ function updateCartDisplay() {
 
 // ===== CUSTOMER SEARCH =====
 function searchWholesaleCustomer() {
-    const q = document.getElementById('wholesaleCustomerInput').value;
+    var q = document.getElementById('wholesaleCustomerInput').value;
     if (!q) return;
-    fetch(`/api/customers/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(customers => {
-            const div = document.getElementById('customerSearchResults');
+    fetch('/api/customers/search?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(function(customers) {
+            var div = document.getElementById('customerSearchResults');
             if (!customers.length) {
-                div.innerHTML = '<div class="text-muted p-2">Not found. Add new.</div>';
+                div.innerHTML = '<div class="text-muted p-2">Not found. Click + New.</div>';
                 return;
             }
-            div.innerHTML = customers.map(c => `
-                <div class="customer-result" onclick="selectWholesaleCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                    <strong>${c.name}</strong> | ${c.phone}<br>
-                    <small>Balance: $${c.balance.toFixed(2)} | Limit: $${c.credit_limit.toFixed(2)}</small>
-                </div>
-            `).join('');
+            div.innerHTML = customers.map(function(c) {
+                return '<div class="customer-result" onclick="selectWholesaleCustomer(' + JSON.stringify(c).replace(/"/g, '&quot;') + ')">' +
+                    '<strong>' + c.name + '</strong> | ' + c.phone + '<br>' +
+                    '<small>Balance: $' + (c.balance||0).toFixed(2) + ' | Limit: $' + (c.credit_limit||0).toFixed(2) + '</small></div>';
+            }).join('');
         });
 }
 
@@ -435,8 +493,8 @@ document.getElementById('wholesaleCustomerInput').addEventListener('keypress', f
 
 function selectWholesaleCustomer(customer) {
     currentWholesaleCustomer = customer;
-    document.getElementById('selectedWholesaleCustomer').innerHTML = `
-        <div class="alert alert-success p-1 small">${customer.name} | Bal: $${customer.balance.toFixed(2)}</div>`;
+    document.getElementById('selectedWholesaleCustomer').innerHTML = 
+        '<div class="alert alert-success p-1 small mb-0">✅ ' + customer.name + ' | Bal: $' + (customer.balance||0).toFixed(2) + '</div>';
     document.getElementById('customerSearchResults').innerHTML = '';
     document.getElementById('wholesaleCustomerInput').value = '';
 }
@@ -449,13 +507,12 @@ function getCustomerInfo() {
             phone: document.getElementById('custPhone').value || '',
             address: document.getElementById('custAddress').value || ''
         };
-    } else {
-        return {
-            name: currentWholesaleCustomer ? currentWholesaleCustomer.name : 'Wholesale Customer',
-            phone: currentWholesaleCustomer ? currentWholesaleCustomer.phone : '',
-            address: currentWholesaleCustomer ? (currentWholesaleCustomer.address || '') : ''
-        };
     }
+    return {
+        name: currentWholesaleCustomer ? currentWholesaleCustomer.name : 'Wholesale Customer',
+        phone: currentWholesaleCustomer ? currentWholesaleCustomer.phone : '',
+        address: currentWholesaleCustomer ? (currentWholesaleCustomer.address || '') : ''
+    };
 }
 
 function processCashPayment() {
@@ -467,15 +524,15 @@ function processCashPayment() {
 }
 
 function calculateChange() {
-    const total = parseFloat(document.getElementById('cashTotal').textContent);
-    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
+    var total = parseFloat(document.getElementById('cashTotal').textContent);
+    var received = parseFloat(document.getElementById('cashReceived').value) || 0;
     document.getElementById('changeAmount').textContent = Math.max(0, received - total).toFixed(2);
 }
 
 function completeCashPayment() {
-    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-    const total = parseFloat(document.getElementById('total').textContent);
-    if (received < total) { alert('Insufficient!'); return; }
+    var received = parseFloat(document.getElementById('cashReceived').value) || 0;
+    var total = parseFloat(document.getElementById('total').textContent);
+    if (received < total) { alert('Insufficient amount!'); return; }
     processSale('cash', received);
     bootstrap.Modal.getInstance(document.getElementById('cashModal')).hide();
 }
@@ -487,20 +544,20 @@ function processCardPayment() {
 
 function processCreditPayment() {
     if (!cart.length) { alert('Cart is empty!'); return; }
-    if (!currentWholesaleCustomer) { alert('Select wholesale customer!'); return; }
+    if (!currentWholesaleCustomer) { alert('Select wholesale customer first!'); return; }
     processSale('credit', 0);
 }
 
 function processSale(paymentMethod, cashReceived) {
-    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
-    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
-    const custInfo = getCustomerInfo();
+    var discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
+    var deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
+    var custInfo = getCustomerInfo();
     
     fetch('/api/orders', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            items: cart.map(item => ({id: item.id, quantity: item.quantity})),
+            items: cart.map(function(item) { return {id: item.id, quantity: item.quantity}; }),
             payment_method: paymentMethod,
             cash_received: cashReceived,
             discount_percent: discountPercent,
@@ -512,16 +569,18 @@ function processSale(paymentMethod, cashReceived) {
             sale_type: customerType
         })
     })
-    .then(r => r.json())
-    .then(data => {
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
         if (data.success) {
             if (paymentMethod === 'cash') fetch('/api/open-drawer');
-            showInvoiceModal(data.order, custInfo);
+            showInvoice(data.order, custInfo);
             resetSale();
+            checkLowStock();
         } else {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error || 'Unknown error'));
         }
-    });
+    })
+    .catch(function(err) { alert('Network error. Please try again.'); });
 }
 
 function resetSale() {
@@ -537,38 +596,35 @@ function resetSale() {
     document.getElementById('barcodeInput').focus();
 }
 
-// ===== INVOICE =====
-function showInvoiceModal(order, custInfo) {
-    document.getElementById('invoiceContent').innerHTML = `
-        <div id="printableInvoice" style="font-family:monospace;font-size:13px;max-width:400px;margin:0 auto;">
-            <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;">
-                <h4>FURNITURE WAREHOUSE</h4>
-                <p>Invoice: ${order.order_number}</p><p>Date: ${order.created_at}</p>
-            </div>
-            <p><strong>Customer:</strong> ${custInfo.name}</p>
-            ${custInfo.phone ? `<p><strong>Phone:</strong> ${custInfo.phone}</p>` : ''}
-            ${custInfo.address ? `<p><strong>Address:</strong> ${custInfo.address}</p>` : ''}
-            <table style="width:100%;margin:10px 0;"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-            ${order.items.map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>$${i.price.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}
-            </table>
-            <div style="border-top:1px solid #000;"><p>Subtotal: $${order.subtotal.toFixed(2)}</p>
-            <p>Discount: -$${order.discount.toFixed(2)}</p><p>Delivery: $${order.delivery.toFixed(2)}</p>
-            <h3>TOTAL: $${order.total.toFixed(2)}</h3></div>
-            <p><strong>Payment:</strong> ${order.payment_method.toUpperCase()}</p>
-            <p><strong>Status:</strong> ${order.payment_status.toUpperCase()}</p>
-            ${order.change ? `<p>Change: $${order.change.toFixed(2)}</p>` : ''}
-        </div>`;
+function showInvoice(order, custInfo) {
+    document.getElementById('invoiceContent').innerHTML = 
+        '<div id="printableInvoice" style="font-family:monospace;font-size:13px;max-width:400px;margin:0 auto;">' +
+        '<div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;">' +
+        '<h4>🏪 FURNITURE WAREHOUSE</h4>' +
+        '<p>Invoice: ' + order.order_number + '</p><p>Date: ' + order.created_at + '</p></div>' +
+        '<p><strong>Customer:</strong> ' + custInfo.name + '</p>' +
+        (custInfo.phone ? '<p><strong>Phone:</strong> ' + custInfo.phone + '</p>' : '') +
+        (custInfo.address ? '<p><strong>Address:</strong> ' + custInfo.address + '</p>' : '') +
+        '<table style="width:100%;margin:10px 0;"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>' +
+        order.items.map(function(i) { return '<tr><td>' + i.name + '</td><td>' + i.quantity + '</td><td>$' + i.price.toFixed(2) + '</td><td>$' + i.total.toFixed(2) + '</td></tr>'; }).join('') +
+        '</table>' +
+        '<div style="border-top:1px solid #000;"><p>Subtotal: $' + order.subtotal.toFixed(2) + '</p>' +
+        '<p>Discount: -$' + order.discount.toFixed(2) + '</p><p>Delivery: $' + order.delivery.toFixed(2) + '</p>' +
+        '<h3>TOTAL: $' + order.total.toFixed(2) + '</h3></div>' +
+        '<p><strong>Payment:</strong> ' + order.payment_method.toUpperCase() + '</p>' +
+        '<p><strong>Status:</strong> ' + order.payment_status.toUpperCase() + '</p>' +
+        (order.change ? '<p>Change: $' + order.change.toFixed(2) + '</p>' : '') +
+        '<div style="text-align:center;margin-top:20px;border-top:1px dashed #000;padding-top:10px;"><p>Thank you!</p></div></div>';
     new bootstrap.Modal(document.getElementById('invoiceModal')).show();
 }
 
 function printInvoice() {
-    const content = document.getElementById('printableInvoice').innerHTML;
-    const win = window.open('', '_blank', 'width=400,height=600');
-    win.document.write(`<html><head><title>Bill</title></head><body>${content}<script>window.print();<\/script></body></html>`);
+    var content = document.getElementById('printableInvoice').innerHTML;
+    var win = window.open('', '_blank', 'width=400,height=600');
+    win.document.write('<html><head><title>Bill</title></head><body>' + content + '<script>window.print();<\/script></body></html>');
     win.document.close();
 }
 
-// ===== ADD CUSTOMER =====
 function showAddCustomerForm() {
     new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
 }
@@ -581,34 +637,36 @@ function saveWholesaleCustomer() {
             phone: document.getElementById('wcPhone').value,
             nic: document.getElementById('wcNic').value,
             address: document.getElementById('wcAddress').value,
-            email: document.getElementById('wcEmail').value,
             credit_limit: document.getElementById('wcCreditLimit').value,
             customer_type: 'wholesale'
         })
     })
-    .then(r => r.json())
-    .then(result => {
+    .then(function(r) { return r.json(); })
+    .then(function(result) {
         if (result.success) {
             currentWholesaleCustomer = result.customer;
             document.getElementById('selectedWholesaleCustomer').innerHTML = 
-                `<div class="alert alert-success p-1 small">${result.customer.name} added</div>`;
+                '<div class="alert alert-success p-1 small">✅ ' + result.customer.name + ' added</div>';
             bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
-        }
+        } else { alert('Error: ' + result.error); }
     });
 }
 
-// ===== INIT =====
 function loadCategories() {
     fetch('/api/products/categories')
-        .then(r => r.json())
-        .then(cats => {
-            const div = document.getElementById('categoryButtons');
+        .then(function(r) { return r.json(); })
+        .then(function(cats) {
+            var div = document.getElementById('categoryButtons');
             div.innerHTML = '<button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory(\'all\')">All</button>';
-            if (Array.isArray(cats)) cats.forEach(c => div.innerHTML += `<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory('${c}')">${c}</button>`);
+            if (Array.isArray(cats)) {
+                cats.forEach(function(c) { 
+                    div.innerHTML += '<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory(\'' + c + '\')">' + c + '</button>'; 
+                });
+            }
         });
 }
 
-loadCategories();
-document.getElementById('barcodeInput').focus();
+// START
+init();
 </script>
 {% endblock %}
