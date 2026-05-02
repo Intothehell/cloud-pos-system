@@ -108,7 +108,16 @@ def search_customers_api():
 def record_payment(customer_id):
     """Record payment"""
     customer = Customer.query.get_or_404(customer_id)
-    amount = float(request.form.get('amount'))
+    amount = float(request.form.get('amount', 0))
+    
+    # Validate amount
+    if amount <= 0:
+        flash('Payment amount must be greater than $0.00', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    if amount > customer.balance:
+        flash(f'Payment amount cannot exceed the outstanding balance of ${customer.balance:.2f}', 'danger')
+        return redirect(url_for('customer.list_customers'))
     
     payment = Payment(
         customer_id=customer.id,
@@ -119,6 +128,7 @@ def record_payment(customer_id):
     )
     
     customer.balance -= amount
+    customer.total_paid += amount
     db.session.add(payment)
     db.session.commit()
     
