@@ -2,38 +2,74 @@
 
 {% block title %}Bill History{% endblock %}
 
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 30%, #fdf2f8 70%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    }
+    .stat-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+    .gradient-indigo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .gradient-emerald { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .gradient-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .gradient-rose { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .tab-active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important; color: white !important; border-color: transparent !important; }
+    .modal-backdrop { backdrop-filter: blur(4px); background: rgba(0,0,0,0.4); }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="max-w-7xl mx-auto px-4 py-4">
+<div class="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
     
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <svg class="w-6 h-6 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
-            </svg>
+    <!-- Header -->
+    <div class="mb-4 sm:mb-6">
+        <h1 class="text-lg sm:text-2xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
+            <span class="w-8 h-8 sm:w-10 sm:h-10 gradient-indigo rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+            </span>
             Bill History
         </h1>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Date</label>
-                <input type="date" id="filterDate" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Search</label>
+                <input type="text" id="searchQuery" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" placeholder="Invoice, name or phone..." onkeyup="loadBills()">
+            </div>
+            <div class="hidden sm:block">
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Date</label>
+                <input type="date" id="filterDate" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
-                <select id="filterType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
+                <select id="filterType" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
                     <option value="all">All Sales</option>
                     <option value="retail">Retail</option>
                     <option value="wholesale">Wholesale</option>
                 </select>
             </div>
             <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Payment</label>
-                <select id="filterPayment" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Payment</label>
+                <select id="filterPayment" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
                     <option value="all">All Payments</option>
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
@@ -41,106 +77,105 @@
                 </select>
             </div>
             <div class="flex items-end">
-                <button onclick="loadBills()" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition">
-                    <svg class="w-4 h-4 inline mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button onclick="loadBills()" class="w-full gradient-indigo text-white px-3 sm:px-4 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:opacity-90 shadow-lg flex items-center justify-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
                     Search
                 </button>
             </div>
         </div>
+        <!-- Mobile Date -->
+        <div class="sm:hidden mt-2">
+            <label class="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Date</label>
+            <input type="date" id="filterDateMobile" class="w-full border-2 border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white/80" onchange="syncDate()">
+        </div>
     </div>
     
     <!-- Stats Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    </svg>
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
+        <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-indigo rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
                 </div>
-                <div>
-                    <p class="text-2xl font-bold text-slate-800" id="totalBills">0</p>
-                    <p class="text-xs text-slate-400">Total Bills</p>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalBills">0</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Total Bills</p>
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="12" y1="1" x2="12" y2="23"></line>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
+        <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-emerald rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
                 </div>
-                <div>
-                    <p class="text-2xl font-bold text-slate-800" id="totalSales">$0</p>
-                    <p class="text-xs text-slate-400">Total Sales</p>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalSales">$0</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Total Sales</p>
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
+        <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-amber rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 </div>
-                <div>
-                    <p class="text-2xl font-bold text-slate-800" id="pendingPayments">0</p>
-                    <p class="text-xs text-slate-400">Pending</p>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="pendingPayments">0</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Pending</p>
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
-                    <svg class="w-5 h-5 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                        <line x1="2" y1="10" x2="22" y2="10"></line>
-                    </svg>
+        <div class="stat-card rounded-xl sm:rounded-2xl p-3 sm:p-4">
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-rose rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
                 </div>
-                <div>
-                    <p class="text-2xl font-bold text-slate-800" id="pendingAmount">$0</p>
-                    <p class="text-xs text-slate-400">Pending Amount</p>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="pendingAmount">$0</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Pending Amt</p>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Category Tabs -->
-    <div class="flex gap-2 mb-4 flex-wrap" id="categoryTabs">
-        <button onclick="filterByCategory('all')" class="px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-xl category-btn">All</button>
-        <button onclick="filterByCategory('cash')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:border-emerald-300 category-btn">
-            💵 Cash (<span id="cashCount">0</span>)
+    <div class="flex gap-1.5 sm:gap-2 mb-3 sm:mb-4 flex-wrap">
+        <button onclick="filterByCategory('all')" id="tabAll" class="tab-active px-3 sm:px-5 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl category-btn shadow-sm flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            All
         </button>
-        <button onclick="filterByCategory('card')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:border-blue-300 category-btn">
-            💳 Card (<span id="cardCount">0</span>)
+        <button onclick="filterByCategory('cash')" id="tabCash" class="px-3 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl hover:border-emerald-300 category-btn shadow-sm flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            Cash (<span id="cashCount">0</span>)
         </button>
-        <button onclick="filterByCategory('credit')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:border-amber-300 category-btn">
-            📋 Credit (<span id="creditCount">0</span>)
+        <button onclick="filterByCategory('card')" id="tabCard" class="px-3 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl hover:border-blue-300 category-btn shadow-sm flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            Card (<span id="cardCount">0</span>)
+        </button>
+        <button onclick="filterByCategory('credit')" id="tabCredit" class="px-3 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold rounded-lg sm:rounded-xl hover:border-amber-300 category-btn shadow-sm flex items-center gap-1.5">
+            <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line></svg>
+            Credit (<span id="creditCount">0</span>)
         </button>
     </div>
     
     <!-- Bills Table -->
-    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="glass-card rounded-xl sm:rounded-2xl overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead><tr class="bg-slate-800 text-white">
-                    <th class="px-4 py-3 text-left font-medium">Invoice #</th>
-                    <th class="px-4 py-3 text-left font-medium hidden md:table-cell">Date/Time</th>
-                    <th class="px-4 py-3 text-left font-medium">Customer</th>
-                    <th class="px-4 py-3 text-left font-medium hidden lg:table-cell">Type</th>
-                    <th class="px-4 py-3 text-center font-medium hidden sm:table-cell">Items</th>
-                    <th class="px-4 py-3 text-right font-medium">Total</th>
-                    <th class="px-4 py-3 text-left font-medium hidden md:table-cell">Payment</th>
-                    <th class="px-4 py-3 text-center font-medium">Status</th>
-                    <th class="px-4 py-3 text-center font-medium">Action</th>
+            <table class="w-full text-xs sm:text-sm">
+                <thead><tr class="bg-slate-900 text-white">
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium">Invoice #</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Date</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium">Customer</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden lg:table-cell">Type</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-right font-medium">Total</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Payment</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-center font-medium">Status</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-center font-medium">View</th>
                 </tr></thead>
                 <tbody id="billsTable" class="divide-y divide-slate-100">
-                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Loading today's bills...</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -148,172 +183,112 @@
 </div>
 
 <!-- View Invoice Modal -->
-<div id="viewInvoiceModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold flex items-center gap-2">
-                <svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                </svg>
+<div id="viewInvoiceModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <span class="w-8 h-8 gradient-indigo rounded-lg flex items-center justify-center">
+                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
+                </span>
                 Invoice Details
             </h3>
             <div class="flex gap-2">
-                <button onclick="printBill()" class="bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-200">
-                    🖨️ Print
+                <button onclick="printBill()" class="bg-slate-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-slate-200 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Print
                 </button>
-                <button onclick="closeInvoiceModal()" class="bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-300">Close</button>
+                <button onclick="closeInvoiceModal()" class="bg-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium">Close</button>
             </div>
         </div>
-        <div id="viewInvoiceContent"></div>
+        <div id="viewInvoiceContent" class="text-sm"></div>
     </div>
 </div>
 
 <script>
-// Set today's date by default
 document.getElementById('filterDate').value = new Date().toISOString().split('T')[0];
-
 var currentCategory = 'all';
 
-function closeInvoiceModal() {
-    var modal = document.getElementById('viewInvoiceModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-}
+function syncDate(){ document.getElementById('filterDate').value = document.getElementById('filterDateMobile').value; loadBills(); }
+function closeInvoiceModal(){ var m=document.getElementById('viewInvoiceModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 
-function filterByCategory(cat) {
-    currentCategory = cat;
-    
-    // Update active button styles
-    document.querySelectorAll('.category-btn').forEach(function(btn) {
-        if (cat === 'all' && btn.textContent.includes('All')) {
-            btn.className = 'px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-xl category-btn';
-        } else if (btn.textContent.toLowerCase().includes(cat) && cat !== 'all') {
-            btn.className = 'px-4 py-2 bg-slate-800 text-white text-sm font-medium rounded-xl category-btn';
-        } else {
-            btn.className = 'px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-sm font-medium rounded-xl hover:border-slate-300 category-btn';
-        }
-    });
-    
+function filterByCategory(cat){
+    currentCategory=cat;
+    document.querySelectorAll('.category-btn').forEach(function(b){b.classList.remove('tab-active');b.classList.add('bg-white','border-2','border-slate-200','text-slate-700');});
+    var a=document.getElementById('tab'+cat.charAt(0).toUpperCase()+cat.slice(1));
+    if(a){a.classList.add('tab-active');a.classList.remove('bg-white','border-slate-200','text-slate-700');}
     loadBills();
 }
 
-function loadBills() {
-    var date = document.getElementById('filterDate').value;
-    var type = document.getElementById('filterType').value;
-    var payment = document.getElementById('filterPayment').value;
+function loadBills(){
+    var date=document.getElementById('filterDate').value;
+    var type=document.getElementById('filterType').value;
+    var payment=document.getElementById('filterPayment').value;
+    var search=(document.getElementById('searchQuery').value||'').toLowerCase();
     
-    // Build URL with date filter
-    var url = '/api/orders/all?';
-    if (date) url += 'date=' + date + '&';
-    url += 'type=' + type + '&payment=' + payment;
+    var url='/api/orders/all?'; if(date) url+='date='+date+'&'; url+='type='+type+'&payment='+payment;
     
-    fetch(url)
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            var allOrders = data.orders;
-            
-            // Filter by category
-            if (currentCategory !== 'all') {
-                allOrders = allOrders.filter(function(o) {
-                    return o.payment_method === currentCategory;
-                });
-            }
-            
-            // Update counts
-            var cashOrders = data.orders.filter(function(o) { return o.payment_method === 'cash'; });
-            var cardOrders = data.orders.filter(function(o) { return o.payment_method === 'card'; });
-            var creditOrders = data.orders.filter(function(o) { return o.payment_method === 'credit'; });
-            
-            document.getElementById('cashCount').textContent = cashOrders.length;
-            document.getElementById('cardCount').textContent = cardOrders.length;
-            document.getElementById('creditCount').textContent = creditOrders.length;
-            
-            // Update stats
-            document.getElementById('totalBills').textContent = allOrders.length;
-            document.getElementById('totalSales').textContent = '$' + allOrders.reduce(function(s, o) { return s + (o.total || 0); }, 0).toFixed(2);
-            
-            var pending = allOrders.filter(function(o) { return o.payment_status === 'pending'; });
-            document.getElementById('pendingPayments').textContent = pending.length;
-            document.getElementById('pendingAmount').textContent = '$' + pending.reduce(function(s, o) { return s + (o.total || 0); }, 0).toFixed(2);
-            
-            var tbody = document.getElementById('billsTable');
-            
-            if (!allOrders.length) {
-                tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No bills found for ' + (currentCategory !== 'all' ? currentCategory : 'this filter') + '</td></tr>';
-                return;
-            }
-            
-            tbody.innerHTML = allOrders.map(function(o) {
-                return '<tr class="hover:bg-slate-50 transition">' +
-                    '<td class="px-4 py-3 font-medium text-indigo-600">' + o.order_number + '</td>' +
-                    '<td class="px-4 py-3 text-xs text-slate-500 hidden md:table-cell">' + o.created_at + '</td>' +
-                    '<td class="px-4 py-3 text-sm">' + (o.customer_name || 'Walk-in') + '</td>' +
-                    '<td class="px-4 py-3 hidden lg:table-cell">' +
-                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + (o.sale_type === 'wholesale' ? 'bg-amber-100 text-amber-800' : 'bg-blue-100 text-blue-800') + '">' + (o.sale_type || 'retail') + '</span>' +
-                    '</td>' +
-                    '<td class="px-4 py-3 text-center hidden sm:table-cell">' + o.item_count + '</td>' +
-                    '<td class="px-4 py-3 text-right font-semibold">$' + (o.total || 0).toFixed(2) + '</td>' +
-                    '<td class="px-4 py-3 hidden md:table-cell"><span class="text-xs font-medium uppercase">' + o.payment_method + '</span></td>' +
-                    '<td class="px-4 py-3 text-center">' +
-                        '<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + (o.payment_status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800') + '">' + o.payment_status + '</span>' +
-                    '</td>' +
-                    '<td class="px-4 py-3 text-center">' +
-                        '<button onclick="viewBill(\'' + o.order_number + '\')" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm hover:underline">View</button>' +
-                    '</td>' +
-                '</tr>';
-            }).join('');
-        });
+    fetch(url).then(function(r){return r.json();}).then(function(data){
+        var allOrders=data.orders;
+        if(currentCategory!=='all'){ allOrders=allOrders.filter(function(o){return o.payment_method===currentCategory;}); }
+        // Search filter
+        if(search){ allOrders=allOrders.filter(function(o){return (o.order_number||'').toLowerCase().includes(search)||(o.customer_name||'').toLowerCase().includes(search)||(o.customer_phone||'').toLowerCase().includes(search);}); }
+        
+        var cashOrders=data.orders.filter(function(o){return o.payment_method==='cash';});
+        var cardOrders=data.orders.filter(function(o){return o.payment_method==='card';});
+        var creditOrders=data.orders.filter(function(o){return o.payment_method==='credit';});
+        document.getElementById('cashCount').textContent=cashOrders.length;
+        document.getElementById('cardCount').textContent=cardOrders.length;
+        document.getElementById('creditCount').textContent=creditOrders.length;
+        
+        document.getElementById('totalBills').textContent=allOrders.length;
+        document.getElementById('totalSales').textContent='$'+allOrders.reduce(function(s,o){return s+(o.total||0);},0).toFixed(2);
+        var pending=allOrders.filter(function(o){return o.payment_status==='pending';});
+        document.getElementById('pendingPayments').textContent=pending.length;
+        document.getElementById('pendingAmount').textContent='$'+pending.reduce(function(s,o){return s+(o.total||0);},0).toFixed(2);
+        
+        var tbody=document.getElementById('billsTable');
+        if(!allOrders.length){tbody.innerHTML='<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">No bills found</td></tr>';return;}
+        tbody.innerHTML=allOrders.map(function(o){
+            return '<tr class="hover:bg-slate-50 transition">'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-indigo-600">'+o.order_number+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs text-slate-500 hidden md:table-cell">'+o.created_at+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-medium">'+(o.customer_name||'Walk-in')+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden lg:table-cell"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+(o.sale_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+(o.sale_type||'retail')+'</span></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-right font-bold">$'+(o.total||0).toFixed(2)+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden md:table-cell"><span class="text-xs font-semibold uppercase">'+o.payment_method+'</span></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+(o.payment_status==='completed'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+o.payment_status+'</span></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><button onclick="viewBill(\''+o.order_number+'\')" class="text-indigo-600 hover:text-indigo-800 font-medium text-xs sm:text-sm hover:underline">View</button></td></tr>';
+        }).join('');
+    });
 }
 
-function viewBill(orderNumber) {
-    fetch('/api/orders/' + orderNumber + '/details')
-        .then(function(r) { return r.json(); })
-        .then(function(order) {
-            document.getElementById('viewInvoiceContent').innerHTML = 
-                '<div class="font-mono text-sm max-w-sm mx-auto">' +
-                '<div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3">' +
-                '<h4 class="font-bold text-lg">🏪 FURNITURE WAREHOUSE</h4>' +
-                '<p class="text-slate-500">Invoice: ' + order.order_number + '</p>' +
-                '<p class="text-slate-400 text-xs">' + order.created_at + '</p></div>' +
-                '<p><strong>Customer:</strong> ' + order.customer_name + '</p>' +
-                '<p><strong>Phone:</strong> ' + (order.customer_phone || 'N/A') + '</p>' +
-                '<table class="w-full my-3 text-xs">' +
-                '<tr class="border-b border-slate-300"><th class="text-left py-1">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>' +
-                (order.items || []).map(function(i) { return '<tr><td class="py-1">' + i.name + '</td><td class="text-right">' + i.quantity + '</td><td class="text-right">$' + i.price.toFixed(2) + '</td><td class="text-right">$' + i.total.toFixed(2) + '</td></tr>'; }).join('') +
-                '</table>' +
-                '<div class="border-t-2 border-slate-300 pt-2 space-y-1">' +
-                '<p class="flex justify-between"><span>Subtotal</span><span>$' + (order.subtotal || 0).toFixed(2) + '</span></p>' +
-                '<p class="flex justify-between text-red-500"><span>Discount</span><span>-$' + (order.discount || 0).toFixed(2) + '</span></p>' +
-                '<p class="flex justify-between"><span>Delivery</span><span>$' + (order.delivery || 0).toFixed(2) + '</span></p>' +
-                '<p class="flex justify-between font-bold text-lg border-t border-slate-300 pt-2"><span>TOTAL</span><span class="text-indigo-600">$' + (order.total || 0).toFixed(2) + '</span></p>' +
-                '</div>' +
-                '<p class="mt-2"><strong>Payment:</strong> ' + (order.payment_method || '').toUpperCase() + '</p>' +
-                '<p><strong>Status:</strong> ' + (order.payment_status || '').toUpperCase() + '</p>' +
-                '<p class="text-center text-slate-400 mt-3 text-xs">Thank you for your purchase!</p></div>';
-            
-            var modal = document.getElementById('viewInvoiceModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        });
+function viewBill(orderNumber){
+    fetch('/api/orders/'+orderNumber+'/details').then(function(r){return r.json();}).then(function(order){
+        document.getElementById('viewInvoiceContent').innerHTML=
+        '<div class="font-mono text-xs sm:text-sm max-w-sm mx-auto">'+
+        '<div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3">'+
+        '<h4 class="font-bold text-base sm:text-lg">FURNITURE WAREHOUSE</h4>'+
+        '<p class="text-slate-500">Invoice: '+order.order_number+'</p><p class="text-slate-400 text-xs">'+order.created_at+'</p></div>'+
+        '<p><strong>Customer:</strong> '+order.customer_name+'</p>'+
+        '<p><strong>Phone:</strong> '+(order.customer_phone||'N/A')+'</p>'+
+        '<table class="w-full my-3 text-xs"><tr class="border-b border-slate-300"><th class="text-left py-1">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+
+        (order.items||[]).map(function(i){return '<tr><td class="py-1">'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">$'+i.price.toFixed(2)+'</td><td class="text-right">$'+i.total.toFixed(2)+'</td></tr>';}).join('')+
+        '</table>'+
+        '<div class="border-t-2 border-slate-300 pt-2 space-y-1">'+
+        '<p class="flex justify-between"><span>Subtotal</span><span>$'+(order.subtotal||0).toFixed(2)+'</span></p>'+
+        '<p class="flex justify-between text-red-500"><span>Discount</span><span>-$'+(order.discount||0).toFixed(2)+'</span></p>'+
+        '<p class="flex justify-between"><span>Delivery</span><span>$'+(order.delivery||0).toFixed(2)+'</span></p>'+
+        '<p class="flex justify-between font-bold text-base sm:text-lg border-t border-slate-300 pt-2"><span>TOTAL</span><span class="text-indigo-600">$'+(order.total||0).toFixed(2)+'</span></p></div>'+
+        '<p class="mt-2"><strong>Payment:</strong> '+(order.payment_method||'').toUpperCase()+'</p>'+
+        '<p><strong>Status:</strong> '+(order.payment_status||'').toUpperCase()+'</p>'+
+        '<p class="text-center text-slate-400 mt-3 text-xs">Thank you for your purchase!</p></div>';
+        var modal=document.getElementById('viewInvoiceModal');modal.classList.remove('hidden');modal.classList.add('flex');
+    });
 }
 
-function printBill() {
-    var content = document.getElementById('viewInvoiceContent').innerHTML;
-    var win = window.open('', '', 'width=400,height=600');
-    win.document.write('<html><head><title>Bill</title></head><body class="p-4">' + content + '<script>window.print();<\/script></body></html>');
-    win.document.close();
-}
+function printBill(){var c=document.getElementById('viewInvoiceContent').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
 
-// Load on page open
-loadBills();
-
-// Auto refresh every 10 seconds
-setInterval(loadBills, 10000);
-
-// Refresh when tab is visible
-window.addEventListener('focus', loadBills);
-document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) loadBills();
-});
+loadBills();setInterval(loadBills,10000);window.addEventListener('focus',loadBills);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)loadBills();});
 </script>
 {% endblock %}
