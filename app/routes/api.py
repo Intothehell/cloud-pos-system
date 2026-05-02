@@ -575,3 +575,145 @@ def dashboard_stats():
 def open_drawer():
     print(f"🔓 Cash drawer opened by {current_user.username}")
     return jsonify({'success': True})
+
+
+#======credit customer tracking======
+@api_bp.route('/customers/<int:customer_id>/payment', methods=['POST'])
+@login_required
+def record_customer_payment(customer_id):
+    """Record a payment from customer (credit settlement)"""
+    customer = Customer.query.get_or_404(customer_id)
+    data = request.json
+    
+    amount = float(data.get('amount', 0))
+    if amount <= 0:
+        return jsonify({'error': 'Invalid amount'}), 400
+    
+    payment = Payment(
+        customer_id=customer.id,
+        amount=amount,
+        payment_method=data.get('payment_method', 'cash'),
+        reference_number=data.get('reference', ''),
+        notes=data.get('notes', ''),
+        received_by=current_user.id
+    )
+    
+    customer.balance -= amount
+    customer.total_paid += amount
+    
+    db.session.add(payment)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'new_balance': customer.balance,
+        'message': f'Payment of ${amount:.2f} recorded'
+    })
+
+# ============ RETURNS ============
+@api_bp.route('/orders/<order_number>/return', methods=['POST'])
+@login_required
+def return_order(order_number):
+    """Process a return/refund/replacement"""
+    from app.models.order import Return
+    
+    order = Order.query.filter_by(order_number=order_number).first()
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    data = request.json
+    return_type = data.get('return_type', 'refund')  # refund, replacement, credit_note
+    
+    # Create return record
+    ret = Return(
+        order_id=order.id,
+        return_type=return_type,
+        reason=data.get('reason', ''),
+        refund_amount=float(data.get('refund_amount', 0)),
+        refund_method=data.get('refund_method', 'cash'),
+        processed_by=current_user.id,
+        notes=data.get('notes', ''),
+        status='completed'
+    )
+    ret.generate_return_number()
+    
+    # Handle replacement
+    if return_type == 'replacement':
+        ret.replacement_product_id = data.get('replacement_product_id')
+        ret.replacement_quantity = data.get('replacement_quantity', 1)
+        
+        # Reduce stock of replacement item
+        if ret.replacement_product_id:
+            replacement_product = Product.query.get(ret.replacement_product_id)
+            if replacement_product:
+                replacement_product.stock_quantity -= ret.replacement_quantity
+                movement = StockMovement(
+                    product_id=replacement_product.id,
+                    user_id=current_user.id,
+                    movement_type='stock_out',
+                    quantity=-ret.replacement_quantity,
+                    previous_stock=replacement_product.stock_quantity + ret.replacement_quantity,
+                    new_stock=replacement_product.stock_quantity,
+                    reference=f'REPLACE-{ret.return_number}',
+                    notes=f'Replacement for order {order_number}'
+                )
+                db.session.add(movement)
+    
+    # Handle refund
+    if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
+        # Restore stock for refund
+        for item in order.items:
+            product = Product.query.get(item.product_id)
+            if product:
+                product.stock_quantity += item.quantity
+                movement = StockMovement(
+                    product_id=product.id,
+                    user_id=current_user.id,
+                    movement_type='return',
+                    quantity=item.quantity,
+                    previous_stock=product.stock_quantity - item.quantity,
+                    new_stock=product.stock_quantity,
+                    reference=f'RTN-{ret.return_number}'
+                )
+                db.session.add(movement)
+        
+        # If credit customer, reduce balance
+        if order.customer_id and order.payment_method == 'credit':
+            customer = Customer.query.get(order.customer_id)
+            if customer:
+                customer.balance -= ret.refund_amount
+    
+    # Update order status
+    order.status = 'returned'
+    
+    db.session.add(ret)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'return_number': ret.return_number,
+        'message': f'Return processed: {ret.return_number}'
+    })
+
+@api_bp.route('/returns/all')
+@login_required
+def get_all_returns():
+    """Get all returns"""
+    from app.models.order import Return
+    
+    returns = Return.query.order_by(Return.created_at.desc()).limit(50).all()
+    
+    return jsonify({
+        'returns': [{
+            'return_number': r.return_number,
+            'order_number': r.order.order_number if r.order else 'N/A',
+            'type': r.return_type,
+            'reason': r.reason,
+            'refund_amount': r.refund_amount,
+            'refund_method': r.refund_method,
+            'status': r.status,
+            'created_at': r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'processed_by': r.processor.username if r.processor else 'N/A',
+            'customer': r.order.customer_name if r.order else 'N/A'
+        } for r in returns]
+    })

@@ -37,7 +37,7 @@ def create_app():
         from app.models.user import User
         from app.models.customer import Customer, Payment
         from app.models.product import Product, StockMovement
-        from app.models.order import Order, OrderItem
+        from app.models.order import Order, OrderItem, Return
         
         db.create_all()
         

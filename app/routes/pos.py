@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from app.models.user import User
 from app.models.product import Product
-from app.models.order import Order
+from app.models.order import Order, Return
 from app import db
 from datetime import datetime
 
@@ -32,6 +32,13 @@ def bills():
         return "Access denied", 403
     today = datetime.now().strftime('%Y-%m-%d')
     return render_template('pos/bills.html', today=today)
+
+@pos_bp.route('/returns')
+@login_required
+def returns():
+    if current_user.role not in ['owner', 'manager']:
+        return "Access denied", 403
+    return render_template('pos/returns.html')
 
 # ============ API ROUTES ============
 
@@ -84,4 +91,25 @@ def api_all_transactions():
             'date': o.created_at.strftime('%Y-%m-%d'),
             'notes': o.notes or ''
         } for o in orders]
+    })
+
+# ============ RETURNS API ============
+@pos_bp.route('/api/returns/all')
+@login_required
+def api_all_returns():
+    """Get all returns history"""
+    returns = Return.query.order_by(Return.created_at.desc()).limit(50).all()
+    
+    return jsonify({
+        'returns': [{
+            'return_number': r.return_number,
+            'order_number': r.order.order_number if r.order else 'N/A',
+            'type': r.return_type,
+            'reason': r.reason,
+            'refund_amount': r.refund_amount,
+            'refund_method': r.refund_method,
+            'status': r.status,
+            'created_at': r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'customer': r.order.customer_name if r.order else 'N/A'
+        } for r in returns]
     })

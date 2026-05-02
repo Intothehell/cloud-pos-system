@@ -90,6 +90,13 @@
                         </svg>
                         Bills
                     </a>
+                    <a href="{{ url_for('pos.returns') }}" class="nav-link px-3 py-2 text-sm text-red-400 hover:text-red-300 flex items-center gap-2">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 14 4 9 9 4"></polyline>
+                            <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                        </svg>
+                        Returns
+                    </a>
                     {% endif %}
                 </div>
                 {% endif %}
@@ -101,7 +108,7 @@
                 <!-- Clock -->
                 <span id="liveClock" class="hidden sm:block text-base font-mono bg-slate-800 px-3 py-1.5 rounded-lg text-indigo-400 border border-slate-700"></span>
                 
-                <!-- User Dropdown -->
+                <!-- User -->
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:block text-right">
                         <p class="text-sm font-medium leading-tight">{{ current_user.username }}</p>
@@ -127,33 +134,41 @@
     {% if current_user.is_authenticated %}
     <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
         <div class="flex justify-around py-2">
-            <a href="{{ url_for('pos.dashboard') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-3 py-1">
+            <a href="{{ url_for('pos.dashboard') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
                     <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
                 </svg>
                 Home
             </a>
-            <a href="{{ url_for('pos.terminal') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-3 py-1">
+            <a href="{{ url_for('pos.terminal') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                    <line x1="12" y1="10" x2="12" y2="14"></line>
                 </svg>
                 POS
             </a>
-            <a href="{{ url_for('inventory.manage') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-3 py-1">
+            <a href="{{ url_for('inventory.manage') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                 </svg>
                 Stock
             </a>
-            <a href="{{ url_for('customer.list_customers') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-3 py-1">
+            <a href="{{ url_for('customer.list_customers') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="9" cy="7" r="4"></circle>
                 </svg>
                 Clients
             </a>
+            {% if current_user.role in ['owner','manager'] %}
+            <a href="{{ url_for('pos.returns') }}" class="flex flex-col items-center text-xs text-red-400 hover:text-red-500 px-1 py-1">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 14 4 9 9 4"></polyline>
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                </svg>
+                Returns
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
