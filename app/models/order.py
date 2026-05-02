@@ -40,7 +40,7 @@ class Order(db.Model):
     status = db.Column(db.String(20), default='completed')
     notes = db.Column(db.Text)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
     returns = db.relationship('Return', backref='order', lazy=True)

@@ -250,7 +250,7 @@ function loadBills(){
         if(!allOrders.length){tbody.innerHTML='<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">No bills found</td></tr>';return;}
         tbody.innerHTML=allOrders.map(function(o){
             return '<tr class="hover:bg-slate-50 transition">'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-indigo-600">'+o.order_number+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-indigo-600 flex items-center gap-1">'+o.order_number+' <button onclick="event.stopPropagation();copyToClipboard(\''+o.order_number+'\')" title="Copy" class="text-slate-300 hover:text-indigo-500 transition"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>'+
                 '<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs text-slate-500 hidden md:table-cell">'+o.created_at+'</td>'+
                 '<td class="px-3 sm:px-4 py-2 sm:py-3 font-medium">'+(o.customer_name||'Walk-in')+'</td>'+
                 '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden lg:table-cell"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+(o.sale_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+(o.sale_type||'retail')+'</span></td>'+
@@ -267,7 +267,7 @@ function viewBill(orderNumber){
         document.getElementById('viewInvoiceContent').innerHTML=
         '<div class="font-mono text-xs sm:text-sm max-w-sm mx-auto">'+
         '<div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3">'+
-        '<h4 class="font-bold text-base sm:text-lg">FURNITURE WAREHOUSE</h4>'+
+        '<h4 class="font-bold text-base sm:text-lg">EASY PAY</h4>'+
         '<p class="text-slate-500">Invoice: '+order.order_number+'</p><p class="text-slate-400 text-xs">'+order.created_at+'</p></div>'+
         '<p><strong>Customer:</strong> '+order.customer_name+'</p>'+
         '<p><strong>Phone:</strong> '+(order.customer_phone||'N/A')+'</p>'+
@@ -290,5 +290,19 @@ function printBill(){var c=document.getElementById('viewInvoiceContent').innerHT
 
 loadBills();setInterval(loadBills,10000);window.addEventListener('focus',loadBills);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)loadBills();});
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Quick flash effect
+    }).catch(function() {
+        // Fallback
+        var input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+    });
+}
 </script>
 {% endblock %}
