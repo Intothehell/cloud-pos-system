@@ -16,17 +16,26 @@ def list_customers():
 @login_required
 def add_customer():
     """Add new customer"""
+    phone = request.form.get('phone')
+    
+    # Check if phone already exists
+    existing = Customer.query.filter_by(phone=phone).first()
+    if existing:
+        flash(f'Phone number {phone} already exists! Customer: {existing.name}', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
     customer = Customer(
         name=request.form.get('name'),
-        phone=request.form.get('phone'),
+        phone=phone,
         email=request.form.get('email'),
         address=request.form.get('address'),
+        nic=request.form.get('nic'),
         customer_type=request.form.get('customer_type', 'retail'),
         credit_limit=float(request.form.get('credit_limit', 5000))
     )
     db.session.add(customer)
     db.session.commit()
-    flash(f'Customer {customer.name} added!', 'success')
+    flash(f'Customer {customer.name} added successfully!', 'success')
     return redirect(url_for('customer.list_customers'))
 
 @customer_bp.route('/api/search')
@@ -72,3 +81,4 @@ def record_payment(customer_id):
     
     flash(f'Payment of ${amount:.2f} recorded! New balance: ${customer.balance:.2f}', 'success')
     return redirect(url_for('customer.list_customers'))
+

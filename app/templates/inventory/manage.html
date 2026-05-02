@@ -3,175 +3,226 @@
 {% block title %}Inventory Management{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3><i class="fas fa-boxes"></i> Inventory Management</h3>
-        <button class="btn btn-primary" onclick="showAddProduct()">
-            <i class="fas fa-plus"></i> Add New Product
+<div class="max-w-7xl mx-auto px-4 py-4">
+    
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <svg class="icon-lg text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+            </svg>
+            Inventory Management
+        </h1>
+        <button onclick="showAddProduct()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-medium hover:bg-indigo-700 transition flex items-center gap-2 shadow-sm">
+            <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Product
         </button>
     </div>
 
-    <!-- Stats Row -->
-    <div class="row mb-3" id="inventoryStats">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h5 id="totalProducts">-</h5>
-                    <small>Total Products</small>
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                    <svg class="icon text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" id="totalProducts">-</p>
+                    <p class="text-xs text-slate-400">Total Products</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning">
-                <div class="card-body text-center">
-                    <h5 id="lowStockCount">-</h5>
-                    <small>Low Stock Items</small>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <svg class="icon text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" id="lowStockCount">-</p>
+                    <p class="text-xs text-slate-400">Low Stock</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h5 id="totalStockValue">-</h5>
-                    <small>Total Stock Value</small>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <svg class="icon text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" id="totalStockValue">-</p>
+                    <p class="text-xs text-slate-400">Stock Value</p>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h5 id="totalCategories">-</h5>
-                    <small>Categories</small>
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <svg class="icon text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-2xl font-bold text-slate-800" id="totalCategories">-</p>
+                    <p class="text-xs text-slate-400">Categories</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="card mb-3">
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4">
-                    <input type="text" id="inventorySearch" class="form-control" 
-                           placeholder="Search products..." onkeyup="loadInventory()">
-                </div>
-                <div class="col-md-3">
-                    <select id="categoryFilter" class="form-control" onchange="loadInventory()">
-                        <option value="">All Categories</option>
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select id="stockFilter" class="form-control" onchange="loadInventory()">
-                        <option value="all">All Stock Levels</option>
-                        <option value="low">Low Stock Only</option>
-                        <option value="out">Out of Stock</option>
-                        <option value="active">Active Only</option>
-                    </select>
-                </div>
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Search</label>
+                <input type="text" id="inventorySearch" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" 
+                       placeholder="Search by name, barcode or SKU..." onkeyup="loadInventory()">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Category</label>
+                <select id="categoryFilter" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" onchange="loadInventory()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Stock Level</label>
+                <select id="stockFilter" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" onchange="loadInventory()">
+                    <option value="all">All Stock Levels</option>
+                    <option value="low">Low Stock Only</option>
+                    <option value="out">Out of Stock</option>
+                    <option value="active">Active Only</option>
+                </select>
             </div>
         </div>
     </div>
 
     <!-- Products Table -->
-    <div class="card">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Barcode</th>
-                            <th>Product Name</th>
-                            <th>Category</th>
-                            <th>Cost</th>
-                            <th>Wholesale</th>
-                            <th>Retail</th>
-                            <th>Stock</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productTableBody">
-                        <tr><td colspan="9" class="text-center">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-800 text-white">
+                        <th class="px-4 py-3 text-left font-medium">Barcode</th>
+                        <th class="px-4 py-3 text-left font-medium">Product</th>
+                        <th class="px-4 py-3 text-left font-medium hidden lg:table-cell">Category</th>
+                        <th class="px-4 py-3 text-right font-medium hidden md:table-cell">Cost</th>
+                        <th class="px-4 py-3 text-right font-medium hidden md:table-cell">Wholesale</th>
+                        <th class="px-4 py-3 text-right font-medium">Retail</th>
+                        <th class="px-4 py-3 text-center font-medium">Stock</th>
+                        <th class="px-4 py-3 text-center font-medium">Status</th>
+                        <th class="px-4 py-3 text-center font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productTableBody" class="divide-y divide-slate-100">
+                    <tr>
+                        <td colspan="9" class="px-4 py-8 text-center">
+                            <svg class="icon-lg mx-auto mb-2 text-slate-300 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="M12 6v6l4 2"></path>
+                            </svg>
+                            <p class="text-slate-400">Loading inventory...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 <!-- Add/Edit Product Modal -->
-<div class="modal fade" id="productModal">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 id="modalTitle">Add Product</h5>
+<div id="productModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <h3 class="text-xl font-bold mb-4 flex items-center gap-2" id="modalTitle">
+            <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+            Add Product
+        </h3>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="col-span-2">
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Product Name *</label>
+                <input type="text" id="pName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none">
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <label>Product Name*</label>
-                        <input type="text" id="pName" class="form-control mb-2">
-                        
-                        <label>Barcode*</label>
-                        <input type="text" id="pBarcode" class="form-control mb-2">
-                        
-                        <label>SKU</label>
-                        <input type="text" id="pSku" class="form-control mb-2">
-                        
-                        <label>Category</label>
-                        <input type="text" id="pCategory" class="form-control mb-2" list="categoryList">
-                        <datalist id="categoryList"></datalist>
-                    </div>
-                    <div class="col-md-6">
-                        <label>Cost Price ($)</label>
-                        <input type="number" id="pCost" class="form-control mb-2" step="0.01">
-                        
-                        <label>Wholesale Price ($)</label>
-                        <input type="number" id="pWholesale" class="form-control mb-2" step="0.01">
-                        
-                        <label>Retail Price ($)*</label>
-                        <input type="number" id="pRetail" class="form-control mb-2" step="0.01">
-                        
-                        <label>Initial Stock</label>
-                        <input type="number" id="pStock" class="form-control mb-2" value="0">
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Barcode *</label>
+                <input type="text" id="pBarcode" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none">
             </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-primary" id="saveProductBtn" onclick="saveProduct()">Save</button>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">SKU</label>
+                <input type="text" id="pSku" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none">
             </div>
+            <div class="col-span-2">
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Category</label>
+                <input type="text" id="pCategory" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" list="categoryList">
+                <datalist id="categoryList"></datalist>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Cost Price ($)</label>
+                <input type="number" id="pCost" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" step="0.01">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Wholesale Price ($)</label>
+                <input type="number" id="pWholesale" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" step="0.01">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Retail Price ($) *</label>
+                <input type="number" id="pRetail" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" step="0.01">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Initial Stock</label>
+                <input type="number" id="pStock" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" value="0">
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button onclick="closeProductModal()" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium hover:bg-slate-300 text-sm">Cancel</button>
+            <button onclick="saveProduct()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-medium hover:bg-indigo-700 text-sm">Save Product</button>
         </div>
     </div>
 </div>
 
 <!-- Stock Adjustment Modal -->
-<div class="modal fade" id="stockModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5>Stock Adjustment: <span id="stockProductName"></span></h5>
-            </div>
-            <div class="modal-body">
-                <p>Current Stock: <strong id="currentStock"></strong></p>
-                
-                <label>Adjustment Type</label>
-                <select id="adjustmentType" class="form-control mb-2">
-                    <option value="stock_in">Stock In (+)</option>
-                    <option value="stock_out">Stock Out (-)</option>
-                    <option value="set">Set Exact Quantity</option>
-                </select>
-                
-                <label>Quantity</label>
-                <input type="number" id="adjustQuantity" class="form-control mb-2" min="1">
-                
-                <label>Notes</label>
-                <input type="text" id="adjustNotes" class="form-control" placeholder="Reason for adjustment...">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-info" onclick="saveStockAdjustment()">Save</button>
-            </div>
+<div id="stockModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold mb-3 flex items-center gap-2">
+            <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+            </svg>
+            Stock: <span id="stockProductName"></span>
+        </h3>
+        <p class="text-sm text-slate-500 mb-3">Current Stock: <strong id="currentStock" class="text-slate-800"></strong></p>
+        
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
+        <select id="adjustmentType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none mb-2">
+            <option value="stock_in">Stock In (+)</option>
+            <option value="stock_out">Stock Out (-)</option>
+            <option value="set">Set Exact Quantity</option>
+        </select>
+        
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Quantity</label>
+        <input type="number" id="adjustQuantity" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none mb-2" min="1">
+        
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label>
+        <input type="text" id="adjustNotes" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Reason...">
+        
+        <div class="flex gap-2 mt-4">
+            <button onclick="closeStockModal()" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium hover:bg-slate-300 text-sm">Cancel</button>
+            <button onclick="saveStockAdjustment()" class="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl font-medium hover:bg-indigo-700 text-sm">Save</button>
         </div>
     </div>
 </div>
@@ -179,6 +230,11 @@
 <script>
 let currentEditId = null;
 let currentStockId = null;
+
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+function closeProductModal() { hideModal('productModal'); }
+function closeStockModal() { hideModal('stockModal'); }
 
 function loadInventory() {
     fetch('/api/products/all')
@@ -192,66 +248,71 @@ function loadInventory() {
             
             if (search) {
                 filtered = filtered.filter(p => 
-                    p.name.toLowerCase().includes(search) ||
-                    p.barcode.toLowerCase().includes(search) ||
-                    (p.sku && p.sku.toLowerCase().includes(search))
+                    (p.name || '').toLowerCase().includes(search) ||
+                    (p.barcode || '').toLowerCase().includes(search) ||
+                    (p.sku || '').toLowerCase().includes(search)
                 );
             }
-            
-            if (category) {
-                filtered = filtered.filter(p => p.category === category);
-            }
-            
-            if (stockFilter === 'low') {
-                filtered = filtered.filter(p => p.stock_quantity <= p.min_stock_level);
-            } else if (stockFilter === 'out') {
-                filtered = filtered.filter(p => p.stock_quantity === 0);
-            } else if (stockFilter === 'active') {
-                filtered = filtered.filter(p => p.is_active);
-            }
+            if (category) filtered = filtered.filter(p => p.category === category);
+            if (stockFilter === 'low') filtered = filtered.filter(p => p.stock_quantity <= p.min_stock_level);
+            else if (stockFilter === 'out') filtered = filtered.filter(p => p.stock_quantity === 0);
+            else if (stockFilter === 'active') filtered = filtered.filter(p => p.is_active);
             
             displayProducts(filtered);
-            updateStats(products, filtered);
+            updateStats(products);
         });
 }
 
 function displayProducts(products) {
     const tbody = document.getElementById('productTableBody');
     
-    if (products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-center">No products found</td></tr>';
+    if (!products.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No products found</td></tr>';
         return;
     }
     
     tbody.innerHTML = products.map(p => `
-        <tr class="${p.stock_quantity <= p.min_stock_level ? 'table-warning' : ''} ${!p.is_active ? 'table-secondary' : ''}">
-            <td><small>${p.barcode}</small></td>
-            <td><strong>${p.name}</strong></td>
-            <td>${p.category}</td>
-            <td>$${p.cost_price.toFixed(2)}</td>
-            <td>$${p.wholesale_price.toFixed(2)}</td>
-            <td>$${p.retail_price.toFixed(2)}</td>
-            <td>
-                <span class="badge bg-${p.stock_quantity > p.min_stock_level ? 'success' : p.stock_quantity > 0 ? 'warning' : 'danger'}">
+        <tr class="hover:bg-slate-50 transition ${p.stock_quantity <= p.min_stock_level ? 'bg-amber-50' : ''} ${!p.is_active ? 'bg-slate-50 opacity-60' : ''}">
+            <td class="px-4 py-3 text-xs text-slate-500">${p.barcode || '-'}</td>
+            <td class="px-4 py-3 font-medium">${p.name}</td>
+            <td class="px-4 py-3 text-xs hidden lg:table-cell">${p.category || '-'}</td>
+            <td class="px-4 py-3 text-right hidden md:table-cell">$${p.cost_price.toFixed(2)}</td>
+            <td class="px-4 py-3 text-right hidden md:table-cell">$${p.wholesale_price.toFixed(2)}</td>
+            <td class="px-4 py-3 text-right font-medium">$${p.retail_price.toFixed(2)}</td>
+            <td class="px-4 py-3 text-center">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold
+                    ${p.stock_quantity > p.min_stock_level ? 'bg-emerald-100 text-emerald-800' : 
+                      p.stock_quantity > 0 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}">
                     ${p.stock_quantity}
                 </span>
             </td>
-            <td>
-                <span class="badge bg-${p.is_active ? 'success' : 'secondary'}">
+            <td class="px-4 py-3 text-center">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium
+                    ${p.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}">
                     ${p.is_active ? 'Active' : 'Inactive'}
                 </span>
             </td>
-            <td>
-                <div class="btn-group btn-group-sm">
-                    <button class="btn btn-info" onclick="showStockAdjust(${p.id}, '${p.name}', ${p.stock_quantity})" title="Adjust Stock">
-                        <i class="fas fa-boxes"></i>
+            <td class="px-4 py-3 text-center">
+                <div class="flex items-center justify-center gap-1">
+                    <button onclick="showStockAdjust(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.stock_quantity})" 
+                            class="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100" title="Adjust Stock">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        </svg>
                     </button>
-                    <button class="btn btn-warning" onclick="editProduct(${p.id})" title="Edit">
-                        <i class="fas fa-edit"></i>
+                    <button onclick="editProduct(${p.id})" 
+                            class="p-1.5 bg-amber-50 text-amber-600 rounded-lg hover:bg-amber-100" title="Edit">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
                     </button>
-                    <button class="btn btn-${p.is_active ? 'secondary' : 'success'}" 
-                            onclick="toggleProduct(${p.id})" title="${p.is_active ? 'Deactivate' : 'Activate'}">
-                        <i class="fas fa-power-off"></i>
+                    <button onclick="toggleProduct(${p.id})" 
+                            class="p-1.5 ${p.is_active ? 'bg-slate-50 text-slate-500' : 'bg-emerald-50 text-emerald-600'} rounded-lg hover:bg-opacity-80" title="${p.is_active ? 'Deactivate' : 'Activate'}">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path>
+                            <line x1="12" y1="2" x2="12" y2="12"></line>
+                        </svg>
                     </button>
                 </div>
             </td>
@@ -259,39 +320,33 @@ function displayProducts(products) {
     `).join('');
 }
 
-function updateStats(allProducts, filteredProducts) {
-    document.getElementById('totalProducts').textContent = allProducts.length;
-    document.getElementById('lowStockCount').textContent = allProducts.filter(p => p.stock_quantity <= p.min_stock_level).length;
+function updateStats(products) {
+    document.getElementById('totalProducts').textContent = products.length;
+    document.getElementById('lowStockCount').textContent = products.filter(p => p.stock_quantity <= p.min_stock_level).length;
     
-    const totalValue = allProducts.reduce((sum, p) => sum + (p.cost_price * p.stock_quantity), 0);
-    document.getElementById('totalStockValue').textContent = '$' + totalValue.toFixed(0);
+    const totalValue = products.reduce((sum, p) => sum + (p.cost_price * p.stock_quantity), 0);
+    document.getElementById('totalStockValue').textContent = '$' + totalValue.toLocaleString();
     
-    const categories = [...new Set(allProducts.map(p => p.category).filter(c => c))];
+    const categories = [...new Set(products.map(p => p.category).filter(c => c))];
     document.getElementById('totalCategories').textContent = categories.length;
     
-    // Update category filter
     const catFilter = document.getElementById('categoryFilter');
     catFilter.innerHTML = '<option value="">All Categories</option>' + 
         categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    
+    const dataList = document.getElementById('categoryList');
+    dataList.innerHTML = categories.map(c => `<option value="${c}">`).join('');
 }
 
-// Add Product
 function showAddProduct() {
     currentEditId = null;
     document.getElementById('modalTitle').textContent = 'Add New Product';
-    document.getElementById('pName').value = '';
-    document.getElementById('pBarcode').value = '';
-    document.getElementById('pSku').value = '';
-    document.getElementById('pCategory').value = '';
-    document.getElementById('pCost').value = '';
-    document.getElementById('pWholesale').value = '';
-    document.getElementById('pRetail').value = '';
-    document.getElementById('pStock').value = '0';
-    new bootstrap.Modal(document.getElementById('productModal')).show();
+    ['pName','pBarcode','pSku','pCategory','pCost','pWholesale','pRetail','pStock'].forEach(id => document.getElementById(id).value = '');
+    showModal('productModal');
 }
 
 function editProduct(productId) {
-    fetch(`/api/products/all`)
+    fetch('/api/products/all')
         .then(r => r.json())
         .then(products => {
             const p = products.find(prod => prod.id === productId);
@@ -306,7 +361,7 @@ function editProduct(productId) {
                 document.getElementById('pWholesale').value = p.wholesale_price;
                 document.getElementById('pRetail').value = p.retail_price;
                 document.getElementById('pStock').value = p.stock_quantity;
-                new bootstrap.Modal(document.getElementById('productModal')).show();
+                showModal('productModal');
             }
         });
 }
@@ -323,33 +378,25 @@ function saveProduct() {
         stock_quantity: document.getElementById('pStock').value || 0
     };
     
+    if (!data.name) { alert('Product name is required!'); return; }
+    
     const url = currentEditId ? `/api/products/${currentEditId}/update` : '/api/products/add';
     
-    fetch(url, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('productModal')).hide();
-            loadInventory();
-            alert('Product saved!');
-        } else {
-            alert('Error: ' + result.error);
-        }
-    });
+    fetch(url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) { hideModal('productModal'); loadInventory(); }
+            else alert('Error: ' + result.error);
+        });
 }
 
-// Stock Adjustment
 function showStockAdjust(productId, productName, currentStock) {
     currentStockId = productId;
     document.getElementById('stockProductName').textContent = productName;
     document.getElementById('currentStock').textContent = currentStock;
     document.getElementById('adjustQuantity').value = '';
     document.getElementById('adjustNotes').value = '';
-    new bootstrap.Modal(document.getElementById('stockModal')).show();
+    showModal('stockModal');
 }
 
 function saveStockAdjustment() {
@@ -357,44 +404,25 @@ function saveStockAdjustment() {
     const quantity = parseInt(document.getElementById('adjustQuantity').value);
     const notes = document.getElementById('adjustNotes').value;
     
-    if (!quantity || quantity < 1) {
-        alert('Enter valid quantity');
-        return;
-    }
+    if (!quantity || quantity < 1) { alert('Enter valid quantity'); return; }
     
     fetch(`/api/products/${currentStockId}/stock`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            type: type,
-            quantity: quantity,
-            notes: notes
-        })
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type, quantity, notes})
     })
     .then(r => r.json())
     .then(result => {
-        if (result.success) {
-            bootstrap.Modal.getInstance(document.getElementById('stockModal')).hide();
-            loadInventory();
-            alert(`Stock updated! New stock: ${result.new_stock}`);
-        } else {
-            alert('Error: ' + result.error);
-        }
+        if (result.success) { hideModal('stockModal'); loadInventory(); }
+        else alert('Error: ' + result.error);
     });
 }
 
 function toggleProduct(productId) {
-    fetch(`/api/products/${productId}/toggle-status`, {method: 'POST'})
+    fetch(`/api/products/${productId}/toggle-status`, {method:'POST'})
         .then(r => r.json())
-        .then(result => {
-            if (result.success) {
-                loadInventory();
-                alert(result.message);
-            }
-        });
+        .then(result => { if (result.success) loadInventory(); });
 }
 
-// Load on page open
 loadInventory();
 </script>
 {% endblock %}

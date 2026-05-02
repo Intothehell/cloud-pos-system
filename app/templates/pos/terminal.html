@@ -4,132 +4,214 @@
 
 {% block extra_css %}
 <style>
-    .barcode-input { font-size: 20px; padding: 10px; border: 3px solid #007bff; }
-    .product-card { cursor: pointer; transition: all 0.2s; border: 2px solid #dee2e6; }
-    .product-card:hover { border-color: #007bff; transform: translateY(-2px); }
-    .product-card.out-of-stock { opacity: 0.5; border-color: #dc3545; }
-    .cart-item { border-bottom: 1px solid #eee; }
-    .qty-input { width: 50px; text-align: center; }
-    .customer-result { cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 3px; }
-    .customer-result:hover { background: #e3f2fd; border-color: #2196f3; }
-    .recent-item { cursor: pointer; padding: 5px 10px; border: 1px solid #dee2e6; border-radius: 3px; margin: 2px; display: inline-block; font-size: 12px; }
-    .recent-item:hover { background: #e3f2fd; }
-    .clock { font-size: 18px; font-weight: bold; color: #007bff; }
+    .product-card { transition: all 0.15s ease; cursor: pointer; }
+    .product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+    .product-card.out-of-stock { opacity: 0.45; pointer-events: none; cursor: not-allowed; }
+    .qty-btn { transition: all 0.1s; user-select: none; }
+    .qty-btn:active { transform: scale(0.9); }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .animate-in { animation: fadeInUp 0.2s ease-out; }
+    .modal-backdrop { backdrop-filter: blur(2px); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-2">
-        <div class="col-6">
-            <h5><i class="fas fa-cash-register"></i> Point of Sale</h5>
-        </div>
-        <div class="col-6 text-end">
-            <span class="clock" id="liveClock"></span>
-            <select id="customerTypeSelect" class="form-select form-select-sm d-inline ms-2" style="width: auto;" onchange="changeCustomerType()">
-                <option value="retail">Retail Sale</option>
-                <option value="wholesale">Wholesale/Bulk Sale</option>
-            </select>
-        </div>
+<div class="max-w-7xl mx-auto px-4 py-4">
+    
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <svg class="icon-lg text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                <line x1="6" y1="8" x2="6" y2="8"></line>
+                <line x1="10" y1="8" x2="10" y2="8"></line>
+                <line x1="14" y1="8" x2="18" y2="8"></line>
+            </svg>
+            Point of Sale
+        </h1>
+        <select id="customerTypeSelect" onchange="changeCustomerType()" 
+                class="border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium bg-white focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">
+            <option value="retail">Retail Sale</option>
+            <option value="wholesale">Wholesale / Bulk</option>
+        </select>
     </div>
 
-    <div class="row">
-        <!-- LEFT: Products -->
-        <div class="col-lg-7">
-            <div class="card mb-2">
-                <div class="card-body p-2">
-                    <input type="text" id="barcodeInput" class="form-control barcode-input mb-2" 
-                           placeholder="Scan barcode here..." tabindex="1">
-                    <div class="input-group">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Search products..." tabindex="2">
-                        <button class="btn btn-primary" onclick="searchProducts()" tabindex="3"><i class="fas fa-search"></i></button>
-                    </div>
+    <div class="flex flex-col lg:flex-row gap-4">
+        
+        <!-- LEFT PANEL -->
+        <div class="lg:w-7/12 space-y-3">
+            
+            <!-- Barcode + Search -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                <div class="relative mb-3">
+                    <svg class="icon absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path>
+                    </svg>
+                    <input type="text" id="barcodeInput" 
+                           class="w-full text-lg p-4 pl-12 border-2 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-indigo-50/20" 
+                           placeholder="Scan barcode here..." autofocus>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="searchInput" 
+                           class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-400 focus:outline-none text-sm" 
+                           placeholder="Search by name, category...">
+                    <button onclick="searchProducts()" 
+                            class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 font-medium text-sm flex items-center gap-2">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Search
+                    </button>
                 </div>
             </div>
 
             <!-- Recent Items -->
-            <div class="mb-2" id="recentItems" style="display: none;">
-                <small class="text-muted">Recent:</small>
-                <div id="recentItemsList"></div>
+            <div id="recentSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Recent
+                </h3>
+                <div id="recentItemsList" class="flex flex-wrap gap-1.5"></div>
             </div>
 
-            <div class="mb-2" id="categoryButtons">
-                <button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory('all')">All</button>
+            <!-- Categories -->
+            <div id="categoryButtons" class="flex flex-wrap gap-1.5"></div>
+
+            <!-- Low Stock Alert -->
+            <div id="lowStockAlert" class="hidden bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium">
+                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span id="lowStockCount">0</span> items low in stock
             </div>
 
-            <div id="productGrid" class="row" style="max-height: 380px; overflow-y: auto;">
-                <div class="col-12 text-center text-muted py-4">Scan barcode or search products</div>
+            <!-- Product Grid -->
+            <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5" style="max-height: 420px; overflow-y: auto;">
+                <div class="col-span-full text-center text-slate-400 py-12">
+                    <svg class="icon-lg mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    </svg>
+                    <p class="text-sm">Scan barcode or search products</p>
+                </div>
             </div>
         </div>
 
-        <!-- RIGHT: Cart -->
-        <div class="col-lg-5">
-            <div class="card mb-2">
-                <div class="card-header py-1"><small><i class="fas fa-user"></i> <span id="customerSectionTitle">Customer Details</span></small></div>
-                <div class="card-body p-2">
-                    <div id="wholesaleCustomerSearch" style="display: none;">
-                        <div class="input-group input-group-sm mb-1">
-                            <input type="text" id="wholesaleCustomerInput" class="form-control" 
-                                   placeholder="Search by name, phone or NIC..." tabindex="4">
-                            <button class="btn btn-info btn-sm" onclick="searchWholesaleCustomer()">Find</button>
-                            <button class="btn btn-success btn-sm" onclick="showAddCustomerForm()">+ New</button>
+        <!-- RIGHT PANEL -->
+        <div class="lg:w-5/12 space-y-3">
+            
+            <!-- Customer Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50 border-b flex items-center gap-2">
+                    <svg class="icon-sm text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="font-semibold text-sm text-slate-700" id="customerSectionTitle">Customer Details</span>
+                </div>
+                <div class="p-4">
+                    <div id="wholesaleCustomerSearch" class="hidden">
+                        <div class="flex gap-1.5 mb-2">
+                            <input type="text" id="wholesaleCustomerInput" 
+                                   class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" 
+                                   placeholder="Search name, phone or NIC...">
+                            <button onclick="searchWholesaleCustomer()" class="bg-indigo-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600">Find</button>
+                            <button onclick="showAddCustomerForm()" class="bg-emerald-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-emerald-600">+ New</button>
                         </div>
-                        <div id="customerSearchResults" style="max-height: 150px; overflow-y: auto;"></div>
-                        <div id="selectedWholesaleCustomer" class="small mt-1"></div>
+                        <div id="customerSearchResults" class="max-h-36 overflow-y-auto space-y-1"></div>
+                        <div id="selectedWholesaleCustomer" class="text-sm mt-2"></div>
                     </div>
                     
-                    <div id="retailCustomerForm">
-                        <div class="row">
-                            <div class="col-6">
-                                <input type="text" id="custName" class="form-control form-control-sm mb-1" placeholder="Customer Name" tabindex="4">
-                            </div>
-                            <div class="col-6">
-                                <input type="text" id="custPhone" class="form-control form-control-sm mb-1" placeholder="Phone Number" tabindex="5">
-                            </div>
+                    <div id="retailCustomerForm" class="space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="text" id="custName" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Customer Name">
+                            <input type="text" id="custPhone" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Phone Number">
                         </div>
-                        <textarea id="custAddress" class="form-control form-control-sm mb-1" placeholder="Address (for delivery)" rows="2" tabindex="6"></textarea>
+                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Address (for delivery)" rows="2"></textarea>
                     </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header bg-dark text-white py-1 d-flex justify-content-between">
-                    <small><i class="fas fa-shopping-cart"></i> Current Sale</small>
-                    <button class="btn btn-sm btn-outline-light py-0" onclick="clearCart()">Clear</button>
+            <!-- Cart Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center rounded-t-2xl">
+                    <span class="font-semibold text-sm flex items-center gap-2">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        Current Sale
+                    </span>
+                    <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400 transition">Clear</button>
                 </div>
-                <div id="cartItems" style="max-height: 200px; overflow-y: auto;">
-                    <div class="text-center text-muted py-3">Cart is empty</div>
+                <div id="cartItems" class="divide-y divide-slate-100" style="max-height: 220px; overflow-y: auto;">
+                    <div class="text-center text-slate-400 py-8">
+                        <svg class="icon-lg mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        <p class="text-sm">Cart is empty</p>
+                    </div>
                 </div>
-                <div class="card-body p-2 bg-light">
-                    <table class="table table-sm table-borderless mb-0">
-                        <tr><td>Subtotal:</td><td class="text-end">$<span id="subtotal">0.00</span></td></tr>
-                        <tr>
-                            <td><small>Discount (%):</small></td>
-                            <td class="text-end">
-                                <input type="number" id="discountPercent" class="form-control form-control-sm d-inline text-end" 
-                                       style="width: 60px;" value="0" min="0" max="100" onchange="updateCartDisplay()" tabindex="7">
-                            </td>
-                        </tr>
-                        <tr><td>Discount:</td><td class="text-end text-danger">-$<span id="discountAmount">0.00</span></td></tr>
-                        <tr>
-                            <td><small>Delivery ($):</small></td>
-                            <td class="text-end">
-                                <input type="number" id="deliveryCharge" class="form-control form-control-sm d-inline text-end" 
-                                       style="width: 70px;" value="0" min="0" step="0.01" onchange="updateCartDisplay()" tabindex="8">
-                            </td>
-                        </tr>
-                        <tr class="fw-bold fs-5"><td>TOTAL:</td><td class="text-end">$<span id="total">0.00</span></td></tr>
-                    </table>
-                    
-                    <div class="d-grid gap-1 mt-2">
-                        <div id="retailPayments">
-                            <button class="btn btn-success" onclick="processCashPayment()">💵 CASH</button>
-                            <button class="btn btn-primary" onclick="processCardPayment()">💳 CARD</button>
+                <div class="p-4 bg-slate-50 rounded-b-2xl">
+                    <div class="space-y-2 text-sm mb-4">
+                        <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-medium">$<span id="subtotal">0.00</span></span></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">Discount (%)</span>
+                            <input type="number" id="discountPercent" value="0" min="0" max="100" onchange="updateCartDisplay()"
+                                   class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm focus:border-indigo-400 focus:outline-none">
                         </div>
-                        <div id="wholesalePayments" style="display: none;">
-                            <button class="btn btn-success" onclick="processCashPayment()">💵 CASH</button>
-                            <button class="btn btn-primary" onclick="processCardPayment()">💳 CARD</button>
-                            <button class="btn btn-warning" onclick="processCreditPayment()">📋 CREDIT</button>
+                        <div class="flex justify-between text-red-500"><span>Discount</span><span>-$<span id="discountAmount">0.00</span></span></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500">Delivery ($)</span>
+                            <input type="number" id="deliveryCharge" value="0" min="0" step="0.01" onchange="updateCartDisplay()"
+                                   class="w-24 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm focus:border-indigo-400 focus:outline-none">
+                        </div>
+                        <div class="flex justify-between font-bold text-lg border-t-2 border-slate-200 pt-3">
+                            <span>TOTAL</span><span class="text-indigo-600">$<span id="total">0.00</span></span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <div id="retailPayments" class="space-y-2">
+                            <button onclick="processCashPayment()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                </svg>
+                                CASH
+                            </button>
+                            <button onclick="processCardPayment()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg>
+                                CARD
+                            </button>
+                        </div>
+                        <div id="wholesalePayments" class="hidden space-y-2">
+                            <button onclick="processCashPayment()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                </svg>
+                                CASH
+                            </button>
+                            <button onclick="processCardPayment()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+                                    <line x1="1" y1="10" x2="23" y2="10"></line>
+                                </svg>
+                                CARD
+                            </button>
+                            <button onclick="processCreditPayment()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition flex items-center justify-center gap-2">
+                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                                </svg>
+                                CREDIT
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -139,58 +221,75 @@
 </div>
 
 <!-- Cash Modal -->
-<div class="modal fade" id="cashModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white"><h5>Cash Payment</h5></div>
-            <div class="modal-body text-center">
-                <h3>Total: $<span id="cashTotal">0.00</span></h3>
-                <input type="number" id="cashReceived" class="form-control form-control-lg text-center mt-2" 
-                       placeholder="Enter cash amount" step="0.01" oninput="calculateChange()">
-                <h3 class="mt-2">Change: $<span id="changeAmount">0.00</span></h3>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button class="btn btn-success btn-lg" onclick="completeCashPayment()">Complete & Open Drawer</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add Customer Modal -->
-<div class="modal fade" id="addCustomerModal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white"><h6>Add Wholesale Customer</h6></div>
-            <div class="modal-body">
-                <input type="text" id="wcName" class="form-control mb-1" placeholder="Full Name*">
-                <input type="text" id="wcPhone" class="form-control mb-1" placeholder="Phone*">
-                <input type="text" id="wcNic" class="form-control mb-1" placeholder="NIC Number">
-                <textarea id="wcAddress" class="form-control mb-1" placeholder="Address" rows="2"></textarea>
-                <input type="email" id="wcEmail" class="form-control mb-1" placeholder="Email">
-                <label>Credit Limit ($):</label>
-                <input type="number" id="wcCreditLimit" class="form-control" value="5000">
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-info btn-sm" onclick="saveWholesaleCustomer()">Save</button>
-            </div>
+<div id="cashModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 animate-in">
+        <h3 class="text-xl font-bold text-center mb-4 flex items-center justify-center gap-2">
+            <svg class="icon text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+            </svg>
+            Cash Payment
+        </h3>
+        <p class="text-4xl font-bold text-center text-slate-800 mb-4">$<span id="cashTotal">0.00</span></p>
+        <input type="number" id="cashReceived" oninput="calculateChange()"
+               class="w-full text-center text-2xl border-2 border-slate-200 rounded-2xl p-4 mb-3 focus:border-emerald-400 focus:outline-none" 
+               placeholder="Enter amount" step="0.01">
+        <p class="text-2xl font-bold text-center text-emerald-600 mb-4">Change: $<span id="changeAmount">0.00</span></p>
+        <div class="flex gap-2">
+            <button onclick="closeCashModal()" class="flex-1 bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300">Cancel</button>
+            <button onclick="completeCashPayment()" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600">Complete</button>
         </div>
     </div>
 </div>
 
 <!-- Invoice Modal -->
-<div class="modal fade" id="invoiceModal">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5>Bill/Invoice</h5>
-                <div>
-                    <button class="btn btn-sm btn-light me-1" onclick="printInvoice()">Print</button>
-                    <button class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
+<div id="invoiceModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                Invoice
+            </h3>
+            <div class="flex gap-2">
+                <button onclick="printInvoice()" class="bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-200 flex items-center gap-1.5">
+                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print
+                </button>
+                <button onclick="closeInvoiceModal()" class="bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-300">Close</button>
             </div>
-            <div class="modal-body" id="invoiceContent"></div>
         </div>
+        <div id="invoiceContent"></div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="addCustomerModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="8.5" cy="7" r="4"></circle>
+                <line x1="20" y1="8" x2="20" y2="14"></line>
+                <line x1="23" y1="11" x2="17" y2="11"></line>
+            </svg>
+            Add Wholesale Customer
+        </h3>
+        <div class="space-y-2">
+            <input type="text" id="wcName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Full Name*">
+            <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Phone*">
+            <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="NIC Number">
+            <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Address" rows="2"></textarea>
+            <label class="text-sm text-slate-500">Credit Limit ($)</label>
+            <input type="number" id="wcCreditLimit" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" value="5000">
+        </div>
+        <button onclick="saveWholesaleCustomer()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold mt-3 hover:bg-indigo-700 transition">Save Customer</button>
     </div>
 </div>
 
@@ -199,416 +298,111 @@ let cart = [];
 let currentWholesaleCustomer = null;
 let customerType = 'retail';
 let recentProducts = [];
+let allProducts = [];
 
-// ===== CLOCK =====
-function updateClock() {
-    const now = new Date();
-    document.getElementById('liveClock').textContent = now.toLocaleString('en-US', { 
-        weekday: 'short', year: 'numeric', month: 'short', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', second: '2-digit'
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+function closeCashModal() { hideModal('cashModal'); }
+function closeInvoiceModal() { hideModal('invoiceModal'); }
+
+function init() { loadCategories(); loadAllProducts(); checkLowStock(); document.getElementById('barcodeInput').focus(); }
+
+function loadAllProducts() {
+    fetch('/api/products/all').then(r => r.json()).then(products => { allProducts = products; displayProducts(products); });
+}
+
+function checkLowStock() {
+    fetch('/api/dashboard/stats').then(r => r.json()).then(stats => {
+        if (stats.low_stock > 0) { document.getElementById('lowStockAlert').classList.remove('hidden'); document.getElementById('lowStockCount').textContent = stats.low_stock; }
     });
 }
-updateClock();
-setInterval(updateClock, 1000);
 
-// ===== CUSTOMER TYPE =====
 function changeCustomerType() {
     customerType = document.getElementById('customerTypeSelect').value;
-    document.getElementById('wholesaleCustomerSearch').style.display = customerType === 'wholesale' ? 'block' : 'none';
-    document.getElementById('retailCustomerForm').style.display = customerType === 'retail' ? 'block' : 'none';
-    document.getElementById('retailPayments').style.display = customerType === 'retail' ? 'block' : 'none';
-    document.getElementById('wholesalePayments').style.display = customerType === 'wholesale' ? 'block' : 'none';
+    document.getElementById('wholesaleCustomerSearch').classList.toggle('hidden', customerType !== 'wholesale');
+    document.getElementById('retailCustomerForm').classList.toggle('hidden', customerType !== 'retail');
+    document.getElementById('retailPayments').classList.toggle('hidden', customerType !== 'retail');
+    document.getElementById('wholesalePayments').classList.toggle('hidden', customerType !== 'wholesale');
     document.getElementById('customerSectionTitle').textContent = customerType === 'wholesale' ? 'Wholesale Customer' : 'Customer Details';
-    cart = [];
-    currentWholesaleCustomer = null;
-    updateCartDisplay();
-    document.getElementById('selectedWholesaleCustomer').innerHTML = '';
-    document.getElementById('customerSearchResults').innerHTML = '';
+    cart = []; currentWholesaleCustomer = null; updateCartDisplay();
 }
 
-// ===== BARCODE =====
-document.getElementById('barcodeInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault();
-        const barcode = this.value.trim();
-        if (barcode) {
-            lookupBarcode(barcode);
-            this.value = '';
-        }
-    }
+document.getElementById('barcodeInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); var b = this.value.trim(); if(b){ fetch('/api/product/barcode/'+encodeURIComponent(b)).then(r=>r.json()).then(p=>{ if(p.id){ if(p.stock_quantity<=0){alert('Out of stock!');return;} addToCart(p,1); addToRecent(p); } else alert('Product not found: '+b); }); this.value=''; } }
 });
 
-document.addEventListener('click', function(e) {
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || 
-        e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA' ||
-        e.target.closest('.product-card') || e.target.closest('.cart-item') ||
-        e.target.closest('.customer-result') || e.target.closest('.modal') ||
-        e.target.closest('.recent-item')) {
-        return;
-    }
-    document.getElementById('barcodeInput').focus();
-});
-
-function lookupBarcode(barcode) {
-    fetch(`/api/product/barcode/${encodeURIComponent(barcode)}`)
-        .then(r => r.json())
-        .then(product => {
-            if (product.id) {
-                addToCart(product, 1);
-                addToRecent(product);
-            } else {
-                alert('Product not found!');
-            }
-        });
-}
-
-// ===== RECENT ITEMS =====
-function addToRecent(product) {
-    recentProducts = recentProducts.filter(p => p.id !== product.id);
-    recentProducts.unshift(product);
-    if (recentProducts.length > 10) recentProducts.pop();
-    displayRecentItems();
-}
-
-function displayRecentItems() {
-    if (recentProducts.length === 0) {
-        document.getElementById('recentItems').style.display = 'none';
-        return;
-    }
-    document.getElementById('recentItems').style.display = 'block';
-    document.getElementById('recentItemsList').innerHTML = recentProducts.map(p => 
-        `<span class="recent-item" onclick="addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1)">${p.name.substring(0, 15)}</span>`
+function addToRecent(p) {
+    recentProducts = recentProducts.filter(x => x.id !== p.id);
+    recentProducts.unshift({id:p.id, name:p.name, price:p.price||p.retail_price, stock:p.stock_quantity});
+    if(recentProducts.length > 8) recentProducts.pop();
+    document.getElementById('recentSection').classList.toggle('hidden', recentProducts.length === 0);
+    document.getElementById('recentItemsList').innerHTML = recentProducts.map(x =>
+        '<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200 font-medium">'+x.name.substring(0,14)+'</span>'
     ).join('');
 }
 
-// ===== PRODUCTS =====
-function searchProducts() {
-    const query = document.getElementById('searchInput').value;
-    fetch(`/api/products/search?q=${encodeURIComponent(query)}&customer_type=${customerType}`)
-        .then(r => r.json())
-        .then(products => displayProducts(products));
-}
-
-function filterCategory(cat) {
-    if (cat === 'all') searchProducts();
-    else {
-        fetch(`/api/products/search?category=${encodeURIComponent(cat)}&customer_type=${customerType}`)
-            .then(r => r.json())
-            .then(products => displayProducts(products));
-    }
-}
+function searchProducts() { var q=document.getElementById('searchInput').value; if(!q){displayProducts(allProducts);return;} fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts); }
+function filterCategory(cat) { displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat)); }
 
 function displayProducts(products) {
-    const grid = document.getElementById('productGrid');
-    if (!products.length) {
-        grid.innerHTML = '<div class="col-12 text-center text-muted py-3">No products</div>';
-        return;
-    }
-    grid.innerHTML = products.map(p => {
-        const outOfStock = p.stock_quantity <= 0;
-        return `
-        <div class="col-6 col-md-4 col-lg-3 mb-2">
-            <div class="card product-card p-1 ${outOfStock ? 'out-of-stock' : ''}" 
-                 onclick="${outOfStock ? '' : `addToCart(${JSON.stringify(p).replace(/"/g, '&quot;')}, 1);addToRecent(${JSON.stringify(p).replace(/"/g, '&quot;')})`}">
-                <small><strong>${p.name.substring(0, 18)}</strong></small><br>
-                <small class="text-success">$${p.price.toFixed(2)}</small>
-                <small class="text-${outOfStock ? 'danger' : 'muted'} float-end">
-                    ${outOfStock ? 'OUT OF STOCK' : 'Qty:'+p.stock_quantity}
-                </small>
-            </div>
-        </div>`;
+    var g = document.getElementById('productGrid');
+    if(!products.length){ g.innerHTML='<div class="col-span-full text-center text-slate-400 py-12"><svg class="icon-lg mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg><p class="text-sm">No products found</p></div>'; return; }
+    g.innerHTML = products.map(p => {
+        var price = customerType==='wholesale'?p.wholesale_price:p.retail_price;
+        var out=(p.stock_quantity||0)<=0;
+        var low=!out&&(p.stock_quantity||0)<=5;
+        var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md';
+        var click=out?'':'onclick="addToCart({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock_quantity:'+(p.stock_quantity||0)+'},1);addToRecent({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock:'+(p.stock_quantity||0)+'})"';
+        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'>'+
+            '<p class="font-semibold text-sm truncate mb-1">'+(p.name||'').substring(0,18)+'</p>'+
+            '<p class="text-emerald-600 font-bold text-lg">$'+price.toFixed(2)+'</p>'+
+            '<p class="text-xs mt-1 '+(out?'text-red-600 font-bold':low?'text-amber-600 font-semibold':'text-slate-400')+'">'+
+            (out?'OUT OF STOCK':low?'Only '+p.stock_quantity+' left':'Stock: '+p.stock_quantity)+'</p></div>';
     }).join('');
 }
 
-// ===== CART =====
-function addToCart(product, qty) {
-    if (product.stock_quantity <= 0) {
-        alert('Product out of stock!');
-        return;
-    }
-    
-    const existing = cart.find(i => i.id === product.id);
-    if (existing) {
-        if (existing.quantity + qty > product.stock_quantity) {
-            alert(`Only ${product.stock_quantity} available!`);
-            return;
-        }
-        existing.quantity += qty;
-    } else {
-        cart.push({
-            id: product.id,
-            name: product.name,
-            price: product.price || product.retail_price,
-            quantity: qty,
-            maxStock: product.stock_quantity
-        });
-    }
-    updateCartDisplay();
+function addToCart(p,qty){if(!p.stock_quantity||p.stock_quantity<=0){alert('Out of stock!');return;}var ex=cart.find(i=>i.id===p.id);if(ex){if(ex.quantity+qty>p.stock_quantity){alert('Only '+p.stock_quantity+' available!');return;}ex.quantity+=qty;}else cart.push({id:p.id,name:p.name,price:p.price||0,quantity:qty,max:p.stock_quantity||0});updateCartDisplay();}
+function changeQty(i,c){var item=cart[i],n=item.quantity+c;if(n<=0)cart.splice(i,1);else if(n>item.max)alert('Max: '+item.max);else item.quantity=n;updateCartDisplay();}
+function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<=0)inp.value=item.quantity;else if(n>item.max){alert('Max: '+item.max);inp.value=item.max;item.quantity=item.max;}else item.quantity=n;updateCartDisplay();}
+function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
+function clearCart(){cart=[];updateCartDisplay();}
+
+function updateCartDisplay(){
+    var d=document.getElementById('cartItems'),sub=0;
+    if(!cart.length){d.innerHTML='<div class="text-center text-slate-400 py-8"><svg class="icon-lg mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg><p class="text-sm">Cart is empty</p></div>';}
+    else{d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-slate-400 text-xs">$'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold hover:bg-slate-200">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 border-slate-200 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold hover:bg-slate-200">+</button><span class="font-bold w-20 text-right">$'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');}
+    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100),dc=parseFloat(document.getElementById('deliveryCharge').value)||0;
+    document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da+dc).toFixed(2);
 }
 
-function changeQty(index, change) {
-    const item = cart[index];
-    const newQty = item.quantity + change;
-    if (newQty <= 0) { removeFromCart(index); }
-    else if (newQty > item.maxStock) { alert(`Max stock: ${item.maxStock}`); }
-    else { item.quantity = newQty; updateCartDisplay(); }
+function searchWholesaleCustomer(){var q=document.getElementById('wholesaleCustomerInput').value;if(!q)return;fetch('/api/customers/search?q='+encodeURIComponent(q)).then(r=>r.json()).then(customers=>{var d=document.getElementById('customerSearchResults');d.innerHTML=customers.length?customers.map(c=>'<div onclick="selectWholesaleCustomer('+JSON.stringify(c).replace(/"/g,'&quot;')+')" class="p-2.5 border-2 border-slate-100 rounded-xl mb-1 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 text-sm"><strong>'+c.name+'</strong> | '+c.phone+'<br><span class="text-xs text-slate-500">Bal: $'+(c.balance||0).toFixed(2)+' | Limit: $'+(c.credit_limit||0).toFixed(2)+'</span></div>').join(''):'<p class="text-slate-400 text-sm p-2">Not found</p>';});}
+function selectWholesaleCustomer(c){currentWholesaleCustomer=c;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-1.5"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> '+c.name+' | Balance: $'+(c.balance||0).toFixed(2)+'</div>';document.getElementById('customerSearchResults').innerHTML='';}
+
+function getInfo(){if(customerType==='retail')return{name:document.getElementById('custName').value||'Walk-in',phone:document.getElementById('custPhone').value||'',address:document.getElementById('custAddress').value||''};return{name:currentWholesaleCustomer?.name||'Wholesale',phone:currentWholesaleCustomer?.phone||'',address:currentWholesaleCustomer?.address||''};}
+function processCashPayment(){if(!cart.length)return;document.getElementById('cashTotal').textContent=document.getElementById('total').textContent;document.getElementById('cashReceived').value='';document.getElementById('changeAmount').textContent='0.00';showModal('cashModal');}
+function calculateChange(){var t=parseFloat(document.getElementById('cashTotal').textContent),r=parseFloat(document.getElementById('cashReceived').value)||0;document.getElementById('changeAmount').textContent=Math.max(0,r-t).toFixed(2);}
+function completeCashPayment(){var r=parseFloat(document.getElementById('cashReceived').value)||0,t=parseFloat(document.getElementById('total').textContent);if(r<t){alert('Insufficient!');return;}processSale('cash',r);hideModal('cashModal');}
+function processCardPayment(){if(cart.length)processSale('card',0);}
+function processCreditPayment(){if(!currentWholesaleCustomer){alert('Select customer!');return;}if(cart.length)processSale('credit',0);}
+
+function processSale(method,cash){
+    var info=getInfo();
+    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,delivery_charge:document.getElementById('deliveryCharge').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
+    .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
 
-function manualQtyChange(index, input) {
-    const newQty = parseInt(input.value);
-    const item = cart[index];
-    if (isNaN(newQty) || newQty <= 0) {
-        input.value = item.quantity;
-    } else if (newQty > item.maxStock) {
-        alert(`Max stock: ${item.maxStock}`);
-        input.value = item.maxStock;
-        item.quantity = item.maxStock;
-    } else {
-        item.quantity = newQty;
-    }
-    updateCartDisplay();
+function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','deliveryCharge','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
+
+function showInvoice(order,info){
+    document.getElementById('invoiceContent').innerHTML='<div id="printableInvoice" class="font-mono text-sm max-w-sm mx-auto"><div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3"><h4 class="font-bold text-lg">FURNITURE WAREHOUSE</h4><p class="text-slate-500">Invoice: '+order.order_number+'</p><p class="text-slate-400 text-xs">'+order.created_at+'</p></div><p><strong>Customer:</strong> '+info.name+'</p>'+(info.phone?'<p><strong>Phone:</strong> '+info.phone+'</p>':'')+'<table class="w-full my-3 text-xs"><tr class="border-b border-slate-300"><th class="text-left py-1">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+order.items.map(i=>'<tr><td class="py-1">'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">$'+i.price.toFixed(2)+'</td><td class="text-right">$'+i.total.toFixed(2)+'</td></tr>').join('')+'</table><div class="border-t-2 border-slate-300 pt-2 space-y-1"><p class="flex justify-between"><span>Subtotal</span><span>$'+order.subtotal.toFixed(2)+'</span></p><p class="flex justify-between text-red-500"><span>Discount</span><span>-$'+order.discount.toFixed(2)+'</span></p><p class="flex justify-between"><span>Delivery</span><span>$'+order.delivery.toFixed(2)+'</span></p><p class="flex justify-between font-bold text-lg border-t border-slate-300 pt-2"><span>TOTAL</span><span class="text-indigo-600">$'+order.total.toFixed(2)+'</span></p></div><p class="mt-2"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>'+(order.change?'<p><strong>Change:</strong> $'+order.change.toFixed(2)+'</p>':'')+'<p class="text-center text-slate-400 mt-3 text-xs">Thank you for your purchase!</p></div>';
+    showModal('invoiceModal');
 }
 
-function removeFromCart(index) { cart.splice(index, 1); updateCartDisplay(); }
-function clearCart() { cart = []; updateCartDisplay(); }
+function printInvoice(){var c=document.getElementById('printableInvoice').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
+function showAddCustomerForm(){showModal('addCustomerModal');}
+function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">'+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:border-indigo-300">'+c+'</button>');});}
 
-function updateCartDisplay() {
-    const div = document.getElementById('cartItems');
-    let subtotal = 0;
-    
-    if (!cart.length) {
-        div.innerHTML = '<div class="text-center text-muted py-3">Cart is empty</div>';
-    } else {
-        div.innerHTML = cart.map((item, i) => {
-            const total = item.price * item.quantity;
-            subtotal += total;
-            return `
-                <div class="cart-item d-flex align-items-center p-2">
-                    <div class="flex-grow-1">
-                        <small><strong>${item.name}</strong></small><br>
-                        <small>$${item.price.toFixed(2)} each</small>
-                    </div>
-                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, -1)">-</button>
-                    <input type="number" class="qty-input mx-1" value="${item.quantity}" min="1" max="${item.maxStock}"
-                           onchange="manualQtyChange(${i}, this)" style="width:45px;">
-                    <button class="btn btn-sm btn-outline-secondary qty-btn" onclick="changeQty(${i}, 1)">+</button>
-                    <strong class="ms-2">$${total.toFixed(2)}</strong>
-                    <button class="btn btn-sm text-danger ms-1" onclick="removeFromCart(${i})">×</button>
-                </div>`;
-        }).join('');
-    }
-    
-    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
-    const discountAmount = subtotal * (discountPercent / 100);
-    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
-    const total = subtotal - discountAmount + deliveryCharge;
-    
-    document.getElementById('subtotal').textContent = subtotal.toFixed(2);
-    document.getElementById('discountAmount').textContent = discountAmount.toFixed(2);
-    document.getElementById('total').textContent = total.toFixed(2);
-}
-
-// ===== CUSTOMER SEARCH =====
-function searchWholesaleCustomer() {
-    const q = document.getElementById('wholesaleCustomerInput').value;
-    if (!q) return;
-    fetch(`/api/customers/search?q=${encodeURIComponent(q)}`)
-        .then(r => r.json())
-        .then(customers => {
-            const div = document.getElementById('customerSearchResults');
-            if (!customers.length) {
-                div.innerHTML = '<div class="text-muted p-2">Not found. Add new.</div>';
-                return;
-            }
-            div.innerHTML = customers.map(c => `
-                <div class="customer-result" onclick="selectWholesaleCustomer(${JSON.stringify(c).replace(/"/g, '&quot;')})">
-                    <strong>${c.name}</strong> | ${c.phone}<br>
-                    <small>Balance: $${c.balance.toFixed(2)} | Limit: $${c.credit_limit.toFixed(2)}</small>
-                </div>
-            `).join('');
-        });
-}
-
-document.getElementById('wholesaleCustomerInput').addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); searchWholesaleCustomer(); }
-});
-
-function selectWholesaleCustomer(customer) {
-    currentWholesaleCustomer = customer;
-    document.getElementById('selectedWholesaleCustomer').innerHTML = `
-        <div class="alert alert-success p-1 small">${customer.name} | Bal: $${customer.balance.toFixed(2)}</div>`;
-    document.getElementById('customerSearchResults').innerHTML = '';
-    document.getElementById('wholesaleCustomerInput').value = '';
-}
-
-// ===== PAYMENTS =====
-function getCustomerInfo() {
-    if (customerType === 'retail') {
-        return {
-            name: document.getElementById('custName').value || 'Walk-in Customer',
-            phone: document.getElementById('custPhone').value || '',
-            address: document.getElementById('custAddress').value || ''
-        };
-    } else {
-        return {
-            name: currentWholesaleCustomer ? currentWholesaleCustomer.name : 'Wholesale Customer',
-            phone: currentWholesaleCustomer ? currentWholesaleCustomer.phone : '',
-            address: currentWholesaleCustomer ? (currentWholesaleCustomer.address || '') : ''
-        };
-    }
-}
-
-function processCashPayment() {
-    if (!cart.length) { alert('Cart is empty!'); return; }
-    document.getElementById('cashTotal').textContent = document.getElementById('total').textContent;
-    document.getElementById('cashReceived').value = '';
-    document.getElementById('changeAmount').textContent = '0.00';
-    new bootstrap.Modal(document.getElementById('cashModal')).show();
-}
-
-function calculateChange() {
-    const total = parseFloat(document.getElementById('cashTotal').textContent);
-    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-    document.getElementById('changeAmount').textContent = Math.max(0, received - total).toFixed(2);
-}
-
-function completeCashPayment() {
-    const received = parseFloat(document.getElementById('cashReceived').value) || 0;
-    const total = parseFloat(document.getElementById('total').textContent);
-    if (received < total) { alert('Insufficient!'); return; }
-    processSale('cash', received);
-    bootstrap.Modal.getInstance(document.getElementById('cashModal')).hide();
-}
-
-function processCardPayment() {
-    if (!cart.length) { alert('Cart is empty!'); return; }
-    processSale('card', 0);
-}
-
-function processCreditPayment() {
-    if (!cart.length) { alert('Cart is empty!'); return; }
-    if (!currentWholesaleCustomer) { alert('Select wholesale customer!'); return; }
-    processSale('credit', 0);
-}
-
-function processSale(paymentMethod, cashReceived) {
-    const discountPercent = parseFloat(document.getElementById('discountPercent').value) || 0;
-    const deliveryCharge = parseFloat(document.getElementById('deliveryCharge').value) || 0;
-    const custInfo = getCustomerInfo();
-    
-    fetch('/api/orders', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            items: cart.map(item => ({id: item.id, quantity: item.quantity})),
-            payment_method: paymentMethod,
-            cash_received: cashReceived,
-            discount_percent: discountPercent,
-            delivery_charge: deliveryCharge,
-            customer_id: currentWholesaleCustomer ? currentWholesaleCustomer.id : null,
-            customer_name: custInfo.name,
-            customer_phone: custInfo.phone,
-            customer_address: custInfo.address,
-            sale_type: customerType
-        })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            if (paymentMethod === 'cash') fetch('/api/open-drawer');
-            showInvoiceModal(data.order, custInfo);
-            resetSale();
-        } else {
-            alert('Error: ' + data.error);
-        }
-    });
-}
-
-function resetSale() {
-    cart = [];
-    currentWholesaleCustomer = null;
-    document.getElementById('discountPercent').value = '0';
-    document.getElementById('deliveryCharge').value = '0';
-    document.getElementById('custName').value = '';
-    document.getElementById('custPhone').value = '';
-    document.getElementById('custAddress').value = '';
-    document.getElementById('selectedWholesaleCustomer').innerHTML = '';
-    updateCartDisplay();
-    document.getElementById('barcodeInput').focus();
-}
-
-// ===== INVOICE =====
-function showInvoiceModal(order, custInfo) {
-    document.getElementById('invoiceContent').innerHTML = `
-        <div id="printableInvoice" style="font-family:monospace;font-size:13px;max-width:400px;margin:0 auto;">
-            <div style="text-align:center;border-bottom:1px dashed #000;padding-bottom:10px;">
-                <h4>FURNITURE WAREHOUSE</h4>
-                <p>Invoice: ${order.order_number}</p><p>Date: ${order.created_at}</p>
-            </div>
-            <p><strong>Customer:</strong> ${custInfo.name}</p>
-            ${custInfo.phone ? `<p><strong>Phone:</strong> ${custInfo.phone}</p>` : ''}
-            ${custInfo.address ? `<p><strong>Address:</strong> ${custInfo.address}</p>` : ''}
-            <table style="width:100%;margin:10px 0;"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-            ${order.items.map(i => `<tr><td>${i.name}</td><td>${i.quantity}</td><td>$${i.price.toFixed(2)}</td><td>$${i.total.toFixed(2)}</td></tr>`).join('')}
-            </table>
-            <div style="border-top:1px solid #000;"><p>Subtotal: $${order.subtotal.toFixed(2)}</p>
-            <p>Discount: -$${order.discount.toFixed(2)}</p><p>Delivery: $${order.delivery.toFixed(2)}</p>
-            <h3>TOTAL: $${order.total.toFixed(2)}</h3></div>
-            <p><strong>Payment:</strong> ${order.payment_method.toUpperCase()}</p>
-            <p><strong>Status:</strong> ${order.payment_status.toUpperCase()}</p>
-            ${order.change ? `<p>Change: $${order.change.toFixed(2)}</p>` : ''}
-        </div>`;
-    new bootstrap.Modal(document.getElementById('invoiceModal')).show();
-}
-
-function printInvoice() {
-    const content = document.getElementById('printableInvoice').innerHTML;
-    const win = window.open('', '_blank', 'width=400,height=600');
-    win.document.write(`<html><head><title>Bill</title></head><body>${content}<script>window.print();<\/script></body></html>`);
-    win.document.close();
-}
-
-// ===== ADD CUSTOMER =====
-function showAddCustomerForm() {
-    new bootstrap.Modal(document.getElementById('addCustomerModal')).show();
-}
-
-function saveWholesaleCustomer() {
-    fetch('/api/customers/add', {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            name: document.getElementById('wcName').value,
-            phone: document.getElementById('wcPhone').value,
-            nic: document.getElementById('wcNic').value,
-            address: document.getElementById('wcAddress').value,
-            email: document.getElementById('wcEmail').value,
-            credit_limit: document.getElementById('wcCreditLimit').value,
-            customer_type: 'wholesale'
-        })
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (result.success) {
-            currentWholesaleCustomer = result.customer;
-            document.getElementById('selectedWholesaleCustomer').innerHTML = 
-                `<div class="alert alert-success p-1 small">${result.customer.name} added</div>`;
-            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
-        }
-    });
-}
-
-// ===== INIT =====
-function loadCategories() {
-    fetch('/api/products/categories')
-        .then(r => r.json())
-        .then(cats => {
-            const div = document.getElementById('categoryButtons');
-            div.innerHTML = '<button class="btn btn-sm btn-secondary me-1 mb-1" onclick="filterCategory(\'all\')">All</button>';
-            if (Array.isArray(cats)) cats.forEach(c => div.innerHTML += `<button class="btn btn-sm btn-outline-secondary me-1 mb-1" onclick="filterCategory('${c}')">${c}</button>`);
-        });
-}
-
-loadCategories();
-document.getElementById('barcodeInput').focus();
+init();
 </script>
 {% endblock %}
