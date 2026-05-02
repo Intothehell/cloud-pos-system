@@ -428,27 +428,63 @@ def search_customers():
 @api_bp.route('/customers/add', methods=['POST'])
 @login_required
 def add_customer():
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
-    
     data = request.json
     
-    if Customer.query.filter_by(phone=data.get('phone')).first():
-        return jsonify({'error': 'Phone number already exists'}), 400
+    # Validate required fields
+    name = (data.get('name') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    nic = (data.get('nic') or '').strip()
     
-    customer = Customer(
-        name=data['name'],
-        phone=data.get('phone'),
-        email=data.get('email', ''),
-        address=data.get('address', ''),
-        nic=data.get('nic', ''),
-        customer_type=data.get('customer_type', 'retail'),
-        credit_limit=float(data.get('credit_limit', 5000))
-    )
-    db.session.add(customer)
-    db.session.commit()
+    errors = []
+    if not name:
+        errors.append('Name is required')
+    if not phone:
+        errors.append('Phone is required')
+    if not nic:
+        errors.append('NIC is required')
     
-    return jsonify({'success': True, 'customer': {'id': customer.id, 'name': customer.name}})
+    if errors:
+        return jsonify({'success': False, 'error': ', '.join(errors)}), 400
+    
+    # Check for duplicate phone
+    existing_phone = Customer.query.filter_by(phone=phone).first()
+    if existing_phone:
+        return jsonify({'success': False, 'error': f'Phone number {phone} already exists! Customer: {existing_phone.name}'}), 400
+    
+    # Check for duplicate NIC
+    existing_nic = Customer.query.filter_by(nic=nic).first()
+    if existing_nic:
+        return jsonify({'success': False, 'error': f'NIC {nic} already exists! Customer: {existing_nic.name}'}), 400
+    
+    try:
+        customer = Customer(
+            name=name,
+            phone=phone,
+            email=(data.get('email') or '').strip(),
+            address=(data.get('address') or '').strip(),
+            nic=nic,
+            customer_type=data.get('customer_type', 'wholesale'),
+            credit_limit=float(data.get('credit_limit', 5000))
+        )
+        db.session.add(customer)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'customer': {
+                'id': customer.id,
+                'name': customer.name,
+                'phone': customer.phone,
+                'nic': customer.nic,
+                'address': customer.address,
+                'balance': customer.balance,
+                'credit_limit': customer.credit_limit,
+                'type': customer.customer_type
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/customers/<int:customer_id>/details')
 @login_required

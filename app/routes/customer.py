@@ -16,20 +16,39 @@ def list_customers():
 @login_required
 def add_customer():
     """Add new customer"""
-    phone = request.form.get('phone')
+    name = request.form.get('name', '').strip()
+    phone = request.form.get('phone', '').strip()
+    nic = request.form.get('nic', '').strip()
+    
+    # Validate required fields
+    if not name:
+        flash('Customer name is required!', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    if not phone:
+        flash('Phone number is required!', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    if not nic:
+        flash('NIC number is required!', 'danger')
+        return redirect(url_for('customer.list_customers'))
     
     # Check if phone already exists
-    existing = Customer.query.filter_by(phone=phone).first()
-    if existing:
-        flash(f'Phone number {phone} already exists! Customer: {existing.name}', 'danger')
+    existing_phone = Customer.query.filter_by(phone=phone).first()
+    if existing_phone:
+        flash(f'Phone number {phone} already exists! Customer: {existing_phone.name}', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    # Check if NIC already exists
+    existing_nic = Customer.query.filter_by(nic=nic).first()
+    if existing_nic:
+        flash(f'NIC {nic} already exists! Customer: {existing_nic.name}', 'danger')
         return redirect(url_for('customer.list_customers'))
     
     customer = Customer(
-        name=request.form.get('name'),
+        name=name,
         phone=phone,
-        email=request.form.get('email'),
-        address=request.form.get('address'),
-        nic=request.form.get('nic'),
+        email=request.form.get('email', '').strip(),
+        address=request.form.get('address', '').strip(),
+        nic=nic,
         customer_type=request.form.get('customer_type', 'retail'),
         credit_limit=float(request.form.get('credit_limit', 5000))
     )
@@ -68,7 +87,8 @@ def search_customers_api():
     customers = Customer.query.filter(
         db.or_(
             Customer.name.ilike(f'%{query}%'),
-            Customer.phone.ilike(f'%{query}%')
+            Customer.phone.ilike(f'%{query}%'),
+            Customer.nic.ilike(f'%{query}%')
         ),
         Customer.is_active == True
     ).limit(10).all()
@@ -77,6 +97,7 @@ def search_customers_api():
         'id': c.id,
         'name': c.name,
         'phone': c.phone,
+        'nic': c.nic,
         'type': c.customer_type,
         'balance': c.balance,
         'credit_limit': c.credit_limit
