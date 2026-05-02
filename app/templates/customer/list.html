@@ -175,7 +175,7 @@
             <p class="text-sm text-slate-600 mb-3"><strong>Balance:</strong> <span id="payBalance" class="text-red-600 font-bold"></span></p>
             
             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Amount *</label>
-            <input type="number" name="amount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-2" required step="0.01">
+            <input type="number" name="amount" id="paymentAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-2" required step="0.01" min="0.01">
             
             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Method</label>
             <select name="payment_method" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-2">
