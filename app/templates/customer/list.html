@@ -61,7 +61,7 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100">
                     {% for customer in customers %}
-                    <tr class="hover:bg-slate-50 transition">
+                    <tr class="hover:bg-slate-50 transition" id="customer-row-{{ customer.id }}">
                         <td class="px-4 py-3 font-medium">{{ customer.name }}</td>
                         <td class="px-4 py-3 text-slate-600">{{ customer.phone }}</td>
                         <td class="px-4 py-3 text-slate-500 hidden lg:table-cell">{{ customer.nic or '-' }}</td>
@@ -84,6 +84,13 @@
                                 <button onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})" 
                                         class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100">
                                     Pay
+                                </button>
+                                <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" 
+                                        class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
+                                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
                                 </button>
                             </div>
                         </td>
@@ -205,6 +212,30 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div id="deleteModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
+        <div class="text-center mb-4">
+            <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg class="icon-lg text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Delete Customer?</h3>
+            <p class="text-sm text-slate-500 mt-1">Are you sure you want to delete <strong id="deleteCustName"></strong>?</p>
+            <p class="text-xs text-red-500 mt-1">This action cannot be undone.</p>
+        </div>
+        <form id="deleteForm" method="POST">
+            <div class="flex gap-2">
+                <button type="button" onclick="closeDelete()" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium hover:bg-slate-300 text-sm">Cancel</button>
+                <button type="submit" class="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-medium hover:bg-red-600 text-sm">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
@@ -212,6 +243,13 @@ function showAddCustomer() { showModal('addCustomerModal'); }
 function closeAddCustomer() { hideModal('addCustomerModal'); }
 function closePayment() { hideModal('paymentModal'); }
 function closeViewCustomer() { hideModal('viewCustomerModal'); }
+function closeDelete() { hideModal('deleteModal'); }
+
+function confirmDelete(id, name) {
+    document.getElementById('deleteForm').action = '/customer/delete/' + id;
+    document.getElementById('deleteCustName').textContent = name;
+    showModal('deleteModal');
+}
 
 function filterTable() {
     const search = document.getElementById('custSearch').value.toLowerCase();

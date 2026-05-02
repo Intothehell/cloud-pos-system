@@ -289,7 +289,10 @@
             <label class="text-sm text-slate-500">Credit Limit ($)</label>
             <input type="number" id="wcCreditLimit" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" value="5000">
         </div>
-        <button onclick="saveWholesaleCustomer()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold mt-3 hover:bg-indigo-700 transition">Save Customer</button>
+        <div class="flex gap-2 mt-3">
+            <button onclick="closeAddCustomerModal()" class="flex-1 bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300 transition text-sm">Cancel</button>
+            <button onclick="saveWholesaleCustomer()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition text-sm">Save Customer</button>
+        </div>
     </div>
 </div>
 
@@ -304,6 +307,15 @@ function showModal(id) { document.getElementById(id).classList.remove('hidden');
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 function closeCashModal() { hideModal('cashModal'); }
 function closeInvoiceModal() { hideModal('invoiceModal'); }
+function closeAddCustomerModal() { 
+    hideModal('addCustomerModal');
+    // Clear form fields
+    document.getElementById('wcName').value = '';
+    document.getElementById('wcPhone').value = '';
+    document.getElementById('wcNic').value = '';
+    document.getElementById('wcAddress').value = '';
+    document.getElementById('wcCreditLimit').value = '5000';
+}
 
 function init() { loadCategories(); loadAllProducts(); checkLowStock(); document.getElementById('barcodeInput').focus(); }
 
@@ -399,8 +411,37 @@ function showInvoice(order,info){
 }
 
 function printInvoice(){var c=document.getElementById('printableInvoice').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
-function showAddCustomerForm(){showModal('addCustomerModal');}
-function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">'+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function showAddCustomerForm(){
+    // Clear previous form values
+    document.getElementById('wcName').value = '';
+    document.getElementById('wcPhone').value = '';
+    document.getElementById('wcNic').value = '';
+    document.getElementById('wcAddress').value = '';
+    document.getElementById('wcCreditLimit').value = '5000';
+    showModal('addCustomerModal');
+}
+
+function saveWholesaleCustomer(){
+    fetch('/api/customers/add',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            name:document.getElementById('wcName').value,
+            phone:document.getElementById('wcPhone').value,
+            nic:document.getElementById('wcNic').value,
+            address:document.getElementById('wcAddress').value,
+            credit_limit:document.getElementById('wcCreditLimit').value,
+            customer_type:'wholesale'
+        })
+    }).then(r=>r.json()).then(r=>{
+        if(r.success){
+            currentWholesaleCustomer=r.customer;
+            document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-1.5"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> '+r.customer.name+' | Balance: $'+r.customer.balance.toFixed(2)+'</div>';
+            closeAddCustomerModal();
+        }else alert(r.error);
+    });
+}
+
 function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:border-indigo-300">'+c+'</button>');});}
 
 init();

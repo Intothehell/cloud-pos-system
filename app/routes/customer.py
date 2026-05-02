@@ -38,6 +38,28 @@ def add_customer():
     flash(f'Customer {customer.name} added successfully!', 'success')
     return redirect(url_for('customer.list_customers'))
 
+@customer_bp.route('/delete/<int:customer_id>', methods=['POST'])
+@login_required
+def delete_customer(customer_id):
+    """Delete customer (soft delete - set is_active to False)"""
+    if current_user.role not in ['owner', 'manager']:
+        flash('You do not have permission to delete customers.', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    customer = Customer.query.get_or_404(customer_id)
+    
+    # Check if customer has pending balance
+    if customer.balance > 0:
+        flash(f'Cannot delete {customer.name}. They have an outstanding balance of ${customer.balance:.2f}. Please settle the balance first.', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    customer_name = customer.name
+    customer.is_active = False
+    db.session.commit()
+    
+    flash(f'Customer {customer_name} has been deleted successfully.', 'success')
+    return redirect(url_for('customer.list_customers'))
+
 @customer_bp.route('/api/search')
 @login_required
 def search_customers_api():
@@ -81,4 +103,3 @@ def record_payment(customer_id):
     
     flash(f'Payment of ${amount:.2f} recorded! New balance: ${customer.balance:.2f}', 'success')
     return redirect(url_for('customer.list_customers'))
-
