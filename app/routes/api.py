@@ -551,14 +551,16 @@ def record_payment(customer_id):
 @api_bp.route('/dashboard/stats')
 @login_required
 def dashboard_stats():
-    # Get ALL orders (remove date filter for testing)
-    all_orders = Order.query.all()
+    today = datetime.now().date()
+    today_orders = Order.query.filter(
+        db.func.date(Order.created_at) == today
+    ).all()
     
     return jsonify({
-        'today_sales': sum(o.total for o in all_orders),
-        'retail_sales': sum(o.total for o in all_orders if o.order_type == 'retail'),
-        'wholesale_sales': sum(o.total for o in all_orders if o.order_type == 'wholesale'),
-        'transaction_count': len(all_orders),
+        'today_sales': sum(o.total for o in today_orders),
+        'retail_sales': sum(o.total for o in today_orders if o.order_type == 'retail'),
+        'wholesale_sales': sum(o.total for o in today_orders if o.order_type == 'wholesale'),
+        'transaction_count': len(today_orders),
         'products_count': Product.query.filter_by(is_active=True).count(),
         'low_stock': Product.query.filter(
             Product.stock_quantity <= Product.min_stock_level,
@@ -577,38 +579,7 @@ def open_drawer():
     return jsonify({'success': True})
 
 
-#======credit customer tracking======
-@api_bp.route('/customers/<int:customer_id>/payment', methods=['POST'])
-@login_required
-def record_customer_payment(customer_id):
-    """Record a payment from customer (credit settlement)"""
-    customer = Customer.query.get_or_404(customer_id)
-    data = request.json
-    
-    amount = float(data.get('amount', 0))
-    if amount <= 0:
-        return jsonify({'error': 'Invalid amount'}), 400
-    
-    payment = Payment(
-        customer_id=customer.id,
-        amount=amount,
-        payment_method=data.get('payment_method', 'cash'),
-        reference_number=data.get('reference', ''),
-        notes=data.get('notes', ''),
-        received_by=current_user.id
-    )
-    
-    customer.balance -= amount
-    customer.total_paid += amount
-    
-    db.session.add(payment)
-    db.session.commit()
-    
-    return jsonify({
-        'success': True,
-        'new_balance': customer.balance,
-        'message': f'Payment of ${amount:.2f} recorded'
-    })
+### a function removed
 
 # ============ RETURNS ============
 @api_bp.route('/orders/<order_number>/return', methods=['POST'])
