@@ -208,13 +208,18 @@
             Record Payment
         </h3>
         <form id="paymentForm" method="POST">
-            <p class="text-xs sm:text-sm"><strong>Customer:</strong> <span id="payCustName"></span></p>
-            <p class="text-xs sm:text-sm mb-2 sm:mb-3"><strong>Balance:</strong> <span id="payBalance" class="text-red-600 font-bold"></span></p>
-            <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Amount *</label>
-            <input type="number" name="amount" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm mb-2" required step="0.01">
-            <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Method</label>
-            <select name="payment_method" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm mb-2">
-                <option value="cash">Cash</option><option value="bank_transfer">Bank Transfer</option><option value="check">Check</option>
+            <p class="text-sm text-slate-600 mb-1"><strong>Customer:</strong> <span id="payCustName"></span></p>
+            <p class="text-sm text-slate-600 mb-3"><strong>Balance:</strong> <span id="payBalance" class="text-red-600 font-bold"></span></p>
+            
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Amount *</label>
+            <input type="number" name="amount" id="paymentAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-1" required step="0.01" min="0.01">
+                <p class="text-[10px] text-slate-400 mb-2">Maximum: <span id="maxPaymentAmount"></span></p>
+
+            <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Method</label>
+            <select name="payment_method" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-2">
+                <option value="cash">Cash</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="check">Check</option>
             </select>
             <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Reference</label>
             <input type="text" name="reference" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" placeholder="Check number, transfer ID...">
@@ -284,6 +289,8 @@ function showPayment(id,name,balance){
     document.getElementById('paymentForm').action='/customer/record-payment/'+id;
     document.getElementById('payCustName').textContent=name;
     document.getElementById('payBalance').textContent='$'+balance.toFixed(2);
+    document.getElementById('paymentAmount').max = balance.toFixed(2);
+    document.getElementById('maxPaymentAmount').textContent = '$'+balance.toFixed(2);
     showModal('paymentModal');
 }
 

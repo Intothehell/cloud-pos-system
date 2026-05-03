@@ -2,6 +2,9 @@ from flask import Blueprint, render_template, request, jsonify, flash, redirect,
 from flask_login import login_required, current_user
 from app import db
 from app.models.customer import Customer, Payment
+from app.models.order import Order
+from datetime import datetime
+from app.models.order import Order, OrderItem
 
 customer_bp = Blueprint('customer', __name__)
 
@@ -106,21 +109,85 @@ def search_customers_api():
 @customer_bp.route('/record-payment/<int:customer_id>', methods=['POST'])
 @login_required
 def record_payment(customer_id):
-    """Record payment"""
+    """Record payment and settle pending orders (FIFO)"""
     customer = Customer.query.get_or_404(customer_id)
-    amount = float(request.form.get('amount'))
+    amount = float(request.form.get('amount', 0))
+    payment_method = request.form.get('payment_method', 'cash')
+    reference = request.form.get('reference', '')
     
+    # Validate amount
+    if amount <= 0:
+        flash('Payment amount must be greater than $0.00', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    if amount > customer.balance:
+        flash(f'Payment amount cannot exceed the outstanding balance of ${customer.balance:.2f}', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    # Record the payment
     payment = Payment(
         customer_id=customer.id,
         amount=amount,
-        payment_method=request.form.get('payment_method'),
-        reference_number=request.form.get('reference', ''),
+        payment_method=payment_method,
+        reference_number=reference,
         received_by=current_user.id
     )
     
     customer.balance -= amount
+    customer.total_paid += amount
     db.session.add(payment)
+    
+    # Settle pending orders (FIFO - oldest first)
+    remaining = amount
+    pending_orders = Order.query.filter_by(
+        customer_id=customer.id,
+        payment_status='pending'
+    ).order_by(Order.created_at.asc()).all()
+    
+    for order in pending_orders:
+        if remaining <= 0:
+            break
+        if remaining >= order.total:
+            remaining -= order.total
+            order.payment_status = 'completed'
+        else:
+            remaining = 0
+    
+    # Create a payment receipt bill (CPY prefix)
+    date_str = datetime.now().strftime('%Y%m%d')
+    count = Order.query.filter(Order.order_number.like(f'CPY-{date_str}%')).count()
+    receipt_number = f'CPY-{date_str}-{count+1:04d}'
+    
+    receipt = Order(
+        order_number=receipt_number,
+        order_type='payment',
+        sale_type='payment',
+        user_id=current_user.id,
+        customer_id=customer.id,
+        customer_name=customer.name,
+        customer_phone=customer.phone,
+        customer_address=customer.address,
+        subtotal=amount,
+        total=amount,
+        discount_amount=0,
+        delivery_charge=0,
+        payment_method=payment_method,
+        payment_status='completed',
+        status='completed',
+        notes=reference if reference else ''
+    )
+    
+    # Add a single item line for the payment
+    receipt_item = OrderItem(
+        product_name='Credit Payment Received',
+        product_price=amount,
+        quantity=1,
+        line_total=amount,
+        discount_amount=0
+    )
+    receipt.items.append(receipt_item)
+    db.session.add(receipt)
     db.session.commit()
     
     flash(f'Payment of ${amount:.2f} recorded! New balance: ${customer.balance:.2f}', 'success')
-    return redirect(url_for('customer.list_customers'))
+    return redirect(url_for('pos.bills'))
