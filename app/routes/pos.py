@@ -28,16 +28,12 @@ def terminal():
 @pos_bp.route('/bills')
 @login_required
 def bills():
-    if current_user.role not in ['owner', 'manager']:
-        return "Access denied", 403
     today = datetime.now().strftime('%Y-%m-%d')
     return render_template('pos/bills.html', today=today)
 
 @pos_bp.route('/returns')
 @login_required
 def returns():
-    if current_user.role not in ['owner', 'manager']:
-        return "Access denied", 403
     return render_template('pos/returns.html')
 
 # ============ API ROUTES ============

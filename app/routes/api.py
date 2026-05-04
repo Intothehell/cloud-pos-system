@@ -48,8 +48,7 @@ def search_products():
 @api_bp.route('/products/all')
 @login_required
 def get_all_products():
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
+    products = Product.query.order_by(Product.category, Product.name).all()
     
     products = Product.query.order_by(Product.category, Product.name).all()
     return jsonify([{
@@ -325,8 +324,6 @@ def today_orders():
 @login_required
 def get_all_orders():
     """Get all orders for bill history page"""
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
     
     date = request.args.get('date', '')
     sale_type = request.args.get('type', 'all')
