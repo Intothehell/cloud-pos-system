@@ -1,0 +1,32 @@
+# to use when updating existing db recordsok just forget it for now. we have to change logins credentials of owner and staff. so new logins are like,
+
+username, role, password
+loshan, owner, HiMary9089
+manager, manager, glass#1324
+milintha, staff, milintha@001
+eranga, staff, 002@eran
+
+
+Retail (Cash/Card):
+
+Refund: Money back to customer, item goes back to inventory
+
+Replacement: No money back, swap damaged item for same item from inventory (stock -1 for replacement, +1 for returned)
+
+Partial return: Customer bought 3 items, returns 1 - refund for that 1 item, restock that 1 item
+
+Wholesale Cash/Card:
+
+Same as retail - cash/card refund or replacement
+
+Wholesale Credit:
+
+Refund: Reduce their credit balance (not cash back), restock item
+
+Replacement: No balance change, swap items in inventory
+
+
+
+when a refund happens to a retail customer its easy. if they refund a damaged item we give cash, or card payement them the money back. then if they want to return a item that they dont like, we have to refund them and add that item again to the inventory. and if we give the replacement have to give another same item from inventory so the that reduces another item in inventory.  and what if they buy more that one item and they need refund/replace one of them, maybe two. we have to track those items too.
+
+for wholesale, if they paid cash or cash we can refund or give a replacement item like retail. but when credit customer needs a refund it needs to update his credit balance. also needs that item selected refund of  replacement.
