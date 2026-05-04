@@ -87,9 +87,11 @@
             <div class="flex gap-1">
                 <button onclick="viewCustomer({{ customer.id }})" class="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
                 <button onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})" class="flex-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100">Pay</button>
+                {% if current_user.role in ['owner','manager'] %}
                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
+                {% endif %}
             </div>
         </div>
         {% endfor %}
@@ -130,9 +132,11 @@
                             <div class="flex items-center justify-center gap-1.5">
                                 <button onclick="viewCustomer({{ customer.id }})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
                                 <button onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100">Pay</button>
+                                {% if current_user.role in ['owner','manager'] %}
                                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

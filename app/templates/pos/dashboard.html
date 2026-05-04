@@ -163,6 +163,7 @@
             </a>
             
             <!-- Inventory -->
+            {% if current_user.role in ['owner','manager'] %}
             <a href="{{ url_for('inventory.manage') }}" class="action-card bg-gradient-green rounded-2xl p-5 text-center text-white shadow-lg group">
                 <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
                     <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,7 +173,8 @@
                 <h6 class="font-bold text-sm">Inventory</h6>
                 <p class="text-xs text-white/70 mt-1">Manage stock</p>
             </a>
-            
+            {% endif %}
+
             <!-- Customers -->
             <a href="{{ url_for('customer.list_customers') }}" class="action-card bg-gradient-cyan rounded-2xl p-5 text-center text-white shadow-lg group">
                 <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
