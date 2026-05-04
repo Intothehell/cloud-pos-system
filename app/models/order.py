@@ -96,7 +96,7 @@ class Return(db.Model):
     # Who processed it
     processed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
     
     # Relationships
     processor = db.relationship('User', foreign_keys=[processed_by])
