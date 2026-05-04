@@ -1,5 +1,7 @@
 # to use when updating existing db recordsok just forget it for now. we have to change logins credentials of owner and staff. so new logins are like,
 
+vt5m1pf0QIV#cu0& - pw
+
 username, role, password
 loshan, owner, HiMary9089
 manager, manager, glass#1324
