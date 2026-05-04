@@ -25,8 +25,8 @@ class Product(db.Model):
     
     # Meta
     added_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     # Relationships
     stock_movements = db.relationship('StockMovement', backref='product', lazy=True)
@@ -59,4 +59,4 @@ class StockMovement(db.Model):
     reference = db.Column(db.String(100))
     notes = db.Column(db.Text)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)

@@ -4,14 +4,77 @@
 
 {% block extra_css %}
 <style>
-    .product-card { transition: all 0.15s ease; cursor: pointer; }
-    .product-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
-    .product-card.out-of-stock { opacity: 0.45; pointer-events: none; cursor: not-allowed; }
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.4);
+        --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    }
+    
+    body {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 30%, #fdf2f8 70%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+    
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        box-shadow: var(--glass-shadow);
+    }
+    .glass-card:hover {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Gradient cards */
+    .card-indigo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card-emerald { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .card-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .card-rose { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .card-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .card-purple { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+    
+    .product-card { 
+        transition: all 0.2s ease; 
+        cursor: pointer; 
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .product-card:hover { 
+        transform: translateY(-3px); 
+        box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        background: rgba(255, 255, 255, 0.95);
+    }
+    .product-card.out-of-stock { opacity: 0.45; pointer-events: none; }
+    
     .qty-btn { transition: all 0.1s; user-select: none; }
     .qty-btn:active { transform: scale(0.9); }
-    @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    
+    @keyframes fadeInUp { 
+        from { opacity:0; transform:translateY(8px); } 
+        to { opacity:1; transform:translateY(0); } 
+    }
     .animate-in { animation: fadeInUp 0.2s ease-out; }
-    .modal-backdrop { backdrop-filter: blur(2px); }
+    
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+        50% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); }
+    }
+    .pulse-glow { animation: pulse-glow 2s infinite; }
+    
+    .modal-backdrop { 
+        backdrop-filter: blur(4px);
+        background: rgba(0, 0, 0, 0.4);
+    }
+    
+    .search-icon-input {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: left 14px center;
+        background-size: 20px;
+    }
 </style>
 {% endblock %}
 
@@ -21,18 +84,17 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-            <svg class="icon-lg text-indigo-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                <line x1="6" y1="8" x2="6" y2="8"></line>
-                <line x1="10" y1="8" x2="10" y2="8"></line>
-                <line x1="14" y1="8" x2="18" y2="8"></line>
-            </svg>
+            <span class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                </svg>
+            </span>
             Point of Sale
         </h1>
         <select id="customerTypeSelect" onchange="changeCustomerType()" 
-                class="border-2 border-slate-200 rounded-xl px-4 py-2.5 text-sm font-medium bg-white focus:border-indigo-400 focus:outline-none focus:ring-2 focus:ring-indigo-100">
-            <option value="retail">Retail Sale</option>
-            <option value="wholesale">Wholesale / Bulk</option>
+                class="glass-card rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            <option value="retail">🛍️ Retail Sale</option>
+            <option value="wholesale">📦 Wholesale / Bulk</option>
         </select>
     </div>
 
@@ -42,22 +104,17 @@
         <div class="lg:w-7/12 space-y-3">
             
             <!-- Barcode + Search -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
-                <div class="relative mb-3">
-                    <svg class="icon absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path>
-                    </svg>
-                    <input type="text" id="barcodeInput" 
-                           class="w-full text-lg p-4 pl-12 border-2 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-indigo-50/20" 
-                           placeholder="Scan barcode here..." autofocus>
-                </div>
-                <div class="flex gap-2">
+            <div class="glass-card rounded-2xl p-4 pulse-glow">
+                <input type="text" id="barcodeInput" 
+                       class="w-full text-lg p-4 pl-12 search-icon-input border-2 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white/80" 
+                       placeholder="Scan barcode here..." autofocus>
+                <div class="flex gap-2 mt-2">
                     <input type="text" id="searchInput" 
-                           class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-400 focus:outline-none text-sm" 
-                           placeholder="Search by name, category...">
+                           class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-400 focus:outline-none text-sm bg-white/80" 
+                           placeholder="Search products...">
                     <button onclick="searchProducts()" 
-                            class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl hover:bg-indigo-700 font-medium text-sm flex items-center gap-2">
-                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            class="card-indigo text-white px-5 py-2.5 rounded-xl hover:opacity-90 font-medium text-sm flex items-center gap-2 shadow-lg">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
                         Search
@@ -66,9 +123,9 @@
             </div>
 
             <!-- Recent Items -->
-            <div id="recentSection" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-3">
+            <div id="recentSection" class="hidden glass-card rounded-2xl p-3">
                 <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
                     Recent
@@ -80,21 +137,17 @@
             <div id="categoryButtons" class="flex flex-wrap gap-1.5"></div>
 
             <!-- Low Stock Alert -->
-            <div id="lowStockAlert" class="hidden bg-amber-50 border border-amber-200 text-amber-700 px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium">
-                <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                <span id="lowStockCount">0</span> items low in stock
+            <div id="lowStockAlert" class="hidden card-amber text-white px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 font-medium shadow-lg">
+                <span>⚠️</span> <span id="lowStockCount">0</span> items low in stock
             </div>
 
             <!-- Product Grid -->
             <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5" style="max-height: 420px; overflow-y: auto;">
-                <div class="col-span-full text-center text-slate-400 py-12">
-                    <svg class="icon-lg mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">
+                    <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                     </svg>
-                    <p class="text-sm">Scan barcode or search products</p>
+                    <p>Scan barcode or search products</p>
                 </div>
             </div>
         </div>
@@ -103,9 +156,9 @@
         <div class="lg:w-5/12 space-y-3">
             
             <!-- Customer Card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-4 py-3 bg-slate-50 border-b flex items-center gap-2">
-                    <svg class="icon-sm text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50/80 border-b flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                         <circle cx="12" cy="7" r="4"></circle>
                     </svg>
@@ -114,155 +167,141 @@
                 <div class="p-4">
                     <div id="wholesaleCustomerSearch" class="hidden">
                         <div class="flex gap-1.5 mb-2">
-                            <input type="text" id="wholesaleCustomerInput" 
-                                   class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" 
-                                   placeholder="Search name, phone or NIC...">
-                            <button onclick="searchWholesaleCustomer()" class="bg-indigo-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600">Find</button>
-                            <button onclick="showAddCustomerForm()" class="bg-emerald-500 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-emerald-600">+ New</button>
+                            <input type="text" id="wholesaleCustomerInput" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Search name, phone or NIC...">
+                            <button onclick="searchWholesaleCustomer()" class="card-indigo text-white px-3 py-2 rounded-xl text-sm">Find</button>
+                            <button onclick="showAddCustomerForm()" class="card-emerald text-white px-3 py-2 rounded-xl text-sm">+ New</button>
                         </div>
                         <div id="customerSearchResults" class="max-h-36 overflow-y-auto space-y-1"></div>
                         <div id="selectedWholesaleCustomer" class="text-sm mt-2"></div>
                     </div>
-                    
                     <div id="retailCustomerForm" class="space-y-2">
                         <div class="grid grid-cols-2 gap-2">
-                            <input type="text" id="custName" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Customer Name">
-                            <input type="text" id="custPhone" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Phone Number">
+                            <input type="text" id="custName" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Customer Name">
+                            <input type="text" id="custPhone" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Phone Number">
                         </div>
-                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Address (for delivery)" rows="2"></textarea>
+                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Address (for delivery)" rows="2"></textarea>
                     </div>
                 </div>
             </div>
 
             <!-- Cart Card -->
-            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center rounded-t-2xl">
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-4 py-3 bg-slate-900/90 text-white flex justify-between items-center rounded-t-2xl">
                     <span class="font-semibold text-sm flex items-center gap-2">
-                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
                             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                         </svg>
                         Current Sale
                     </span>
-                    <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400 transition">Clear</button>
+                    <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400">Clear</button>
                 </div>
                 <div id="cartItems" class="divide-y divide-slate-100" style="max-height: 220px; overflow-y: auto;">
-                    <div class="text-center text-slate-400 py-8">
-                        <svg class="icon-lg mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
-                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                        </svg>
-                        <p class="text-sm">Cart is empty</p>
-                    </div>
+                    <div class="text-center text-slate-400 py-8">Cart is empty</div>
                 </div>
-                <div class="p-4 bg-slate-50 rounded-b-2xl">
+                <div class="p-4 bg-slate-50/50 rounded-b-2xl">
                     <div class="space-y-2 text-sm mb-4">
                         <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-medium">$<span id="subtotal">0.00</span></span></div>
                         <div class="flex justify-between items-center">
                             <span class="text-slate-500">Discount (%)</span>
                             <input type="number" id="discountPercent" value="0" min="0" max="100" onchange="updateCartDisplay()"
-                                   class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm focus:border-indigo-400 focus:outline-none">
+                                   class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
                         </div>
                         <div class="flex justify-between text-red-500"><span>Discount</span><span>-$<span id="discountAmount">0.00</span></span></div>
                         <div class="flex justify-between items-center">
                             <span class="text-slate-500">Delivery ($)</span>
                             <input type="number" id="deliveryCharge" value="0" min="0" step="0.01" onchange="updateCartDisplay()"
-                                   class="w-24 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm focus:border-indigo-400 focus:outline-none">
+                                   class="w-24 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
                         </div>
                         <div class="flex justify-between font-bold text-lg border-t-2 border-slate-200 pt-3">
                             <span>TOTAL</span><span class="text-indigo-600">$<span id="total">0.00</span></span>
                         </div>
                     </div>
                     
-                    <div class="space-y-2">
-                        <div id="retailPayments" class="space-y-2">
-                            <button onclick="processCashPayment()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                                CASH
-                            </button>
-                            <button onclick="processCardPayment()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                </svg>
-                                CARD
-                            </button>
-                        </div>
-                        <div id="wholesalePayments" class="hidden space-y-2">
-                            <button onclick="processCashPayment()" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold hover:bg-emerald-600 transition flex items-center justify-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="12" y1="1" x2="12" y2="23"></line>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                                CASH
-                            </button>
-                            <button onclick="processCardPayment()" class="w-full bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
-                                    <line x1="1" y1="10" x2="23" y2="10"></line>
-                                </svg>
-                                CARD
-                            </button>
-                            <button onclick="processCreditPayment()" class="w-full bg-amber-500 text-white py-3 rounded-xl font-semibold hover:bg-amber-600 transition flex items-center justify-center gap-2">
-                                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M12 1v22"></path><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                                </svg>
-                                CREDIT
-                            </button>
-                        </div>
-                    </div>
+                    <button onclick="reviewOrder()" class="w-full card-indigo text-white py-3 rounded-xl font-bold hover:opacity-90 transition text-lg shadow-lg">
+                        ✨ Review & Pay
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- REVIEW ORDER MODAL -->
+<div id="reviewModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="px-6 py-4 border-b flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-3xl">
+            <h3 class="text-xl font-bold text-slate-800">📋 Review Order</h3>
+            <button onclick="hideModal('reviewModal')" class="text-slate-400 hover:text-red-500 text-2xl">&times;</button>
+        </div>
+        <div class="px-6 py-4 border-b">
+            <p class="text-xs font-semibold text-slate-400 uppercase mb-1">Customer Details</p>
+            <p class="font-semibold text-slate-800" id="reviewCustName">Walk-in</p>
+            <p class="text-sm text-slate-500" id="reviewCustPhone"></p>
+            <p class="text-sm text-slate-500" id="reviewCustAddress"></p>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase mb-2">Order Items</p>
+            <div id="reviewItems" class="space-y-2 max-h-48 overflow-y-auto"></div>
+        </div>
+        <div class="px-6 py-4 bg-slate-50 border-t border-b">
+            <div class="space-y-1.5 text-sm">
+                <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-medium">$<span id="revSubtotal">0.00</span></span></div>
+                <div class="flex justify-between text-red-500"><span>Discount</span><span>-$<span id="revDiscount">0.00</span></span></div>
+                <div class="flex justify-between"><span class="text-slate-500">Delivery</span><span class="font-medium">$<span id="revDelivery">0.00</span></span></div>
+                <div class="flex justify-between font-bold text-lg border-t border-slate-300 pt-2 mt-2">
+                    <span>TOTAL</span><span class="text-indigo-600">$<span id="revTotal">0.00</span></span>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-4">
+            <p class="text-xs font-semibold text-slate-400 uppercase mb-3">Select Payment Method</p>
+            <div id="revRetailBtns" class="grid grid-cols-2 gap-3">
+                <button onclick="confirmPay('cash')" class="card-emerald text-white py-3 rounded-xl font-bold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg">
+                    💵 Cash
+                </button>
+                <button onclick="confirmPay('card')" class="card-blue text-white py-3 rounded-xl font-bold hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg">
+                    💳 Card
+                </button>
+            </div>
+            <div id="revWholesaleBtns" class="grid grid-cols-3 gap-2 hidden">
+                <button onclick="confirmPay('cash')" class="card-emerald text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">💵 Cash</button>
+                <button onclick="confirmPay('card')" class="card-blue text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">💳 Card</button>
+                <button onclick="confirmPay('credit')" class="card-amber text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">📋 Credit</button>
+            </div>
+        </div>
+        <div class="px-6 pb-4">
+            <button onclick="hideModal('reviewModal')" class="w-full bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300 transition">
+                Cancel & Continue Shopping
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Cash Modal -->
-<div id="cashModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+<div id="cashModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 animate-in">
-        <h3 class="text-xl font-bold text-center mb-4 flex items-center justify-center gap-2">
-            <svg class="icon text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-            </svg>
-            Cash Payment
-        </h3>
+        <h3 class="text-xl font-bold text-center mb-4">💵 Cash Payment</h3>
         <p class="text-4xl font-bold text-center text-slate-800 mb-4">$<span id="cashTotal">0.00</span></p>
         <input type="number" id="cashReceived" oninput="calculateChange()"
                class="w-full text-center text-2xl border-2 border-slate-200 rounded-2xl p-4 mb-3 focus:border-emerald-400 focus:outline-none" 
                placeholder="Enter amount" step="0.01">
         <p class="text-2xl font-bold text-center text-emerald-600 mb-4">Change: $<span id="changeAmount">0.00</span></p>
         <div class="flex gap-2">
-            <button onclick="closeCashModal()" class="flex-1 bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300">Cancel</button>
-            <button onclick="completeCashPayment()" class="flex-1 bg-emerald-500 text-white py-3 rounded-xl font-bold hover:bg-emerald-600">Complete</button>
+            <button onclick="hideModal('cashModal')" class="flex-1 bg-slate-200 py-3 rounded-xl font-medium">Cancel</button>
+            <button onclick="completeCashPayment()" class="flex-1 card-emerald text-white py-3 rounded-xl font-bold">Complete</button>
         </div>
     </div>
 </div>
 
 <!-- Invoice Modal -->
-<div id="invoiceModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+<div id="invoiceModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto p-6">
         <div class="flex justify-between items-center mb-4">
-            <h3 class="text-xl font-bold flex items-center gap-2">
-                <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                </svg>
-                Invoice
-            </h3>
+            <h3 class="text-xl font-bold">🧾 Invoice</h3>
             <div class="flex gap-2">
-                <button onclick="printInvoice()" class="bg-slate-100 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-200 flex items-center gap-1.5">
-                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                        <path d="M6 12H4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-4a2 2 0 0 0-2-2h-2"></path>
-                        <rect x="6" y="14" width="12" height="8"></rect>
-                    </svg>
-                    Print
-                </button>
-                <button onclick="closeInvoiceModal()" class="bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium hover:bg-slate-300">Close</button>
+                <button onclick="printInvoice()" class="bg-slate-100 px-4 py-2 rounded-xl text-sm">🖨️ Print</button>
+                <button onclick="hideModal('invoiceModal')" class="bg-slate-200 px-4 py-2 rounded-xl text-sm">Close</button>
             </div>
         </div>
         <div id="invoiceContent"></div>
@@ -270,26 +309,21 @@
 </div>
 
 <!-- Add Customer Modal -->
-<div id="addCustomerModal" class="fixed inset-0 bg-black/40 modal-backdrop hidden items-center justify-center z-50 p-4">
+<div id="addCustomerModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold mb-4 flex items-center gap-2">
-            <svg class="icon text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="8.5" cy="7" r="4"></circle>
-                <line x1="20" y1="8" x2="20" y2="14"></line>
-                <line x1="23" y1="11" x2="17" y2="11"></line>
-            </svg>
-            Add Wholesale Customer
-        </h3>
+        <h3 class="text-lg font-bold mb-4">➕ Add Wholesale Customer</h3>
         <div class="space-y-2">
-            <input type="text" id="wcName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Full Name*">
-            <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Phone*">
-            <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="NIC Number">
-            <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Address" rows="2"></textarea>
+            <input type="text" id="wcName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Full Name*">
+            <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Phone*">
+            <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="NIC Number*">
+            <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Address" rows="2"></textarea>
             <label class="text-sm text-slate-500">Credit Limit ($)</label>
-            <input type="number" id="wcCreditLimit" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" value="5000">
+            <input type="number" id="wcCreditLimit" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" value="5000">
         </div>
-        <button onclick="saveWholesaleCustomer()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold mt-3 hover:bg-indigo-700 transition">Save Customer</button>
+        <div class="flex gap-2 mt-3">
+            <button onclick="hideModal('addCustomerModal')" class="flex-1 bg-slate-200 py-3 rounded-xl">Cancel</button>
+            <button onclick="saveWholesaleCustomer()" class="flex-1 card-indigo text-white py-3 rounded-xl font-semibold">Save</button>
+        </div>
     </div>
 </div>
 
@@ -302,66 +336,42 @@ let allProducts = [];
 
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
-function closeCashModal() { hideModal('cashModal'); }
-function closeInvoiceModal() { hideModal('invoiceModal'); }
 
 function init() { loadCategories(); loadAllProducts(); checkLowStock(); document.getElementById('barcodeInput').focus(); }
 
-function loadAllProducts() {
-    fetch('/api/products/all').then(r => r.json()).then(products => { allProducts = products; displayProducts(products); });
-}
-
-function checkLowStock() {
-    fetch('/api/dashboard/stats').then(r => r.json()).then(stats => {
-        if (stats.low_stock > 0) { document.getElementById('lowStockAlert').classList.remove('hidden'); document.getElementById('lowStockCount').textContent = stats.low_stock; }
-    });
-}
+function loadAllProducts() { fetch('/api/products/all').then(r=>r.json()).then(p=>{allProducts=p;displayProducts(p);}); }
+function checkLowStock() { fetch('/api/dashboard/stats').then(r=>r.json()).then(s=>{if(s.low_stock>0){document.getElementById('lowStockAlert').classList.remove('hidden');document.getElementById('lowStockCount').textContent=s.low_stock;}}); }
 
 function changeCustomerType() {
-    customerType = document.getElementById('customerTypeSelect').value;
-    document.getElementById('wholesaleCustomerSearch').classList.toggle('hidden', customerType !== 'wholesale');
-    document.getElementById('retailCustomerForm').classList.toggle('hidden', customerType !== 'retail');
-    document.getElementById('retailPayments').classList.toggle('hidden', customerType !== 'retail');
-    document.getElementById('wholesalePayments').classList.toggle('hidden', customerType !== 'wholesale');
-    document.getElementById('customerSectionTitle').textContent = customerType === 'wholesale' ? 'Wholesale Customer' : 'Customer Details';
-    cart = []; currentWholesaleCustomer = null; updateCartDisplay();
+    customerType=document.getElementById('customerTypeSelect').value;
+    document.getElementById('wholesaleCustomerSearch').classList.toggle('hidden',customerType!=='wholesale');
+    document.getElementById('retailCustomerForm').classList.toggle('hidden',customerType!=='retail');
+    document.getElementById('customerSectionTitle').textContent=customerType==='wholesale'?'Wholesale Customer':'Customer Details';
+    cart=[];currentWholesaleCustomer=null;updateCartDisplay();
 }
 
-document.getElementById('barcodeInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') { e.preventDefault(); var b = this.value.trim(); if(b){ fetch('/api/product/barcode/'+encodeURIComponent(b)).then(r=>r.json()).then(p=>{ if(p.id){ if(p.stock_quantity<=0){alert('Out of stock!');return;} addToCart(p,1); addToRecent(p); } else alert('Product not found: '+b); }); this.value=''; } }
+document.getElementById('barcodeInput').addEventListener('keydown',function(e){
+    if(e.key==='Enter'){e.preventDefault();var b=this.value.trim();if(b){fetch('/api/product/barcode/'+encodeURIComponent(b)).then(r=>r.json()).then(p=>{if(p.id){if(p.stock_quantity<=0){alert('Out of stock!');return;}addToCart(p,1);addToRecent(p);}else alert('Not found: '+b);});this.value='';}}
 });
 
-function addToRecent(p) {
-    recentProducts = recentProducts.filter(x => x.id !== p.id);
-    recentProducts.unshift({id:p.id, name:p.name, price:p.price||p.retail_price, stock:p.stock_quantity});
-    if(recentProducts.length > 8) recentProducts.pop();
-    document.getElementById('recentSection').classList.toggle('hidden', recentProducts.length === 0);
-    document.getElementById('recentItemsList').innerHTML = recentProducts.map(x =>
-        '<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200 font-medium">'+x.name.substring(0,14)+'</span>'
-    ).join('');
-}
+function addToRecent(p){recentProducts=recentProducts.filter(x=>x.id!==p.id);recentProducts.unshift({id:p.id,name:p.name,price:p.price||p.retail_price,stock:p.stock_quantity});if(recentProducts.length>8)recentProducts.pop();document.getElementById('recentSection').classList.toggle('hidden',recentProducts.length===0);document.getElementById('recentItemsList').innerHTML=recentProducts.map(x=>'<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200">'+x.name.substring(0,14)+'</span>').join('');}
 
-function searchProducts() { var q=document.getElementById('searchInput').value; if(!q){displayProducts(allProducts);return;} fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts); }
-function filterCategory(cat) { displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat)); }
+function searchProducts(){var q=document.getElementById('searchInput').value;if(!q){displayProducts(allProducts);return;}fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts);}
+function filterCategory(cat){displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));}
 
-function displayProducts(products) {
-    var g = document.getElementById('productGrid');
-    if(!products.length){ g.innerHTML='<div class="col-span-full text-center text-slate-400 py-12"><svg class="icon-lg mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg><p class="text-sm">No products found</p></div>'; return; }
-    g.innerHTML = products.map(p => {
-        var price = customerType==='wholesale'?p.wholesale_price:p.retail_price;
-        var out=(p.stock_quantity||0)<=0;
-        var low=!out&&(p.stock_quantity||0)<=5;
-        var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300 hover:shadow-md';
+function displayProducts(products){
+    var g=document.getElementById('productGrid');
+    if(!products.length){g.innerHTML='<div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">No products</div>';return;}
+    g.innerHTML=products.map(p=>{
+        var price=customerType==='wholesale'?p.wholesale_price:p.retail_price;
+        var out=(p.stock_quantity||0)<=0,low=!out&&(p.stock_quantity||0)<=5;
+        var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300';
         var click=out?'':'onclick="addToCart({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock_quantity:'+(p.stock_quantity||0)+'},1);addToRecent({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock:'+(p.stock_quantity||0)+'})"';
-        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'>'+
-            '<p class="font-semibold text-sm truncate mb-1">'+(p.name||'').substring(0,18)+'</p>'+
-            '<p class="text-emerald-600 font-bold text-lg">$'+price.toFixed(2)+'</p>'+
-            '<p class="text-xs mt-1 '+(out?'text-red-600 font-bold':low?'text-amber-600 font-semibold':'text-slate-400')+'">'+
-            (out?'OUT OF STOCK':low?'Only '+p.stock_quantity+' left':'Stock: '+p.stock_quantity)+'</p></div>';
+        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'><p class="font-semibold text-sm truncate">'+(p.name||'').substring(0,18)+'</p><p class="text-emerald-600 font-bold text-lg">$'+price.toFixed(2)+'</p><p class="text-xs '+(out?'text-red-600':low?'text-amber-600':'text-slate-400')+'">'+(out?'OUT':low?'Only '+p.stock_quantity:'Stock:'+p.stock_quantity)+'</p></div>';
     }).join('');
 }
 
-function addToCart(p,qty){if(!p.stock_quantity||p.stock_quantity<=0){alert('Out of stock!');return;}var ex=cart.find(i=>i.id===p.id);if(ex){if(ex.quantity+qty>p.stock_quantity){alert('Only '+p.stock_quantity+' available!');return;}ex.quantity+=qty;}else cart.push({id:p.id,name:p.name,price:p.price||0,quantity:qty,max:p.stock_quantity||0});updateCartDisplay();}
+function addToCart(p,qty){if(!p.stock_quantity||p.stock_quantity<=0){alert('Out of stock!');return;}var ex=cart.find(i=>i.id===p.id);if(ex){if(ex.quantity+qty>p.stock_quantity){alert('Only '+p.stock_quantity+' left!');return;}ex.quantity+=qty;}else cart.push({id:p.id,name:p.name,price:p.price||0,quantity:qty,max:p.stock_quantity||0});updateCartDisplay();}
 function changeQty(i,c){var item=cart[i],n=item.quantity+c;if(n<=0)cart.splice(i,1);else if(n>item.max)alert('Max: '+item.max);else item.quantity=n;updateCartDisplay();}
 function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<=0)inp.value=item.quantity;else if(n>item.max){alert('Max: '+item.max);inp.value=item.max;item.quantity=item.max;}else item.quantity=n;updateCartDisplay();}
 function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
@@ -369,16 +379,39 @@ function clearCart(){cart=[];updateCartDisplay();}
 
 function updateCartDisplay(){
     var d=document.getElementById('cartItems'),sub=0;
-    if(!cart.length){d.innerHTML='<div class="text-center text-slate-400 py-8"><svg class="icon-lg mx-auto mb-2 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg><p class="text-sm">Cart is empty</p></div>';}
-    else{d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-slate-400 text-xs">$'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold hover:bg-slate-200">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 border-slate-200 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold hover:bg-slate-200">+</button><span class="font-bold w-20 text-right">$'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');}
+    if(!cart.length){d.innerHTML='<div class="text-center text-slate-400 py-8">Cart is empty</div>';}
+    else{d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">$'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">$'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');}
     var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100),dc=parseFloat(document.getElementById('deliveryCharge').value)||0;
     document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da+dc).toFixed(2);
 }
 
-function searchWholesaleCustomer(){var q=document.getElementById('wholesaleCustomerInput').value;if(!q)return;fetch('/api/customers/search?q='+encodeURIComponent(q)).then(r=>r.json()).then(customers=>{var d=document.getElementById('customerSearchResults');d.innerHTML=customers.length?customers.map(c=>'<div onclick="selectWholesaleCustomer('+JSON.stringify(c).replace(/"/g,'&quot;')+')" class="p-2.5 border-2 border-slate-100 rounded-xl mb-1 cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 text-sm"><strong>'+c.name+'</strong> | '+c.phone+'<br><span class="text-xs text-slate-500">Bal: $'+(c.balance||0).toFixed(2)+' | Limit: $'+(c.credit_limit||0).toFixed(2)+'</span></div>').join(''):'<p class="text-slate-400 text-sm p-2">Not found</p>';});}
-function selectWholesaleCustomer(c){currentWholesaleCustomer=c;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm font-medium flex items-center gap-1.5"><svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> '+c.name+' | Balance: $'+(c.balance||0).toFixed(2)+'</div>';document.getElementById('customerSearchResults').innerHTML='';}
+// REVIEW ORDER
+function reviewOrder(){
+    if(!cart.length){alert('Cart empty!');return;}
+    var info=getInfo();
+    document.getElementById('reviewCustName').textContent=info.name;
+    document.getElementById('reviewCustPhone').textContent=info.phone||'';
+    document.getElementById('reviewCustAddress').textContent=info.address||'';
+    var html='',sub=0;
+    cart.forEach(function(item){var t=item.price*item.quantity;sub+=t;html+='<div class="flex justify-between py-2 border-b"><div><p class="font-medium text-sm">'+item.name+'</p><p class="text-xs">'+item.quantity+' x $'+item.price.toFixed(2)+'</p></div><span class="font-bold">$'+t.toFixed(2)+'</span></div>';});
+    document.getElementById('reviewItems').innerHTML=html;
+    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100),dc=parseFloat(document.getElementById('deliveryCharge').value)||0;
+    document.getElementById('revSubtotal').textContent=sub.toFixed(2);
+    document.getElementById('revDiscount').textContent=da.toFixed(2);
+    document.getElementById('revDelivery').textContent=dc.toFixed(2);
+    document.getElementById('revTotal').textContent=(sub-da+dc).toFixed(2);
+    document.getElementById('revRetailBtns').classList.toggle('hidden',customerType!=='retail');
+    document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
+    showModal('reviewModal');
+}
+function confirmPay(method){hideModal('reviewModal');if(method==='cash')processCashPayment();else if(method==='card')processCardPayment();else processCreditPayment();}
 
-function getInfo(){if(customerType==='retail')return{name:document.getElementById('custName').value||'Walk-in',phone:document.getElementById('custPhone').value||'',address:document.getElementById('custAddress').value||''};return{name:currentWholesaleCustomer?.name||'Wholesale',phone:currentWholesaleCustomer?.phone||'',address:currentWholesaleCustomer?.address||''};}
+// CUSTOMERS
+function searchWholesaleCustomer(){var q=document.getElementById('wholesaleCustomerInput').value;if(!q)return;fetch('/api/customers/search?q='+encodeURIComponent(q)).then(r=>r.json()).then(c=>{var d=document.getElementById('customerSearchResults');d.innerHTML=c.length?c.map(x=>'<div onclick="selectWholesaleCustomer('+JSON.stringify(x).replace(/"/g,'&quot;')+')" class="p-2.5 border-2 rounded-xl mb-1 cursor-pointer hover:border-indigo-300 text-sm"><strong>'+x.name+'</strong> | '+x.phone+'<br><span class="text-xs">Bal: $'+(x.balance||0).toFixed(2)+'</span></div>').join(''):'<p class="text-sm p-2">Not found</p>';});}
+function selectWholesaleCustomer(c){currentWholesaleCustomer=c;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+c.name+' | Bal: $'+(c.balance||0).toFixed(2)+'</div>';document.getElementById('customerSearchResults').innerHTML='';}
+function getInfo(){return customerType==='retail'?{name:document.getElementById('custName').value||'Walk-in',phone:document.getElementById('custPhone').value||'',address:document.getElementById('custAddress').value||''}:{name:currentWholesaleCustomer?.name||'Wholesale',phone:currentWholesaleCustomer?.phone||'',address:currentWholesaleCustomer?.address||''};}
+
+// PAYMENTS
 function processCashPayment(){if(!cart.length)return;document.getElementById('cashTotal').textContent=document.getElementById('total').textContent;document.getElementById('cashReceived').value='';document.getElementById('changeAmount').textContent='0.00';showModal('cashModal');}
 function calculateChange(){var t=parseFloat(document.getElementById('cashTotal').textContent),r=parseFloat(document.getElementById('cashReceived').value)||0;document.getElementById('changeAmount').textContent=Math.max(0,r-t).toFixed(2);}
 function completeCashPayment(){var r=parseFloat(document.getElementById('cashReceived').value)||0,t=parseFloat(document.getElementById('total').textContent);if(r<t){alert('Insufficient!');return;}processSale('cash',r);hideModal('cashModal');}
@@ -390,18 +423,17 @@ function processSale(method,cash){
     fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,delivery_charge:document.getElementById('deliveryCharge').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
     .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
-
 function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','deliveryCharge','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
 
 function showInvoice(order,info){
-    document.getElementById('invoiceContent').innerHTML='<div id="printableInvoice" class="font-mono text-sm max-w-sm mx-auto"><div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3"><h4 class="font-bold text-lg">FURNITURE WAREHOUSE</h4><p class="text-slate-500">Invoice: '+order.order_number+'</p><p class="text-slate-400 text-xs">'+order.created_at+'</p></div><p><strong>Customer:</strong> '+info.name+'</p>'+(info.phone?'<p><strong>Phone:</strong> '+info.phone+'</p>':'')+'<table class="w-full my-3 text-xs"><tr class="border-b border-slate-300"><th class="text-left py-1">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+order.items.map(i=>'<tr><td class="py-1">'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">$'+i.price.toFixed(2)+'</td><td class="text-right">$'+i.total.toFixed(2)+'</td></tr>').join('')+'</table><div class="border-t-2 border-slate-300 pt-2 space-y-1"><p class="flex justify-between"><span>Subtotal</span><span>$'+order.subtotal.toFixed(2)+'</span></p><p class="flex justify-between text-red-500"><span>Discount</span><span>-$'+order.discount.toFixed(2)+'</span></p><p class="flex justify-between"><span>Delivery</span><span>$'+order.delivery.toFixed(2)+'</span></p><p class="flex justify-between font-bold text-lg border-t border-slate-300 pt-2"><span>TOTAL</span><span class="text-indigo-600">$'+order.total.toFixed(2)+'</span></p></div><p class="mt-2"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>'+(order.change?'<p><strong>Change:</strong> $'+order.change.toFixed(2)+'</p>':'')+'<p class="text-center text-slate-400 mt-3 text-xs">Thank you for your purchase!</p></div>';
+    document.getElementById('invoiceContent').innerHTML='<div id="printableInvoice" class="font-mono text-sm max-w-sm mx-auto"><div class="text-center border-b-2 border-dashed pb-3 mb-3"><h4 class="font-bold text-lg">EASY PAY</h4><p>Invoice: '+order.order_number+'</p><p>'+order.created_at+'</p></div><p><strong>Customer:</strong> '+info.name+'</p>'+(info.phone?'<p><strong>Phone:</strong> '+info.phone+'</p>':'')+'<table class="w-full my-3 text-xs"><tr class="border-b"><th class="text-left">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+order.items.map(i=>'<tr><td>'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">$'+i.price.toFixed(2)+'</td><td class="text-right">$'+i.total.toFixed(2)+'</td></tr>').join('')+'</table><div class="border-t-2 pt-2"><p class="flex justify-between"><span>Subtotal</span><span>$'+order.subtotal.toFixed(2)+'</span></p><p class="flex justify-between text-red-500"><span>Discount</span><span>-$'+order.discount.toFixed(2)+'</span></p><p class="flex justify-between"><span>Delivery</span><span>$'+order.delivery.toFixed(2)+'</span></p><p class="flex justify-between font-bold text-lg border-t pt-2"><span>TOTAL</span><span>$'+order.total.toFixed(2)+'</span></p></div><p class="mt-2"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>'+(order.change?'<p><strong>Change:</strong> $'+order.change.toFixed(2)+'</p>':'')+'</div>';
     showModal('invoiceModal');
 }
+function printInvoice(){var c=document.getElementById('printableInvoice').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
 
-function printInvoice(){var c=document.getElementById('printableInvoice').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title><script src="https://cdn.tailwindcss.com"><\/script></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
 function showAddCustomerForm(){showModal('addCustomerModal');}
-function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">'+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
-function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 border-slate-200 text-slate-700 text-xs font-semibold rounded-xl hover:border-indigo-300">'+c+'</button>');});}
+function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl">'+c+'</button>');});}
 
 init();
 </script>

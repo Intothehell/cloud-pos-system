@@ -32,6 +32,10 @@ class Order(db.Model):
     cash_received = db.Column(db.Float)
     change_given = db.Column(db.Float)
     
+    # Return flags
+    is_returned = db.Column(db.Boolean, default=False)
+    return_date = db.Column(db.DateTime)
+    
     # Status
     status = db.Column(db.String(20), default='completed')
     notes = db.Column(db.Text)
@@ -39,6 +43,7 @@ class Order(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now)
     
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
+    returns = db.relationship('Return', backref='order', lazy=True)
     
     def generate_order_number(self):
         date_str = datetime.now().strftime('%Y%m%d')
@@ -67,3 +72,36 @@ class OrderItem(db.Model):
     discount_percent = db.Column(db.Float, default=0)
     line_total = db.Column(db.Float)
     discount_amount = db.Column(db.Float, default=0)
+
+class Return(db.Model):
+    __tablename__ = 'returns'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'))
+    return_number = db.Column(db.String(20), unique=True, index=True)
+    
+    # Return details
+    return_type = db.Column(db.String(20))  # refund, replacement, credit_note
+    reason = db.Column(db.Text)
+    refund_amount = db.Column(db.Float, default=0.0)
+    refund_method = db.Column(db.String(20))  # cash, card, credit_note
+    
+    # Replacement item
+    replacement_product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=True)
+    replacement_quantity = db.Column(db.Integer, default=0)
+    
+    # Status
+    status = db.Column(db.String(20), default='completed')
+    
+    # Who processed it
+    processed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    
+    # Relationships
+    processor = db.relationship('User', foreign_keys=[processed_by])
+    
+    def generate_return_number(self):
+        date_str = datetime.now().strftime('%Y%m%d')
+        count = Return.query.filter(Return.return_number.like(f'RTN-{date_str}%')).count()
+        self.return_number = f'RTN-{date_str}-{count+1:04d}'

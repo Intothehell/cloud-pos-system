@@ -9,7 +9,7 @@ class Customer(db.Model):
     phone = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(120))
     address = db.Column(db.Text)
-    nic = db.Column(db.String(20))  # National ID Card
+    nic = db.Column(db.String(20), unique=True, nullable=False)  # National ID Card - mandatory & unique
     customer_type = db.Column(db.String(20), default='retail')
     
     # Credit management

@@ -48,8 +48,7 @@ def search_products():
 @api_bp.route('/products/all')
 @login_required
 def get_all_products():
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
+    products = Product.query.order_by(Product.category, Product.name).all()
     
     products = Product.query.order_by(Product.category, Product.name).all()
     return jsonify([{
@@ -325,8 +324,6 @@ def today_orders():
 @login_required
 def get_all_orders():
     """Get all orders for bill history page"""
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
     
     date = request.args.get('date', '')
     sale_type = request.args.get('type', 'all')
@@ -428,27 +425,63 @@ def search_customers():
 @api_bp.route('/customers/add', methods=['POST'])
 @login_required
 def add_customer():
-    if current_user.role not in ['owner', 'manager']:
-        return jsonify({'error': 'Permission denied'}), 403
-    
     data = request.json
     
-    if Customer.query.filter_by(phone=data.get('phone')).first():
-        return jsonify({'error': 'Phone number already exists'}), 400
+    # Validate required fields
+    name = (data.get('name') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    nic = (data.get('nic') or '').strip()
     
-    customer = Customer(
-        name=data['name'],
-        phone=data.get('phone'),
-        email=data.get('email', ''),
-        address=data.get('address', ''),
-        nic=data.get('nic', ''),
-        customer_type=data.get('customer_type', 'retail'),
-        credit_limit=float(data.get('credit_limit', 5000))
-    )
-    db.session.add(customer)
-    db.session.commit()
+    errors = []
+    if not name:
+        errors.append('Name is required')
+    if not phone:
+        errors.append('Phone is required')
+    if not nic:
+        errors.append('NIC is required')
     
-    return jsonify({'success': True, 'customer': {'id': customer.id, 'name': customer.name}})
+    if errors:
+        return jsonify({'success': False, 'error': ', '.join(errors)}), 400
+    
+    # Check for duplicate phone
+    existing_phone = Customer.query.filter_by(phone=phone).first()
+    if existing_phone:
+        return jsonify({'success': False, 'error': f'Phone number {phone} already exists! Customer: {existing_phone.name}'}), 400
+    
+    # Check for duplicate NIC
+    existing_nic = Customer.query.filter_by(nic=nic).first()
+    if existing_nic:
+        return jsonify({'success': False, 'error': f'NIC {nic} already exists! Customer: {existing_nic.name}'}), 400
+    
+    try:
+        customer = Customer(
+            name=name,
+            phone=phone,
+            email=(data.get('email') or '').strip(),
+            address=(data.get('address') or '').strip(),
+            nic=nic,
+            customer_type=data.get('customer_type', 'wholesale'),
+            credit_limit=float(data.get('credit_limit', 5000))
+        )
+        db.session.add(customer)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'customer': {
+                'id': customer.id,
+                'name': customer.name,
+                'phone': customer.phone,
+                'nic': customer.nic,
+                'address': customer.address,
+                'balance': customer.balance,
+                'credit_limit': customer.credit_limit,
+                'type': customer.customer_type
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @api_bp.route('/customers/<int:customer_id>/details')
 @login_required
@@ -515,14 +548,16 @@ def record_payment(customer_id):
 @api_bp.route('/dashboard/stats')
 @login_required
 def dashboard_stats():
-    # Get ALL orders (remove date filter for testing)
-    all_orders = Order.query.all()
+    today = datetime.now().date()
+    today_orders = Order.query.filter(
+        db.func.date(Order.created_at) == today
+    ).all()
     
     return jsonify({
-        'today_sales': sum(o.total for o in all_orders),
-        'retail_sales': sum(o.total for o in all_orders if o.order_type == 'retail'),
-        'wholesale_sales': sum(o.total for o in all_orders if o.order_type == 'wholesale'),
-        'transaction_count': len(all_orders),
+        'today_sales': sum(o.total for o in today_orders),
+        'retail_sales': sum(o.total for o in today_orders if o.order_type == 'retail'),
+        'wholesale_sales': sum(o.total for o in today_orders if o.order_type == 'wholesale'),
+        'transaction_count': len(today_orders),
         'products_count': Product.query.filter_by(is_active=True).count(),
         'low_stock': Product.query.filter(
             Product.stock_quantity <= Product.min_stock_level,
@@ -539,3 +574,114 @@ def dashboard_stats():
 def open_drawer():
     print(f"🔓 Cash drawer opened by {current_user.username}")
     return jsonify({'success': True})
+
+
+### a function removed
+
+# ============ RETURNS ============
+@api_bp.route('/orders/<order_number>/return', methods=['POST'])
+@login_required
+def return_order(order_number):
+    """Process a return/refund/replacement"""
+    from app.models.order import Return
+    
+    order = Order.query.filter_by(order_number=order_number).first()
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    data = request.json
+    return_type = data.get('return_type', 'refund')  # refund, replacement, credit_note
+    
+    # Create return record
+    ret = Return(
+        order_id=order.id,
+        return_type=return_type,
+        reason=data.get('reason', ''),
+        refund_amount=float(data.get('refund_amount', 0)),
+        refund_method=data.get('refund_method', 'cash'),
+        processed_by=current_user.id,
+        notes=data.get('notes', ''),
+        status='completed'
+    )
+    ret.generate_return_number()
+    
+    # Handle replacement
+    if return_type == 'replacement':
+        ret.replacement_product_id = data.get('replacement_product_id')
+        ret.replacement_quantity = data.get('replacement_quantity', 1)
+        
+        # Reduce stock of replacement item
+        if ret.replacement_product_id:
+            replacement_product = Product.query.get(ret.replacement_product_id)
+            if replacement_product:
+                replacement_product.stock_quantity -= ret.replacement_quantity
+                movement = StockMovement(
+                    product_id=replacement_product.id,
+                    user_id=current_user.id,
+                    movement_type='stock_out',
+                    quantity=-ret.replacement_quantity,
+                    previous_stock=replacement_product.stock_quantity + ret.replacement_quantity,
+                    new_stock=replacement_product.stock_quantity,
+                    reference=f'REPLACE-{ret.return_number}',
+                    notes=f'Replacement for order {order_number}'
+                )
+                db.session.add(movement)
+    
+    # Handle refund
+    if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
+        # Restore stock for refund
+        for item in order.items:
+            product = Product.query.get(item.product_id)
+            if product:
+                product.stock_quantity += item.quantity
+                movement = StockMovement(
+                    product_id=product.id,
+                    user_id=current_user.id,
+                    movement_type='return',
+                    quantity=item.quantity,
+                    previous_stock=product.stock_quantity - item.quantity,
+                    new_stock=product.stock_quantity,
+                    reference=f'RTN-{ret.return_number}'
+                )
+                db.session.add(movement)
+        
+        # If credit customer, reduce balance
+        if order.customer_id and order.payment_method == 'credit':
+            customer = Customer.query.get(order.customer_id)
+            if customer:
+                customer.balance -= ret.refund_amount
+    
+    # Update order status
+    order.status = 'returned'
+    
+    db.session.add(ret)
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'return_number': ret.return_number,
+        'message': f'Return processed: {ret.return_number}'
+    })
+
+@api_bp.route('/returns/all')
+@login_required
+def get_all_returns():
+    """Get all returns"""
+    from app.models.order import Return
+    
+    returns = Return.query.order_by(Return.created_at.desc()).limit(50).all()
+    
+    return jsonify({
+        'returns': [{
+            'return_number': r.return_number,
+            'order_number': r.order.order_number if r.order else 'N/A',
+            'type': r.return_type,
+            'reason': r.reason,
+            'refund_amount': r.refund_amount,
+            'refund_method': r.refund_method,
+            'status': r.status,
+            'created_at': r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'processed_by': r.processor.username if r.processor else 'N/A',
+            'customer': r.order.customer_name if r.order else 'N/A'
+        } for r in returns]
+    })
