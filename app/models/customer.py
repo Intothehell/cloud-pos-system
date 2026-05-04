@@ -21,8 +21,8 @@ class Customer(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     notes = db.Column(db.Text)
     
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now)
     
     orders = db.relationship('Order', backref='customer_rel', lazy=True)
     payments = db.relationship('Payment', backref='customer_rel', lazy=True)
@@ -46,4 +46,4 @@ class Payment(db.Model):
     reference_number = db.Column(db.String(50))
     notes = db.Column(db.Text)
     received_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now)
