@@ -286,6 +286,8 @@ def create_order():
                 'sale_type': order.sale_type,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'items': [{
+                    'id': item.id,
+                    'product_id': item.product_id,
                     'name': item.product_name,
                     'quantity': item.quantity,
                     'price': item.product_price,

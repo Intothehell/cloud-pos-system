@@ -82,7 +82,7 @@
             </div>
             <div class="flex justify-between items-center text-xs mb-2">
                 <span class="text-slate-500">NIC: {{ customer.nic or '-' }}</span>
-                <span class="font-bold {{ 'text-red-600' if customer.balance > 0 else 'text-slate-700' }}">${{ "%.2f"|format(customer.balance) }}</span>
+                <span class="font-bold {{ 'text-red-600' if customer.balance > 0 else 'text-slate-700' }}">Rs.{{ "%.2f"|format(customer.balance) }}</span>
             </div>
             <div class="flex gap-1">
                 <button onclick="viewCustomer({{ customer.id }})" class="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
@@ -126,8 +126,8 @@
                                 {{ customer.customer_type }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-right font-bold {{ 'text-red-600' if customer.balance > 0 else 'text-slate-700' }}">${{ "%.2f"|format(customer.balance) }}</td>
-                        <td class="px-4 py-3 text-right text-slate-500">${{ "%.0f"|format(customer.credit_limit) }}</td>
+                        <td class="px-4 py-3 text-right font-bold {{ 'text-red-600' if customer.balance > 0 else 'text-slate-700' }}">Rs.{{ "%.2f"|format(customer.balance) }}</td>
+                        <td class="px-4 py-3 text-right text-slate-500">Rs.{{ "%.0f"|format(customer.credit_limit) }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-center gap-1.5">
                                 <button onclick="viewCustomer({{ customer.id }})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
@@ -190,7 +190,7 @@
                     <textarea name="address" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" rows="2"></textarea>
                 </div>
                 <div>
-                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Credit Limit ($)</label>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Credit Limit (Rs)</label>
                     <input type="number" name="credit_limit" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" value="5000">
                 </div>
             </div>
@@ -292,9 +292,9 @@ function filterTable(){
 function showPayment(id,name,balance){
     document.getElementById('paymentForm').action='/customer/record-payment/'+id;
     document.getElementById('payCustName').textContent=name;
-    document.getElementById('payBalance').textContent='$'+balance.toFixed(2);
+    document.getElementById('payBalance').textContent='Rs.'+balance.toFixed(2);
     document.getElementById('paymentAmount').max = balance.toFixed(2);
-    document.getElementById('maxPaymentAmount').textContent = '$'+balance.toFixed(2);
+    document.getElementById('maxPaymentAmount').textContent = 'Rs.'+balance.toFixed(2);
     showModal('paymentModal');
 }
 
@@ -308,14 +308,14 @@ function viewCustomer(id){
         '<p class="text-sm text-slate-600"><strong>Address:</strong> '+(c.address||'-')+'</p>'+
         '<p class="text-sm"><strong>Type:</strong> <span class="px-2 py-0.5 rounded-full text-xs '+(c.customer_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+c.customer_type+'</span></p></div>'+
         '<div class="bg-slate-50 rounded-xl p-4"><h5 class="font-semibold text-sm mb-2">Credit Summary</h5>'+
-        '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">$'+c.balance.toFixed(2)+'</strong></p>'+
-        '<p class="text-sm">Credit Limit: $'+c.credit_limit.toFixed(2)+'</p>'+
-        '<p class="text-sm">Total Purchases: $'+c.total_purchases.toFixed(2)+'</p>'+
-        '<p class="text-sm">Total Paid: $'+c.total_paid.toFixed(2)+'</p></div></div>'+
+        '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">Rs.'+c.balance.toFixed(2)+'</strong></p>'+
+        '<p class="text-sm">Credit Limit: Rs.'+c.credit_limit.toFixed(2)+'</p>'+
+        '<p class="text-sm">Total Purchases: Rs.'+c.total_purchases.toFixed(2)+'</p>'+
+        '<p class="text-sm">Total Paid: Rs.'+c.total_paid.toFixed(2)+'</p></div></div>'+
         '<div class="mb-4"><h5 class="font-semibold text-sm mb-2">Payment History</h5><table class="w-full text-xs"><thead><tr class="bg-slate-100"><th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-right">Amount</th><th class="px-3 py-2 text-left">Method</th></tr></thead><tbody>'+
-        (c.payment_history.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No payments</td></tr>':c.payment_history.map(p=>'<tr><td class="px-3 py-2">'+p.date+'</td><td class="px-3 py-2 text-right font-medium">$'+p.amount.toFixed(2)+'</td><td class="px-3 py-2">'+p.method+'</td></tr>').join(''))+
+        (c.payment_history.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No payments</td></tr>':c.payment_history.map(p=>'<tr><td class="px-3 py-2">'+p.date+'</td><td class="px-3 py-2 text-right font-medium">Rs.'+p.amount.toFixed(2)+'</td><td class="px-3 py-2">'+p.method+'</td></tr>').join(''))+
         '</tbody></table></div><div><h5 class="font-semibold text-sm mb-2">Recent Orders</h5><table class="w-full text-xs"><thead><tr class="bg-slate-100"><th class="px-3 py-2 text-left">Order</th><th class="px-3 py-2 text-right">Total</th><th class="px-3 py-2 text-left">Status</th></tr></thead><tbody>'+
-        (c.recent_orders.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No orders</td></tr>':c.recent_orders.map(o=>'<tr><td class="px-3 py-2">'+o.order_number+'</td><td class="px-3 py-2 text-right font-medium">$'+o.total.toFixed(2)+'</td><td class="px-3 py-2">'+o.payment_status+'</td></tr>').join(''))+
+        (c.recent_orders.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No orders</td></tr>':c.recent_orders.map(o=>'<tr><td class="px-3 py-2">'+o.order_number+'</td><td class="px-3 py-2 text-right font-medium">Rs.'+o.total.toFixed(2)+'</td><td class="px-3 py-2">'+o.payment_status+'</td></tr>').join(''))+
         '</tbody></table></div>';
         showModal('viewCustomerModal');
     });
