@@ -429,10 +429,57 @@ function processSale(method,cash){
 function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','deliveryCharge','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
 
 function showInvoice(order,info){
-        document.getElementById('invoiceContent').innerHTML='<div id="printableInvoice" class="font-mono text-sm max-w-sm mx-auto"><div class="text-center border-b-2 border-dashed pb-3 mb-3"><h4 class="font-bold text-lg">EASY PAY</h4><p>Invoice: '+order.order_number+'</p><p>'+order.created_at+'</p></div><p><strong>Customer:</strong> '+info.name+'</p>'+(info.phone?'<p><strong>Phone:</strong> '+info.phone+'</p>':'')+'<table class="w-full my-3 text-xs"><tr class="border-b"><th class="text-left">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+order.items.map(i=>'<tr><td>'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">Rs.'+i.price.toFixed(2)+'</td><td class="text-right">Rs.'+i.total.toFixed(2)+'</td></tr>').join('')+'</table><div class="border-t-2 pt-2"><p class="flex justify-between"><span>Subtotal</span><span>Rs.'+order.subtotal.toFixed(2)+'</span></p><p class="flex justify-between text-red-500"><span>Discount</span><span>-Rs.'+order.discount.toFixed(2)+'</span></p><p class="flex justify-between"><span>Delivery</span><span>Rs.'+order.delivery.toFixed(2)+'</span></p><p class="flex justify-between font-bold text-lg border-t pt-2"><span>TOTAL</span><span>Rs.'+order.total.toFixed(2)+'</span></p></div><p class="mt-2"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>'+(order.change?'<p><strong>Change:</strong> Rs.'+order.change.toFixed(2)+'</p>':'')+'</div>';
+    var itemsHtml = order.items.map(function(i){
+        return '<tr><td style="padding: 4px 0;">'+i.name+'</td><td style="text-align: right;">'+i.quantity+'</td><td style="text-align: right;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right;">Rs.'+i.total.toFixed(2)+'</td></tr>';
+    }).join('');
+    
+    document.getElementById('invoiceContent').innerHTML = 
+        '<div id="printableInvoice" style="font-family: Arial, sans-serif; font-size: 13px; max-width: 800px; margin: 0 auto; padding: 20px; color: #1e293b;">' +
+        '<div style="text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 15px; margin-bottom: 15px;">' +
+        '<h2 style="margin: 0; font-size: 22px; font-weight: 700;">EASY PAY</h2>' +
+        '<p style="margin: 2px 0;">Meegoda, Homagama</p>' +
+        '<p style="margin: 2px 0;">Tel: +(94)75 427 1371</p>' +
+        '<p style="margin: 2px 0; color: #64748b;">'+order.created_at+'</p>' +
+        '</div>' +
+        '<p style="text-align: center; font-weight: 700; font-size: 15px;">INVOICE #'+order.order_number+'</p>' +
+        '<div style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 10px;">' +
+        '<p><strong>Customer:</strong> '+info.name+'</p>' +
+        (info.phone ? '<p><strong>Phone:</strong> '+info.phone+'</p>' : '') +
+        '<p><strong>Sale Type:</strong> '+(order.sale_type||'RETAIL').toUpperCase()+'</p>' +
+        '</div>' +
+        '<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px;">' +
+        '<tr style="border-bottom: 2px solid #1e293b;"><th style="text-align: left; padding: 6px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>' +
+        itemsHtml +
+        '</table>' +
+        '<div style="border-top: 2px solid #1e293b; border-bottom: 2px solid #1e293b; padding: 10px 0; margin: 10px 0; font-size: 13px;">' +
+        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Subtotal</span><span>Rs.'+order.subtotal.toFixed(2)+'</span></p>' +
+        '<p style="display: flex; justify-content: space-between; color: #ef4444; margin: 3px 0;"><span>Discount</span><span>-Rs.'+order.discount.toFixed(2)+'</span></p>' +
+        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Delivery</span><span>Rs.'+order.delivery.toFixed(2)+'</span></p>' +
+        '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b;"><span>TOTAL</span><span>Rs.'+order.total.toFixed(2)+'</span></p>' +
+        '</div>' +
+        '<p><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>' +
+        (order.change ? '<p><strong>Change:</strong> Rs.'+order.change.toFixed(2)+'</p>' : '') +
+        '<div style="text-align: center; margin-top: 25px; border-top: 1px dashed #cbd5e1; padding-top: 12px; font-size: 12px;">' +
+        '<p style="margin: 3px 0;">Thank you for your purchase!</p>' +
+        '<p style="margin: 3px 0;">Please come again</p>' +
+        '</div></div>';
     showModal('invoiceModal');
 }
-function printInvoice(){var c=document.getElementById('printableInvoice').innerHTML;var w=window.open('','','width=400,height=600');w.document.write('<html><head><title>Bill</title></head><body class="p-4">'+c+'<script>window.print();<\/script></body></html>');w.document.close();}
+function printInvoice(){
+    var c = document.getElementById('printableInvoice').innerHTML;
+    var w = window.open('','','width=800,height=600');
+    w.document.write(
+        '<html><head><title>Bill</title>' +
+        '<style>' +
+        '@page { size: A4; margin: 8mm; }' +
+        '@media print { body { width: 100%; margin: 0; padding: 0; } }' +
+        'body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; color: #000; }' +
+        'table { width: 100%; border-collapse: collapse; }' +
+        '</style></head>' +
+        '<body>' + c + '<script>setTimeout(function(){window.print();}, 400);<\/script></body></html>'
+    );
+    w.document.close();
+}
 
 function showAddCustomerForm(){showModal('addCustomerModal');}
 function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}

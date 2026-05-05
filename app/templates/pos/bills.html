@@ -264,24 +264,33 @@ function loadBills(){
 
 function viewBill(orderNumber){
     fetch('/api/orders/'+orderNumber+'/details').then(function(r){return r.json();}).then(function(order){
+        var itemsHtml = (order.items||[]).map(function(i){return '<tr><td style="padding: 4px 0;">'+i.name+'</td><td style="text-align: right;">'+i.quantity+'</td><td style="text-align: right;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right;">Rs.'+i.total.toFixed(2)+'</td></tr>';}).join('');
+        
         document.getElementById('viewInvoiceContent').innerHTML=
-        '<div class="font-mono text-xs sm:text-sm max-w-sm mx-auto">'+
-        '<div class="text-center border-b-2 border-dashed border-slate-300 pb-3 mb-3">'+
-        '<h4 class="font-bold text-base sm:text-lg">EASY PAY</h4>'+
-        '<p class="text-slate-500">Invoice: '+order.order_number+'</p><p class="text-slate-400 text-xs">'+order.created_at+'</p></div>'+
+        '<div style="font-family: Arial, sans-serif; font-size: 13px; max-width: 800px; margin: 0 auto; color: #1e293b;">'+
+        '<div style="text-align: center; border-bottom: 2px dashed #cbd5e1; padding-bottom: 15px; margin-bottom: 15px;">'+
+        '<h2 style="margin: 0; font-size: 22px; font-weight: 700;">EASY PAY</h2>'+
+        '<p style="margin: 2px 0;">Meegoda, Homagama</p>'+
+        '<p style="margin: 2px 0;">Tel: +(94)75 427 1371</p>'+
+        '<p style="margin: 2px 0; color: #64748b;">'+order.created_at+'</p></div>'+
+        '<p style="text-align: center; font-weight: 700; font-size: 15px;">INVOICE #'+order.order_number+'</p>'+
+        '<div style="border-bottom: 1px dashed #cbd5e1; padding-bottom: 10px; margin-bottom: 10px;">'+
         '<p><strong>Customer:</strong> '+order.customer_name+'</p>'+
         '<p><strong>Phone:</strong> '+(order.customer_phone||'N/A')+'</p>'+
-        '<table class="w-full my-3 text-xs"><tr class="border-b border-slate-300"><th class="text-left py-1">Item</th><th class="text-right">Qty</th><th class="text-right">Price</th><th class="text-right">Total</th></tr>'+
-        (order.items||[]).map(function(i){return '<tr><td class="py-1">'+i.name+'</td><td class="text-right">'+i.quantity+'</td><td class="text-right">Rs.'+i.price.toFixed(2)+'</td><td class="text-right">Rs.'+i.total.toFixed(2)+'</td></tr>';}).join('')+
-        '</table>'+
-        '<div class="border-t-2 border-slate-300 pt-2 space-y-1">'+
-        '<p class="flex justify-between"><span>Subtotal</span><span>Rs.'+(order.subtotal||0).toFixed(2)+'</span></p>'+
-        '<p class="flex justify-between text-red-500"><span>Discount</span><span>-Rs.'+(order.discount||0).toFixed(2)+'</span></p>'+
-        '<p class="flex justify-between"><span>Delivery</span><span>Rs.'+(order.delivery||0).toFixed(2)+'</span></p>'+
-        '<p class="flex justify-between font-bold text-base sm:text-lg border-t border-slate-300 pt-2"><span>TOTAL</span><span class="text-indigo-600">Rs.'+(order.total||0).toFixed(2)+'</span></p></div>'+
-        '<p class="mt-2"><strong>Payment:</strong> '+(order.payment_method||'').toUpperCase()+'</p>'+
+        '<p><strong>Sale Type:</strong> '+(order.sale_type||'RETAIL').toUpperCase()+'</p></div>'+
+        '<table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 12px;">'+
+        '<tr style="border-bottom: 2px solid #1e293b;"><th style="text-align: left; padding: 6px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>'+
+        itemsHtml+'</table>'+
+        '<div style="border-top: 2px solid #1e293b; border-bottom: 2px solid #1e293b; padding: 10px 0; margin: 10px 0; font-size: 13px;">'+
+        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Subtotal</span><span>Rs.'+(order.subtotal||0).toFixed(2)+'</span></p>'+
+        '<p style="display: flex; justify-content: space-between; color: #ef4444; margin: 3px 0;"><span>Discount</span><span>-Rs.'+(order.discount||0).toFixed(2)+'</span></p>'+
+        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Delivery</span><span>Rs.'+(order.delivery||0).toFixed(2)+'</span></p>'+
+        '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b;"><span>TOTAL</span><span>Rs.'+(order.total||0).toFixed(2)+'</span></p></div>'+
+        '<p><strong>Payment:</strong> '+(order.payment_method||'').toUpperCase()+'</p>'+
         '<p><strong>Status:</strong> '+(order.payment_status||'').toUpperCase()+'</p>'+
-        '<p class="text-center text-slate-400 mt-3 text-xs">Thank you for your purchase!</p></div>';
+        '<div style="text-align: center; margin-top: 25px; border-top: 1px dashed #cbd5e1; padding-top: 12px; font-size: 12px;">'+
+        '<p style="margin: 3px 0;">Thank you for your purchase!</p>'+
+        '<p style="margin: 3px 0;">Please come again</p></div></div>';
         var modal=document.getElementById('viewInvoiceModal');modal.classList.remove('hidden');modal.classList.add('flex');
     });
 }
