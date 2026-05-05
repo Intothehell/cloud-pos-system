@@ -14,7 +14,6 @@ class Customer(db.Model):
     
     # Credit management
     balance = db.Column(db.Float, default=0.0)
-    credit_limit = db.Column(db.Float, default=5000.0)
     total_purchases = db.Column(db.Float, default=0.0)
     total_paid = db.Column(db.Float, default=0.0)
     

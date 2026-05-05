@@ -40,7 +40,7 @@ def search_products():
     result = []
     for p in products:
         data = p.to_dict()
-        data['price'] = p.wholesale_price if customer_type == 'wholesale' else p.retail_price
+        data['price'] = p.wholesale_price if customer_type == 'wholesale' else 0
         result.append(data)
     
     return jsonify(result)
@@ -59,7 +59,6 @@ def get_all_products():
         'sku': p.sku or '',
         'cost_price': p.cost_price,
         'wholesale_price': p.wholesale_price,
-        'retail_price': p.retail_price,
         'stock_quantity': p.stock_quantity,
         'min_stock_level': p.min_stock_level,
         'is_active': p.is_active
@@ -94,7 +93,6 @@ def add_product():
         sku=data.get('sku', ''),
         cost_price=float(data.get('cost_price', 0)),
         wholesale_price=float(data.get('wholesale_price', 0)),
-        retail_price=float(data.get('retail_price', 0)),
         stock_quantity=int(data.get('stock_quantity', 0)),
         min_stock_level=int(data.get('min_stock_level', 5)),
         added_by=current_user.id
@@ -129,7 +127,6 @@ def update_product(product_id):
     product.sku = data.get('sku', product.sku)
     product.cost_price = float(data.get('cost_price', product.cost_price))
     product.wholesale_price = float(data.get('wholesale_price', product.wholesale_price))
-    product.retail_price = float(data.get('retail_price', product.retail_price))
     product.min_stock_level = int(data.get('min_stock_level', product.min_stock_level))
     
     db.session.commit()
@@ -202,7 +199,6 @@ def create_order():
             customer_name=data.get('customer_name', ''),
             customer_phone=data.get('customer_phone', ''),
             customer_address=data.get('customer_address', ''),
-            delivery_charge=float(data.get('delivery_charge', 0)),
             sale_type=data.get('sale_type', 'retail')
         )
         order.generate_order_number()
@@ -221,7 +217,7 @@ def create_order():
             if product.stock_quantity < qty:
                 return jsonify({'error': f'Not enough stock for {product.name}'}), 400
             
-            price = product.wholesale_price if customer_type == 'wholesale' else product.retail_price
+            price = product.wholesale_price if customer_type == 'wholesale' else float(item_data.get('price', 0))
             
             order_item = OrderItem(
                 product_id=product.id,
@@ -251,7 +247,7 @@ def create_order():
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
         order.discount_amount = sum(item.discount_amount for item in order.items)
         order.tax_amount = 0
-        order.total = order.subtotal - order.discount_amount + order.delivery_charge
+        order.total = order.subtotal - order.discount_amount
         
         if data.get('payment_method') == 'cash':
             order.cash_received = float(data.get('cash_received', 0))
@@ -262,8 +258,6 @@ def create_order():
         elif data.get('payment_method') == 'credit' and order.customer_id:
             customer = Customer.query.get(order.customer_id)
             if customer:
-                if customer.balance + order.total > customer.credit_limit:
-                    return jsonify({'error': 'Credit limit exceeded!'}), 400
                 customer.balance += order.total
                 customer.total_purchases += order.total
                 order.payment_status = 'pending'
@@ -377,7 +371,6 @@ def order_details(order_number):
         'customer_phone': order.customer_phone or '',
         'subtotal': order.subtotal,
         'discount': order.discount_amount,
-        'delivery': order.delivery_charge or 0,
         'total': order.total,
         'items': [{
             'name': item.product_name,
@@ -462,8 +455,7 @@ def add_customer():
             email=(data.get('email') or '').strip(),
             address=(data.get('address') or '').strip(),
             nic=nic,
-            customer_type=data.get('customer_type', 'wholesale'),
-            credit_limit=float(data.get('credit_limit', 5000))
+            customer_type=data.get('customer_type', 'wholesale')
         )
         db.session.add(customer)
         db.session.commit()
@@ -477,7 +469,6 @@ def add_customer():
                 'nic': customer.nic,
                 'address': customer.address,
                 'balance': customer.balance,
-                'credit_limit': customer.credit_limit,
                 'type': customer.customer_type
             }
         })
@@ -503,7 +494,6 @@ def customer_details(customer_id):
         'nic': customer.nic,
         'customer_type': customer.customer_type,
         'balance': customer.balance,
-        'credit_limit': customer.credit_limit,
         'total_purchases': customer.total_purchases,
         'total_paid': customer.total_paid,
         'payment_history': customer.get_payment_history(),

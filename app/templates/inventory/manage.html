@@ -136,14 +136,13 @@
                         <th class="px-4 py-3 text-left font-medium">Category</th>
                         <th class="px-4 py-3 text-right font-medium">Cost</th>
                         <th class="px-4 py-3 text-right font-medium">Wholesale</th>
-                        <th class="px-4 py-3 text-right font-medium">Retail</th>
                         <th class="px-4 py-3 text-center font-medium">Stock</th>
                         <th class="px-4 py-3 text-center font-medium">Status</th>
                         <th class="px-4 py-3 text-center font-medium">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="productTableBody" class="divide-y divide-slate-100">
-                    <tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -180,10 +179,7 @@
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Wholesale (Rs)</label>
                 <input type="number" id="pWholesale" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" step="0.01">
             </div>
-            <div>
-                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Retail (Rs) *</label>
-                <input type="number" id="pRetail" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" step="0.01">
-            </div>
+
             <div>
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Stock</label>
                 <input type="number" id="pStock" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" value="0">
@@ -240,13 +236,13 @@ function loadInventory(){
 function displayDesktop(products){
     const t=document.getElementById('productTableBody');
     if(!products.length){t.innerHTML='<tr><td colspan="9" class="px-4 py-8 text-center text-slate-400">No products</td></tr>';return;}
-    t.innerHTML=products.map(p=>`<tr class="hover:bg-slate-50 ${p.stock_quantity<=p.min_stock_level?'bg-amber-50':''} ${!p.is_active?'opacity-60':''}"><td class="px-4 py-3 text-xs">${p.barcode||'-'}</td><td class="px-4 py-3 font-medium">${p.name}</td><td class="px-4 py-3 text-xs">${p.category||'-'}</td><td class="px-4 py-3 text-right">Rs.${p.cost_price.toFixed(2)}</td><td class="px-4 py-3 text-right">Rs.${p.wholesale_price.toFixed(2)}</td><td class="px-4 py-3 text-right font-medium">Rs.${p.retail_price.toFixed(2)}</td><td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.stock_quantity>p.min_stock_level?'bg-emerald-100 text-emerald-800':p.stock_quantity>0?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'}">${p.stock_quantity}</span></td><td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs ${p.is_active?'bg-emerald-100 text-emerald-800':'bg-slate-200 text-slate-600'}">${p.is_active?'Active':'Inactive'}</span></td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-1">${actionButtons(p)}</div></td></tr>`).join('');
+    t.innerHTML=products.map(p=>`<tr class="hover:bg-slate-50 ${p.stock_quantity<=p.min_stock_level?'bg-amber-50':''} ${!p.is_active?'opacity-60':''}"><td class="px-4 py-3 text-xs">${p.barcode||'-'}</td><td class="px-4 py-3 font-medium">${p.name}</td><td class="px-4 py-3 text-xs">${p.category||'-'}</td><td class="px-4 py-3 text-right">Rs.${p.cost_price.toFixed(2)}</td><td class="px-4 py-3 text-right">Rs.${p.wholesale_price.toFixed(2)}</td><td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.stock_quantity>p.min_stock_level?'bg-emerald-100 text-emerald-800':p.stock_quantity>0?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'}">${p.stock_quantity}</span></td><td class="px-4 py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs ${p.is_active?'bg-emerald-100 text-emerald-800':'bg-slate-200 text-slate-600'}">${p.is_active?'Active':'Inactive'}</span></td><td class="px-4 py-3 text-center"><div class="flex justify-center gap-1">${actionButtons(p)}</div></td></tr>`).join('');
 }
 
 function displayMobile(products){
     const m=document.getElementById('mobileProductCards');
     if(!products.length){m.innerHTML='<div class="px-3 py-6 text-center text-slate-400 text-sm">No products</div>';return;}
-    m.innerHTML=products.map(p=>`<div class="p-3 ${p.stock_quantity<=p.min_stock_level?'bg-amber-50':''} ${!p.is_active?'opacity-60':''}"><div class="flex justify-between items-start mb-2"><div><p class="font-semibold text-sm">${p.name}</p><p class="text-xs text-slate-400">${p.barcode||'No barcode'} | ${p.category||'No category'}</p></div><span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.stock_quantity>p.min_stock_level?'bg-emerald-100 text-emerald-800':p.stock_quantity>0?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'}">${p.stock_quantity}</span></div><div class="flex justify-between items-center text-xs"><div><span class="text-slate-500">Cost: Rs.${p.cost_price.toFixed(2)}</span> <span class="text-slate-500 ml-2">Wholesale: Rs.${p.wholesale_price.toFixed(2)}</span><br><span class="font-semibold">Retail: Rs.${p.retail_price.toFixed(2)}</span></div><div class="flex gap-1">${actionButtons(p)}</div></div></div>`).join('');
+    m.innerHTML=products.map(p=>`<div class="p-3 ${p.stock_quantity<=p.min_stock_level?'bg-amber-50':''} ${!p.is_active?'opacity-60':''}"><div class="flex justify-between items-start mb-2"><div><p class="font-semibold text-sm">${p.name}</p><p class="text-xs text-slate-400">${p.barcode||'No barcode'} | ${p.category||'No category'}</p></div><span class="px-2 py-0.5 rounded-full text-xs font-bold ${p.stock_quantity>p.min_stock_level?'bg-emerald-100 text-emerald-800':p.stock_quantity>0?'bg-amber-100 text-amber-800':'bg-red-100 text-red-800'}">${p.stock_quantity}</span></div><div class="flex justify-between items-center text-xs"><div><span class="text-slate-500">Cost: Rs.${p.cost_price.toFixed(2)}</span> <span class="text-slate-500 ml-2">Wholesale: Rs.${p.wholesale_price.toFixed(2)}</span><br></div><div class="flex gap-1">${actionButtons(p)}</div></div></div>`).join('');
 }
 
 function actionButtons(p){
@@ -264,9 +260,9 @@ function updateStats(products){
     document.getElementById('categoryList').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
 }
 
-function showAddProduct(){currentEditId=null;document.getElementById('modalTitle').textContent='Add Product';['pName','pBarcode','pSku','pCategory','pCost','pWholesale','pRetail','pStock'].forEach(id=>document.getElementById(id).value='');showModal('productModal');}
-function editProduct(id){fetch('/api/products/all').then(r=>r.json()).then(products=>{const p=products.find(x=>x.id===id);if(p){currentEditId=p.id;document.getElementById('modalTitle').textContent='Edit Product';document.getElementById('pName').value=p.name;document.getElementById('pBarcode').value=p.barcode;document.getElementById('pSku').value=p.sku;document.getElementById('pCategory').value=p.category;document.getElementById('pCost').value=p.cost_price;document.getElementById('pWholesale').value=p.wholesale_price;document.getElementById('pRetail').value=p.retail_price;document.getElementById('pStock').value=p.stock_quantity;showModal('productModal');}});}
-function saveProduct(){const d={name:document.getElementById('pName').value,barcode:document.getElementById('pBarcode').value,sku:document.getElementById('pSku').value,category:document.getElementById('pCategory').value,cost_price:document.getElementById('pCost').value||0,wholesale_price:document.getElementById('pWholesale').value||0,retail_price:document.getElementById('pRetail').value||0,stock_quantity:document.getElementById('pStock').value||0};if(!d.name){alert('Name required!');return;}const url=currentEditId?`/api/products/${currentEditId}/update`:'/api/products/add';fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(r=>r.json()).then(r=>{if(r.success){hideModal('productModal');loadInventory();}else alert(r.error);});}
+function showAddProduct(){currentEditId=null;document.getElementById('modalTitle').textContent='Add Product';['pName','pBarcode','pSku','pCategory','pCost','pWholesale','pStock'].forEach(id=>document.getElementById(id).value='');showModal('productModal');}
+function editProduct(id){fetch('/api/products/all').then(r=>r.json()).then(products=>{const p=products.find(x=>x.id===id);if(p){currentEditId=p.id;document.getElementById('modalTitle').textContent='Edit Product';document.getElementById('pName').value=p.name;document.getElementById('pBarcode').value=p.barcode;document.getElementById('pSku').value=p.sku;document.getElementById('pCategory').value=p.category;document.getElementById('pCost').value=p.cost_price;document.getElementById('pWholesale').value=p.wholesale_price;document.getElementById('pStock').value=p.stock_quantity;showModal('productModal');}});}
+function saveProduct(){const d={name:document.getElementById('pName').value,barcode:document.getElementById('pBarcode').value,sku:document.getElementById('pSku').value,category:document.getElementById('pCategory').value,cost_price:document.getElementById('pCost').value||0,wholesale_price:document.getElementById('pWholesale').value||0,stock_quantity:document.getElementById('pStock').value||0};if(!d.name){alert('Name required!');return;}const url=currentEditId?`/api/products/${currentEditId}/update`:'/api/products/add';fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)}).then(r=>r.json()).then(r=>{if(r.success){hideModal('productModal');loadInventory();}else alert(r.error);});}
 function showStockAdjust(id,name,stock){currentStockId=id;document.getElementById('stockProductName').textContent=name;document.getElementById('currentStock').textContent=stock;document.getElementById('adjustQuantity').value='';document.getElementById('adjustNotes').value='';showModal('stockModal');}
 function saveStockAdjustment(){const t=document.getElementById('adjustmentType').value,q=parseInt(document.getElementById('adjustQuantity').value),n=document.getElementById('adjustNotes').value;if(!q||q<1){alert('Enter quantity');return;}fetch(`/api/products/${currentStockId}/stock`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:t,quantity:q,notes:n})}).then(r=>r.json()).then(r=>{if(r.success){hideModal('stockModal');loadInventory();}else alert(r.error);});}
 function toggleProduct(id){fetch(`/api/products/${id}/toggle-status`,{method:'POST'}).then(r=>r.json()).then(r=>{if(r.success)loadInventory();});}

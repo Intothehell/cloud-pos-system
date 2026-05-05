@@ -284,7 +284,6 @@ function viewBill(orderNumber){
         '<div style="border-top: 2px solid #1e293b; border-bottom: 2px solid #1e293b; padding: 10px 0; margin: 10px 0; font-size: 13px;">'+
         '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Subtotal</span><span>Rs.'+(order.subtotal||0).toFixed(2)+'</span></p>'+
         '<p style="display: flex; justify-content: space-between; color: #ef4444; margin: 3px 0;"><span>Discount</span><span>-Rs.'+(order.discount||0).toFixed(2)+'</span></p>'+
-        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Delivery</span><span>Rs.'+(order.delivery||0).toFixed(2)+'</span></p>'+
         '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b;"><span>TOTAL</span><span>Rs.'+(order.total||0).toFixed(2)+'</span></p></div>'+
         '<p><strong>Payment:</strong> '+(order.payment_method||'').toUpperCase()+'</p>'+
         '<p><strong>Status:</strong> '+(order.payment_status||'').toUpperCase()+'</p>'+

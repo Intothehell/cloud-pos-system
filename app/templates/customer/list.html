@@ -88,6 +88,11 @@
                 <button onclick="viewCustomer({{ customer.id }})" class="flex-1 px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
                 <button onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})" class="flex-1 px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100">Pay</button>
                 {% if current_user.role in ['owner','manager'] %}
+                <button onclick="editCustomer({{ customer.id }})" class="px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg hover:bg-amber-100">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                </button>
+                {% endif %}
+                {% if current_user.role in ['owner','manager'] %}
                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
@@ -111,7 +116,6 @@
                         <th class="px-4 py-3 text-left font-medium">NIC</th>
                         <th class="px-4 py-3 text-left font-medium">Type</th>
                         <th class="px-4 py-3 text-right font-medium">Balance</th>
-                        <th class="px-4 py-3 text-right font-medium">Limit</th>
                         <th class="px-4 py-3 text-center font-medium">Actions</th>
                     </tr>
                 </thead>
@@ -127,11 +131,15 @@
                             </span>
                         </td>
                         <td class="px-4 py-3 text-right font-bold {{ 'text-red-600' if customer.balance > 0 else 'text-slate-700' }}">Rs.{{ "%.2f"|format(customer.balance) }}</td>
-                        <td class="px-4 py-3 text-right text-slate-500">Rs.{{ "%.0f"|format(customer.credit_limit) }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-center gap-1.5">
                                 <button onclick="viewCustomer({{ customer.id }})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">View</button>
                                 <button onclick="showPayment({{ customer.id }}, '{{ customer.name }}', {{ customer.balance }})" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100">Pay</button>
+                                {% if current_user.role in ['owner','manager'] %}
+                                <button onclick="editCustomer({{ customer.id }})" class="px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg hover:bg-amber-100">
+                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                </button>
+                                {% endif %}
                                 {% if current_user.role in ['owner','manager'] %}
                                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -141,7 +149,7 @@
                         </td>
                     </tr>
                     {% else %}
-                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No customers found</td></tr>
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No customers found</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -189,14 +197,57 @@
                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Address</label>
                     <textarea name="address" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" rows="2"></textarea>
                 </div>
-                <div>
-                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Credit Limit (Rs)</label>
-                    <input type="number" name="credit_limit" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" value="5000">
-                </div>
             </div>
             <div class="flex gap-2 mt-3 sm:mt-4">
                 <button type="button" onclick="closeAddCustomer()" class="flex-1 bg-slate-200 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm hover:bg-slate-300">Cancel</button>
                 <button type="submit" class="flex-1 gradient-indigo text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm hover:opacity-90">Save Customer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div id="editCustomerModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto p-4 sm:p-6">
+        <h3 class="text-lg sm:text-xl font-bold mb-3 sm:mb-4 flex items-center gap-2">
+            <svg class="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            Edit Customer
+        </h3>
+        <form id="editCustomerForm" method="POST">
+            <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                <div class="col-span-2">
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Full Name *</label>
+                    <input type="text" name="name" id="editName" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Phone *</label>
+                    <input type="text" name="phone" id="editPhone" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
+                    <input type="email" name="email" id="editEmail" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm">
+                </div>
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">NIC *</label>
+                    <input type="text" name="nic" id="editNic" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" required>
+                </div>
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
+                    <select name="customer_type" id="editType" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm">
+                        <option value="retail">Retail</option>
+                        <option value="wholesale">Wholesale (Credit)</option>
+                    </select>
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Address</label>
+                    <textarea name="address" id="editAddress" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="flex gap-2 mt-3 sm:mt-4">
+                <button type="button" onclick="closeEditCustomer()" class="flex-1 bg-slate-200 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">Cancel</button>
+                <button type="submit" class="flex-1 gradient-amber text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">Update</button>
             </div>
         </form>
     </div>
@@ -309,7 +360,7 @@ function viewCustomer(id){
         '<p class="text-sm"><strong>Type:</strong> <span class="px-2 py-0.5 rounded-full text-xs '+(c.customer_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+c.customer_type+'</span></p></div>'+
         '<div class="bg-slate-50 rounded-xl p-4"><h5 class="font-semibold text-sm mb-2">Credit Summary</h5>'+
         '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">Rs.'+c.balance.toFixed(2)+'</strong></p>'+
-        '<p class="text-sm">Credit Limit: Rs.'+c.credit_limit.toFixed(2)+'</p>'+
+        
         '<p class="text-sm">Total Purchases: Rs.'+c.total_purchases.toFixed(2)+'</p>'+
         '<p class="text-sm">Total Paid: Rs.'+c.total_paid.toFixed(2)+'</p></div></div>'+
         '<div class="mb-4"><h5 class="font-semibold text-sm mb-2">Payment History</h5><table class="w-full text-xs"><thead><tr class="bg-slate-100"><th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-right">Amount</th><th class="px-3 py-2 text-left">Method</th></tr></thead><tbody>'+
@@ -318,6 +369,21 @@ function viewCustomer(id){
         (c.recent_orders.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No orders</td></tr>':c.recent_orders.map(o=>'<tr><td class="px-3 py-2">'+o.order_number+'</td><td class="px-3 py-2 text-right font-medium">Rs.'+o.total.toFixed(2)+'</td><td class="px-3 py-2">'+o.payment_status+'</td></tr>').join(''))+
         '</tbody></table></div>';
         showModal('viewCustomerModal');
+    });
+}
+
+function closeEditCustomer(){hideModal('editCustomerModal');}
+
+function editCustomer(id){
+    fetch('/api/customers/'+id+'/details').then(r=>r.json()).then(c=>{
+        document.getElementById('editCustomerForm').action='/customer/edit/'+id;
+        document.getElementById('editName').value=c.name;
+        document.getElementById('editPhone').value=c.phone;
+        document.getElementById('editEmail').value=c.email||'';
+        document.getElementById('editNic').value=c.nic||'';
+        document.getElementById('editType').value=c.customer_type;
+        document.getElementById('editAddress').value=c.address||'';
+        showModal('editCustomerModal');
     });
 }
 </script>

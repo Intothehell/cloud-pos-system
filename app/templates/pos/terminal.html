@@ -142,7 +142,7 @@
             </div>
 
             <!-- Product Grid -->
-            <div id="productGrid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5" style="max-height: 420px; overflow-y: auto;">
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" style="max-height: 420px; overflow-y: auto;">
                 <div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">
                     <svg class="w-12 h-12 mx-auto mb-3 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -208,11 +208,7 @@
                                    class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
                         </div>
                         <div class="flex justify-between text-red-500"><span>Discount</span><span>-Rs.<span id="discountAmount">0.00</span></span></div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-slate-500">Delivery (Rs.)</span>
-                            <input type="number" id="deliveryCharge" value="0" min="0" step="0.01" onchange="updateCartDisplay()"
-                                   class="w-24 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
-                        </div>
+
                         <div class="flex justify-between font-bold text-lg border-t-2 border-slate-200 pt-3">
                             <span>TOTAL</span><span class="text-indigo-600">Rs.<span id="total">0.00</span></span>
                         </div>
@@ -223,6 +219,19 @@
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Price Input Modal -->
+<div id="priceModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-xs p-6 animate-in text-center">
+        <h3 class="text-lg font-bold text-slate-800 mb-1" id="priceProductName"></h3>
+        <p class="text-xs text-slate-400 mb-4">Enter selling price</p>
+        <input type="number" id="manualPrice" class="w-full text-center text-2xl border-2 border-indigo-200 rounded-2xl p-4 mb-3 focus:border-indigo-500 focus:outline-none" placeholder="Rs. 0.00" step="0.01">
+        <div class="flex gap-2">
+            <button onclick="hideModal('priceModal')" class="flex-1 bg-slate-200 py-3 rounded-xl font-medium">Cancel</button>
+            <button onclick="confirmManualPrice()" class="flex-1 card-indigo text-white py-3 rounded-xl font-bold">Add</button>
         </div>
     </div>
 </div>
@@ -248,7 +257,6 @@
             <div class="space-y-1.5 text-sm">
                 <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-medium">Rs.<span id="revSubtotal">0.00</span></span></div>
                 <div class="flex justify-between text-red-500"><span>Discount</span><span>-Rs.<span id="revDiscount">0.00</span></span></div>
-                <div class="flex justify-between"><span class="text-slate-500">Delivery</span><span class="font-medium">Rs.<span id="revDelivery">0.00</span></span></div>
                 <div class="flex justify-between font-bold text-lg border-t border-slate-300 pt-2 mt-2">
                     <span>TOTAL</span><span class="text-indigo-600">Rs.<span id="revTotal">0.00</span></span>
                 </div>
@@ -317,8 +325,6 @@
             <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Phone*">
             <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="NIC Number*">
             <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Address" rows="2"></textarea>
-            <label class="text-sm text-slate-500">Credit Limit (Rs)</label>
-            <input type="number" id="wcCreditLimit" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" value="5000">
         </div>
         <div class="flex gap-2 mt-3">
             <button onclick="hideModal('addCustomerModal')" class="flex-1 bg-slate-200 py-3 rounded-xl">Cancel</button>
@@ -354,7 +360,7 @@ document.getElementById('barcodeInput').addEventListener('keydown',function(e){
     if(e.key==='Enter'){e.preventDefault();var b=this.value.trim();if(b){fetch('/api/product/barcode/'+encodeURIComponent(b)).then(r=>r.json()).then(p=>{if(p.id){if(p.stock_quantity<=0){alert('Out of stock!');return;}addToCart(p,1);addToRecent(p);}else alert('Not found: '+b);});this.value='';}}
 });
 
-function addToRecent(p){recentProducts=recentProducts.filter(x=>x.id!==p.id);recentProducts.unshift({id:p.id,name:p.name,price:p.price||p.retail_price,stock:p.stock_quantity});if(recentProducts.length>8)recentProducts.pop();document.getElementById('recentSection').classList.toggle('hidden',recentProducts.length===0);document.getElementById('recentItemsList').innerHTML=recentProducts.map(x=>'<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200">'+x.name.substring(0,14)+'</span>').join('');}
+function addToRecent(p){recentProducts=recentProducts.filter(x=>x.id!==p.id);recentProducts.unshift({id:p.id,name:p.name,price:p.price||p.wholesale_price,stock:p.stock_quantity});if(recentProducts.length>8)recentProducts.pop();document.getElementById('recentSection').classList.toggle('hidden',recentProducts.length===0);document.getElementById('recentItemsList').innerHTML=recentProducts.map(x=>'<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200">'+x.name.substring(0,14)+'</span>').join('');}
 
 function searchProducts(){var q=document.getElementById('searchInput').value;if(!q){displayProducts(allProducts);return;}fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts);}
 function filterCategory(cat){displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));}
@@ -363,12 +369,36 @@ function displayProducts(products){
     var g=document.getElementById('productGrid');
     if(!products.length){g.innerHTML='<div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">No products</div>';return;}
     g.innerHTML=products.map(p=>{
-        var price=customerType==='wholesale'?p.wholesale_price:p.retail_price;
         var out=(p.stock_quantity||0)<=0,low=!out&&(p.stock_quantity||0)<=5;
         var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300';
-        var click=out?'':'onclick="addToCart({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock_quantity:'+(p.stock_quantity||0)+'},1);addToRecent({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',price:'+price+',stock:'+(p.stock_quantity||0)+'})"';
-        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'><p class="font-semibold text-sm truncate">'+(p.name||'').substring(0,18)+'</p><p class="text-emerald-600 font-bold text-lg">Rs.'+price.toFixed(2)+'</p><p class="text-xs '+(out?'text-red-600':low?'text-amber-600':'text-slate-400')+'">'+(out?'OUT':low?'Only '+p.stock_quantity:'Stock:'+p.stock_quantity)+'</p></div>';
+        var click=out?'':'onclick="handleProductClick({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',wholesale_price:'+p.wholesale_price+',stock_quantity:'+(p.stock_quantity||0)+'})"';
+        return '<div class="product-card border-2 rounded-2xl p-5 text-center '+bg+'" '+click+'><p class="font-semibold text-sm truncate">'+(p.name||'').substring(0,18)+'</p><p class="text-xs '+(out?'text-red-600':low?'text-amber-600':'text-slate-400')+'">'+(out?'OUT':low?'Only '+p.stock_quantity:'Stock:'+p.stock_quantity)+'</p></div>';
     }).join('');
+}
+
+var pendingProduct = null;
+
+function handleProductClick(p){
+    if(customerType==='wholesale'){
+        addToCart({id:p.id, name:p.name, price:p.wholesale_price, stock_quantity:p.stock_quantity}, 1);
+        addToRecent({id:p.id, name:p.name, price:p.wholesale_price, stock:p.stock_quantity});
+    }else{
+        pendingProduct = p;
+        document.getElementById('priceProductName').textContent = p.name;
+        document.getElementById('manualPrice').value = '';
+        document.getElementById('manualPrice').focus();
+        showModal('priceModal');
+    }
+}
+
+function confirmManualPrice(){
+    var price = parseFloat(document.getElementById('manualPrice').value);
+    if(price && price > 0 && pendingProduct){
+        addToCart({id:pendingProduct.id, name:pendingProduct.name, price:price, stock_quantity:pendingProduct.stock_quantity}, 1);
+        addToRecent({id:pendingProduct.id, name:pendingProduct.name, price:price, stock:pendingProduct.stock_quantity});
+        hideModal('priceModal');
+        pendingProduct = null;
+    }
 }
 
 function addToCart(p,qty){if(!p.stock_quantity||p.stock_quantity<=0){alert('Out of stock!');return;}var ex=cart.find(i=>i.id===p.id);if(ex){if(ex.quantity+qty>p.stock_quantity){alert('Only '+p.stock_quantity+' left!');return;}ex.quantity+=qty;}else cart.push({id:p.id,name:p.name,price:p.price||0,quantity:qty,max:p.stock_quantity||0});updateCartDisplay();}
@@ -384,7 +414,7 @@ function updateCartDisplay(){
     }else{
         d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
     }
-    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100),dc=parseFloat(document.getElementById('deliveryCharge').value)||0;
+    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100);
     document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da+dc).toFixed(2);
 }
 
@@ -423,7 +453,7 @@ function processCreditPayment(){if(!currentWholesaleCustomer){alert('Select cust
 
 function processSale(method,cash){
     var info=getInfo();
-    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,delivery_charge:document.getElementById('deliveryCharge').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
+    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,delivery_charge:document.getElementById('deliveryCharge').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
     .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
 function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','deliveryCharge','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
@@ -454,7 +484,6 @@ function showInvoice(order,info){
         '<div style="border-top: 2px solid #1e293b; border-bottom: 2px solid #1e293b; padding: 10px 0; margin: 10px 0; font-size: 13px;">' +
         '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Subtotal</span><span>Rs.'+order.subtotal.toFixed(2)+'</span></p>' +
         '<p style="display: flex; justify-content: space-between; color: #ef4444; margin: 3px 0;"><span>Discount</span><span>-Rs.'+order.discount.toFixed(2)+'</span></p>' +
-        '<p style="display: flex; justify-content: space-between; margin: 3px 0;"><span>Delivery</span><span>Rs.'+order.delivery.toFixed(2)+'</span></p>' +
         '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #1e293b;"><span>TOTAL</span><span>Rs.'+order.total.toFixed(2)+'</span></p>' +
         '</div>' +
         '<p><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>' +

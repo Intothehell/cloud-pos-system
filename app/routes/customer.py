@@ -53,13 +53,52 @@ def add_customer():
         address=request.form.get('address', '').strip(),
         nic=nic,
         customer_type=request.form.get('customer_type', 'retail'),
-        credit_limit=float(request.form.get('credit_limit', 5000))
     )
     db.session.add(customer)
     db.session.commit()
     flash(f'Customer {customer.name} added successfully!', 'success')
     return redirect(url_for('customer.list_customers'))
 
+@customer_bp.route('/edit/<int:customer_id>', methods=['POST'])
+@login_required
+def edit_customer(customer_id):
+    """Edit customer details"""
+    if current_user.role not in ['owner', 'manager']:
+        flash('You do not have permission to edit customers.', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    customer = Customer.query.get_or_404(customer_id)
+    
+    name = request.form.get('name', '').strip()
+    phone = request.form.get('phone', '').strip()
+    nic = request.form.get('nic', '').strip()
+    
+    if not name or not phone or not nic:
+        flash('Name, phone and NIC are required!', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    # Check phone uniqueness (exclude current customer)
+    dup_phone = Customer.query.filter(Customer.phone == phone, Customer.id != customer_id).first()
+    if dup_phone:
+        flash(f'Phone {phone} already used by {dup_phone.name}', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    # Check NIC uniqueness
+    dup_nic = Customer.query.filter(Customer.nic == nic, Customer.id != customer_id).first()
+    if dup_nic:
+        flash(f'NIC {nic} already used by {dup_nic.name}', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    customer.name = name
+    customer.phone = phone
+    customer.nic = nic
+    customer.email = request.form.get('email', '').strip()
+    customer.address = request.form.get('address', '').strip()
+    customer.customer_type = request.form.get('customer_type', 'retail')
+    
+    db.session.commit()
+    flash(f'Customer {customer.name} updated!', 'success')
+    return redirect(url_for('customer.list_customers'))
 
 @customer_bp.route('/delete/<int:customer_id>', methods=['POST'])
 @login_required
@@ -104,7 +143,6 @@ def search_customers_api():
         'nic': c.nic,
         'type': c.customer_type,
         'balance': c.balance,
-        'credit_limit': c.credit_limit
     } for c in customers])
 
 @customer_bp.route('/record-payment/<int:customer_id>', methods=['POST'])

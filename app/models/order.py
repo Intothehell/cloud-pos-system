@@ -21,7 +21,6 @@ class Order(db.Model):
     subtotal = db.Column(db.Float, default=0.0)
     tax_amount = db.Column(db.Float, default=0.0)
     discount_amount = db.Column(db.Float, default=0.0)
-    delivery_charge = db.Column(db.Float, default=0.0)
     total = db.Column(db.Float, default=0.0)
     
     # Payment
@@ -55,7 +54,7 @@ class Order(db.Model):
         self.subtotal = sum(item.line_total for item in self.items)
         self.discount_amount = sum(item.discount_amount for item in self.items)
         self.tax_amount = 0  # No tax
-        self.total = self.subtotal - self.discount_amount + (self.delivery_charge or 0)
+        self.total = self.subtotal - self.discount_amount
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
