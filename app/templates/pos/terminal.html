@@ -372,7 +372,7 @@ function displayProducts(products){
         var out=(p.stock_quantity||0)<=0,low=!out&&(p.stock_quantity||0)<=5;
         var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300';
         var click=out?'':'onclick="handleProductClick({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',wholesale_price:'+p.wholesale_price+',stock_quantity:'+(p.stock_quantity||0)+'})"';
-        return '<div class="product-card border-2 rounded-2xl p-5 text-center '+bg+'" '+click+'><p class="font-semibold text-sm truncate">'+(p.name||'').substring(0,18)+'</p><p class="text-xs '+(out?'text-red-600':low?'text-amber-600':'text-slate-400')+'">'+(out?'OUT':low?'Only '+p.stock_quantity:'Stock:'+p.stock_quantity)+'</p></div>';
+        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'><p class="font-semibold text-xs leading-tight px-1">'+(p.name||'').substring(0,48)+'</p></div>';
     }).join('');
 }
 
