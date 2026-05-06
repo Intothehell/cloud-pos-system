@@ -209,7 +209,6 @@ def record_payment(customer_id):
         subtotal=amount,
         total=amount,
         discount_amount=0,
-        delivery_charge=0,
         payment_method=payment_method,
         payment_status='completed',
         status='completed',
