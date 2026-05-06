@@ -1,0 +1,80 @@
+from app import create_app, db
+from app.models.customer import Customer
+
+app = create_app()
+
+customers = [
+    ("CM Marketing", "933460207V", "876387387", 416750.00),
+    ("Dewmitha - Ranga", "882650618V", "781947581", 0.00),
+    ("Sumathi Aiya", "0", "1000", 52000.00),
+    ("Sineth", "1", "1001", 43300.00),
+    ("Wajira", "2", "1002", 27500.00),
+    ("Avinash", "3", "1003", 64500.00),
+    ("Asanka - Unique Marketing", "4", "1004", 131600.00),
+    ("HDS - Sampath", "5", "1005", 52500.00),
+    ("Oldin", "6", "1006", 318090.00),
+    ("Supun Malinda", "7", "1007", 50750.00),
+    ("Sahan - SMJ", "8", "1008", 0.00),
+    ("Sanju", "9", "1009", 0.00),
+    ("Sanjaya", "10", "1010", 153250.00),
+    ("Dharshana - බෙනා", "11", "1011", 122000.00),
+    ("Gagana", "12", "1012", 0.00),
+    ("Asela", "13", "1013", 77750.00),
+    ("Thisara", "14", "1014", 45500.00),
+    ("HD Marketing", "15", "1015", 45500.00),
+    ("Thilina", "16", "1016", 40500.00),
+    ("Priyanka", "17", "1017", 0.00),
+    ("Ajith", "18", "1018", 133500.00),
+    ("Gaja", "19", "1019", 24750.00),
+    ("Duminda", "20", "1020", 20000.00),
+    ("Tharindu - Grand Marketing", "21", "1021", 53000.00),
+    ("Dharshana Welikanna", "22", "1022", 25000.00),
+    ("Perera Home Styles", "23", "1023", 0.00),
+    ("Hashan", "24", "1024", 0.00),
+    ("Moda Tharindu", "25", "1025", 23000.00),
+    ("Pasindu", "26", "1026", 27500.00),
+    ("Loku Bula", "27", "1027", 0.00),
+    ("New Lanka", "28", "1028", 64500.00),
+    ("PNP", "29", "1029", 0.00),
+    ("Lasantha Aiya", "30", "1030", 22500.00),
+    ("Yuwanya", "31", "1031", 0.00),
+    ("Samadhi", "32", "1032", 0.00),
+    ("Dilshan Malli", "33", "1033", 0.00),
+    ("RR", "34", "1034", 0.00),
+    ("Malhara", "35", "1035", 50000.00),
+    ("Suduwa", "36", "1036", 41500.00),
+    ("Rupasinghe", "37", "1037", 56800.00),
+    ("Vishwani", "38", "1038", 25750.00),
+    ("Isuru", "39", "1039", 0.00),
+    ("Eranga", "40", "1040", 0.00),
+    ("Heshan", "41", "1041", 0.00),
+    ("Aruna", "42", "1042", 0.00),
+    ("Jani Online", "43", "1043", 0.00),
+    ("NHK", "44", "1044", 0.00),
+    ("Dilan", "45", "1045", 0.00),
+    ("Harsha", "46", "1046", 0.00),
+    ("Kukkuwa", "47", "1047", 0.00),
+    ("Waruna", "48", "1048", 0.00),
+    ("Sanjeewa Sandamina", "49", "1049", 0.00),
+    ("Milinda", "50", "1050", 0.00),
+    ("Dilshan Jayasanka", "992750553V", "1051", 37500.00),
+]
+
+with app.app_context():
+    for name, nic, phone, balance in customers:
+        if Customer.query.filter_by(phone=phone).first():
+            print(f"SKIP: {name} (phone {phone} exists)")
+            continue
+        c = Customer(
+            name=name,
+            phone=phone,
+            nic=nic,
+            customer_type='wholesale',
+            balance=balance,
+            total_purchases=balance
+        )
+        db.session.add(c)
+        print(f"ADDED: {name} | Bal: Rs.{balance:,.2f}")
+    
+    db.session.commit()
+    print("\nDone!")

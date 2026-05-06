@@ -415,7 +415,7 @@ function updateCartDisplay(){
         d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
     }
     var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100);
-    document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da+dc).toFixed(2);
+    document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da).toFixed(2);
 }
 
 // REVIEW ORDER
@@ -428,11 +428,10 @@ function reviewOrder(){
     var html='',sub=0;
     cart.forEach(function(item){var t=item.price*item.quantity;sub+=t;html+='<div class="flex justify-between py-2 border-b"><div><p class="font-medium text-sm">'+item.name+'</p><p class="text-xs">'+item.quantity+' x Rs.'+item.price.toFixed(2)+'</p></div><span class="font-bold">Rs.'+t.toFixed(2)+'</span></div>';});
     document.getElementById('reviewItems').innerHTML=html;
-    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100),dc=parseFloat(document.getElementById('deliveryCharge').value)||0;
+    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100);
     document.getElementById('revSubtotal').textContent=sub.toFixed(2);
     document.getElementById('revDiscount').textContent=da.toFixed(2);
-    document.getElementById('revDelivery').textContent=dc.toFixed(2);
-    document.getElementById('revTotal').textContent=(sub-da+dc).toFixed(2);
+    document.getElementById('revTotal').textContent=(sub-da).toFixed(2);
     document.getElementById('revRetailBtns').classList.toggle('hidden',customerType!=='retail');
     document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
     showModal('reviewModal');
@@ -453,10 +452,10 @@ function processCreditPayment(){if(!currentWholesaleCustomer){alert('Select cust
 
 function processSale(method,cash){
     var info=getInfo();
-    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,delivery_charge:document.getElementById('deliveryCharge').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
+    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
     .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
-function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','deliveryCharge','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
+function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
 
 function showInvoice(order,info){
     var itemsHtml = order.items.map(function(i){
@@ -511,7 +510,7 @@ function printInvoice(){
 }
 
 function showAddCustomerForm(){showModal('addCustomerModal');}
-function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,credit_limit:document.getElementById('wcCreditLimit').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
 function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl">'+c+'</button>');});}
 
 init();

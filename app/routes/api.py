@@ -6,6 +6,7 @@ from app.models.order import Order, OrderItem
 from app.models.customer import Customer, Payment
 from app.models.user import User
 from datetime import datetime
+from app.models.order import Order, OrderItem, Return, ReturnItem
 
 api_bp = Blueprint('api', __name__)
 
@@ -272,7 +273,6 @@ def create_order():
                 'total': order.total,
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
-                'delivery': order.delivery_charge,
                 'change': order.change_given,
                 'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
@@ -414,7 +414,6 @@ def search_customers():
         'address': c.address,
         'type': c.customer_type,
         'balance': c.balance,
-        'credit_limit': c.credit_limit
     } for c in customers])
 
 @api_bp.route('/customers/add', methods=['POST'])
@@ -619,19 +618,33 @@ def return_order(order_number):
                 )
                 db.session.add(movement)
     
-    # Handle refund
+        # Handle refund
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
-        # Restore stock for refund
-        for item in order.items:
-            product = Product.query.get(item.product_id)
-            if product:
-                product.stock_quantity += item.quantity
+        selected_items = data.get('items', [])
+        
+        # Calculate discount proportion
+        discount_ratio = 1.0
+        if order.subtotal > 0:
+            discount_ratio = 1.0 - (order.discount_amount / order.subtotal)
+        
+        reason_type = data.get('reason_type', 'no_damage')
+
+        for item_data in selected_items:
+            price = float(item_data.get('price', 0))
+            qty = int(item_data.get('quantity', 1))
+            refund_per_item = price * qty * discount_ratio
+            
+            # Only restore stock for non-damaged returns
+            if reason_type != 'damaged':
+                product = Product.query.get(item_data.get('product_id'))
+                if product:
+                    product.stock_quantity += qty
                 movement = StockMovement(
                     product_id=product.id,
                     user_id=current_user.id,
                     movement_type='return',
-                    quantity=item.quantity,
-                    previous_stock=product.stock_quantity - item.quantity,
+                    quantity=qty,
+                    previous_stock=product.stock_quantity - qty,
                     new_stock=product.stock_quantity,
                     reference=f'RTN-{ret.return_number}'
                 )
@@ -654,7 +667,7 @@ def return_order(order_number):
         'return_number': ret.return_number,
         'message': f'Return processed: {ret.return_number}'
     })
-
+ 
 @api_bp.route('/returns/all')
 @login_required
 def get_all_returns():

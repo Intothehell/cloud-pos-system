@@ -96,7 +96,28 @@
     </div>
 </div>
 
+<!-- Confirm Return Modal -->
+<div id="confirmReturnModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center">
+        <div class="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <svg class="w-7 h-7 text-rose-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 14 4 9 9 4"></polyline>
+                <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+            </svg>
+        </div>
+        <h3 class="text-lg font-bold text-slate-800 mb-1">Confirm Return</h3>
+        <p class="text-sm text-slate-500 mb-4" id="confirmReturnMsg"></p>
+        <div class="flex gap-2">
+            <button onclick="hideModal('confirmReturnModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium text-sm">Cancel</button>
+            <button id="confirmReturnBtn" class="flex-1 gradient-rose text-white py-2.5 rounded-xl font-medium text-sm">Confirm</button>
+        </div>
+    </div>
+</div>
+
 <script>
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
+
 function searchOrder() {
     var orderNum = document.getElementById('returnSearch').value.trim();
     if (!orderNum) return;
@@ -130,13 +151,29 @@ function searchOrder() {
                         '<p class="text-sm"><strong>Status:</strong> <span class="px-2 py-0.5 rounded-full text-xs ' + (order.payment_status === 'completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800') + '">' + order.payment_status + '</span></p>' +
                     '</div>' +
                 '</div>' +
-                
                 '<div class="border-t border-slate-200 pt-4">' +
                 '<h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">' +
                     '<svg class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>' +
-                    'Process Return' +
+                    'Select Items to Return' +
                 '</h4>' +
-                
+
+                '<div class="mb-4 space-y-2">' +
+                    '<div class="flex items-center gap-2 mb-2">' +
+                        '<input type="checkbox" id="selectAllItems" onchange="toggleAllItems(this)" checked class="w-4 h-4">' +
+                        '<label for="selectAllItems" class="text-sm font-medium text-slate-600">Select All</label>' +
+                    '</div>' +
+                    order.items.map(function(item, idx) {
+                        return '<div class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200">' +
+                            '<input type="checkbox" class="return-item-check w-4 h-4" data-idx="' + idx + '" data-product-id="' + item.product_id + '" data-price="' + item.price + '" data-qty="' + item.quantity + '" checked onchange="updateRefundAmount()">' +
+                            '<div class="flex-1">' +
+                                '<p class="font-medium text-sm">' + item.name + '</p>' +
+                                '<p class="text-xs text-slate-400">Rs.' + item.price.toFixed(2) + ' x <input type="number" class="return-qty w-14 text-center border rounded px-1 py-0.5 text-xs" value="' + item.quantity + '" min="1" max="' + item.quantity + '" data-idx="' + idx + '" onchange="updateRefundAmount()"> (Max: ' + item.quantity + ')</p>' +
+                            '</div>' +
+                            '<span class="font-semibold text-sm">Rs.' + item.total.toFixed(2) + '</span>' +
+                        '</div>';
+                    }).join('') +
+                '</div>' +
+
                 '<div class="grid grid-cols-2 gap-4 mb-3">' +
                     '<div>' +
                         '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Return Type</label>' +
@@ -148,7 +185,7 @@ function searchOrder() {
                     '</div>' +
                     '<div id="refundAmountDiv">' +
                         '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Refund Amount</label>' +
-                        '<input type="number" id="refundAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-red-400 focus:outline-none" value="' + order.total + '" step="0.01">' +
+                        '<input type="number" id="refundAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-red-400 focus:outline-none" value="' + order.total + '" step="0.01" readonly>' +
                     '</div>' +
                     '<div id="replacementDiv" class="hidden">' +
                         '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Replacement Product</label>' +
@@ -158,12 +195,16 @@ function searchOrder() {
                         '<input type="number" id="replacementQty" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80" value="1" min="1">' +
                     '</div>' +
                 '</div>' +
-                
+
                 '<div class="mb-3">' +
-                    '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Reason for Return</label>' +
+                    '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Return Reason</label>' +
+                    '<select id="returnReasonType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-red-400 focus:outline-none mb-2">' +
+                        '<option value="no_damage">Return (No Damage)</option>' +
+                        '<option value="damaged">Damaged Item</option>' +
+                    '</select>' +
                     '<textarea id="returnReason" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-red-400 focus:outline-none" rows="2" placeholder="Enter reason..."></textarea>' +
                 '</div>' +
-                
+
                 '<div class="mb-4" id="refundMethodDiv">' +
                     '<label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Refund Method</label>' +
                     '<select id="refundMethod" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-red-400 focus:outline-none">' +
@@ -172,15 +213,15 @@ function searchOrder() {
                         '<option value="credit_note">Credit Note</option>' +
                     '</select>' +
                 '</div>' +
-                
+
                 '<button onclick="processReturn(\'' + order.order_number + '\')" class="w-full gradient-rose text-white py-3 rounded-xl font-bold hover:opacity-90 transition text-lg shadow-lg flex items-center justify-center gap-2">' +
                     '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>' +
-                    'Process' +
+                    'Process Return' +
                 '</button>' +
                 '</div>';
         });
 }
-
+ 
 function toggleReturnType() {
     var type = document.getElementById('returnType').value;
     document.getElementById('refundAmountDiv').classList.toggle('hidden', type === 'replacement');
@@ -203,6 +244,27 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
+function toggleAllItems(el) {
+    var checks = document.querySelectorAll('.return-item-check');
+    checks.forEach(function(c) { c.checked = el.checked; });
+    updateRefundAmount();
+}
+
+function updateRefundAmount() {
+    var total = 0;
+    var checks = document.querySelectorAll('.return-item-check');
+    checks.forEach(function(c) {
+        if (c.checked) {
+            var idx = c.dataset.idx;
+            var qtyInput = document.querySelector('.return-qty[data-idx="' + idx + '"]');
+            var qty = parseInt(qtyInput.value) || 0;
+            var price = parseFloat(c.dataset.price);
+            total += price * qty;
+        }
+    });
+    document.getElementById('refundAmount').value = total.toFixed(2);
+}
+
 function processReturn(orderNumber) {
     var type = document.getElementById('returnType').value;
     var reason = document.getElementById('returnReason').value;
@@ -211,27 +273,51 @@ function processReturn(orderNumber) {
     
     if (!reason) { alert('Enter reason!'); return; }
     
-    var data = { return_type: type, reason: reason, refund_amount: amount, refund_method: method };
-    
-    if (type === 'replacement') {
-        data.replacement_product_id = document.getElementById('replacementProductId').value;
-        data.replacement_quantity = parseInt(document.getElementById('replacementQty').value) || 1;
-        data.refund_amount = 0;
-    }
-    
-    fetch('/api/orders/' + orderNumber + '/return', {
-        method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (result.success) {
-            alert(result.message);
-            document.getElementById('orderDetails').classList.add('hidden');
-            document.getElementById('returnSearch').value = '';
-            loadReturns();
-            if (type === 'refund' && method === 'cash') fetch('/api/open-drawer');
-        } else { alert('Error: ' + result.error); }
+    var selectedItems = [];
+    var checks = document.querySelectorAll('.return-item-check');
+    checks.forEach(function(c) {
+        if (c.checked) {
+            var idx = c.dataset.idx;
+            var qtyInput = document.querySelector('.return-qty[data-idx="' + idx + '"]');
+            var qty = parseInt(qtyInput.value) || 0;
+            var price = parseFloat(c.dataset.price);
+            if (qty > 0) {
+                selectedItems.push({ product_id: parseInt(c.dataset.productId), price: price, quantity: qty });
+            }
+        }
     });
+    
+    if (selectedItems.length === 0) { alert('Select at least one item!'); return; }
+    
+    document.getElementById('confirmReturnMsg').textContent = 'Refund Rs.' + amount.toFixed(2) + ' via ' + method.toUpperCase() + '?';
+    document.getElementById('confirmReturnBtn').onclick = function() {
+        hideModal('confirmReturnModal');
+        
+        var reasonType = document.getElementById('returnReasonType').value;
+        var data = { 
+            return_type: type, reason: reason, reason_type: reasonType,
+            refund_amount: amount, refund_method: method, items: selectedItems
+        };
+        if (type === 'replacement') {
+            data.replacement_product_id = document.getElementById('replacementProductId').value;
+            data.replacement_quantity = parseInt(document.getElementById('replacementQty').value) || 1;
+            data.refund_amount = 0;
+        }
+        
+        fetch('/api/orders/' + orderNumber + '/return', {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                document.getElementById('orderDetails').classList.add('hidden');
+                document.getElementById('returnSearch').value = '';
+                loadReturns();
+                if (type === 'refund' && method === 'cash') fetch('/api/open-drawer');
+            } else { alert('Error: ' + result.error); }
+        });
+    };
+    showModal('confirmReturnModal');
 }
 
 function loadReturns() {

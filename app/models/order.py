@@ -104,3 +104,13 @@ class Return(db.Model):
         date_str = datetime.now().strftime('%Y%m%d')
         count = Return.query.filter(Return.return_number.like(f'RTN-{date_str}%')).count()
         self.return_number = f'RTN-{date_str}-{count+1:04d}'
+
+class ReturnItem(db.Model):
+    __tablename__ = 'return_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    return_id = db.Column(db.Integer, db.ForeignKey('returns.id'))
+    product_name = db.Column(db.String(200))
+    product_price = db.Column(db.Float)
+    quantity = db.Column(db.Integer, default=1)
+    is_damaged = db.Column(db.Boolean, default=False)
