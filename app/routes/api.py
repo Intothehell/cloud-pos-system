@@ -196,7 +196,6 @@ def create_order():
             user_id=current_user.id,
             order_type=order_type,
             payment_method=data.get('payment_method', 'cash'),
-            notes=data.get('notes', ''),
             customer_name=data.get('customer_name', ''),
             customer_phone=data.get('customer_phone', ''),
             customer_address=data.get('customer_address', ''),
@@ -259,8 +258,10 @@ def create_order():
         elif data.get('payment_method') == 'credit' and order.customer_id:
             customer = Customer.query.get(order.customer_id)
             if customer:
+                order.previous_balance = customer.balance
                 customer.balance += order.total
                 customer.total_purchases += order.total
+                order.new_balance = customer.balance
                 order.payment_status = 'pending'
         
         db.session.add(order)
@@ -270,6 +271,8 @@ def create_order():
             'success': True,
             'order': {
                 'order_number': order.order_number,
+                'previous_balance': order.previous_balance or 0,
+                'new_balance': order.new_balance or 0,                
                 'total': order.total,
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
@@ -289,7 +292,7 @@ def create_order():
                 } for item in order.items]
             }
         })
-        
+                
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -371,6 +374,8 @@ def order_details(order_number):
         'customer_phone': order.customer_phone or '',
         'subtotal': order.subtotal,
         'discount': order.discount_amount,
+        'previous_balance': order.previous_balance or 0,
+        'new_balance': order.new_balance or 0,
         'total': order.total,
         'items': [{
             'name': item.product_name,

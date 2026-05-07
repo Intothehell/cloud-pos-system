@@ -31,13 +31,13 @@ class Order(db.Model):
     cash_received = db.Column(db.Float)
     change_given = db.Column(db.Float)
     
+        # Credit tracking
+    previous_balance = db.Column(db.Float, default=0.0)
+    new_balance = db.Column(db.Float, default=0.0)
+
     # Return flags
     is_returned = db.Column(db.Boolean, default=False)
     return_date = db.Column(db.DateTime)
-    
-    # Status
-    status = db.Column(db.String(20), default='completed')
-    notes = db.Column(db.Text)
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     
@@ -55,6 +55,7 @@ class Order(db.Model):
         self.discount_amount = sum(item.discount_amount for item in self.items)
         self.tax_amount = 0  # No tax
         self.total = self.subtotal - self.discount_amount
+ 
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'

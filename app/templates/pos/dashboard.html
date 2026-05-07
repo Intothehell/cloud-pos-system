@@ -242,11 +242,11 @@ function loadStats() {
     fetch('/api/dashboard/stats')
         .then(r => r.json())
         .then(stats => {
-            document.getElementById('todaySales').textContent = 'Rs.' + (stats.today_sales || 0).toFixed(2);
-            document.getElementById('creditDue').textContent = 'Rs.' + (stats.total_credit || 0).toFixed(2);
+            document.getElementById('todaySales').textContent = 'Rs.' + (stats.today_sales || 0).toLocaleString();
+            document.getElementById('creditDue').textContent = 'Rs.' + (stats.total_credit || 0).toLocaleString();
             document.getElementById('lowStock').textContent = stats.low_stock || 0;
-            document.getElementById('retailSales').textContent = 'Rs.' + (stats.retail_sales || 0).toFixed(2);
-            document.getElementById('wholesaleSales').textContent = 'Rs.' + (stats.wholesale_sales || 0).toFixed(2);
+            document.getElementById('retailSales').textContent = 'Rs.' + (stats.retail_sales || 0).toLocaleString();
+            document.getElementById('wholesaleSales').textContent = 'Rs.' + (stats.wholesale_sales || 0).toLocaleString();
             document.getElementById('transactionCount').textContent = stats.transaction_count || 0;
             document.getElementById('productsCount').textContent = stats.products_count || 0;
         });
