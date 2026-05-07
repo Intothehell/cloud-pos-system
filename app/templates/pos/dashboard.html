@@ -75,7 +75,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Total Users</p>
-                    <p class="text-4xl font-bold text-slate-800">{{ users_count }}</p>
+                    <p class="text-2xl font-bold text-slate-800">{{ users_count }}</p>
                 </div>
                 <div class="stat-icon bg-gradient-blue">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -92,7 +92,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Today Sales</p>
-                    <p class="text-4xl font-bold text-emerald-600" id="todaySales">$0</p>
+                    <p class="text-2xl font-bold text-emerald-600" id="todaySales">$0</p>
                 </div>
                 <div class="stat-icon bg-gradient-green">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,7 +109,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Credit Due</p>
-                    <p class="text-4xl font-bold text-orange-500" id="creditDue">$0</p>
+                    <p class="text-2xl font-bold text-orange-500" id="creditDue">$0</p>
                 </div>
                 <div class="stat-icon bg-gradient-orange">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -126,7 +126,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Low Stock</p>
-                    <p class="text-4xl font-bold text-rose-500" id="lowStock">0</p>
+                    <p class="text-2xl font-bold text-rose-500" id="lowStock">0</p>
                 </div>
                 <div class="stat-icon bg-gradient-red">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -219,11 +219,11 @@
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
                 <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Retail Sales</p>
-                <p class="text-2xl font-bold text-indigo-600" id="retailSales">$0</p>
+                <p class="text-2xl font-bold text-indigo-600" id="retailSales">Rs.0</p>
             </div>
             <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
                 <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Wholesale</p>
-                <p class="text-2xl font-bold text-amber-600" id="wholesaleSales">$0</p>
+                <p class="text-2xl font-bold text-amber-600" id="wholesaleSales">Rs.0</p>
             </div>
             <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
                 <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Transactions</p>
@@ -242,11 +242,11 @@ function loadStats() {
     fetch('/api/dashboard/stats')
         .then(r => r.json())
         .then(stats => {
-            document.getElementById('todaySales').textContent = '$' + (stats.today_sales || 0).toFixed(2);
-            document.getElementById('creditDue').textContent = '$' + (stats.total_credit || 0).toFixed(2);
+            document.getElementById('todaySales').textContent = 'Rs.' + (stats.today_sales || 0).toLocaleString();
+            document.getElementById('creditDue').textContent = 'Rs.' + (stats.total_credit || 0).toLocaleString();
             document.getElementById('lowStock').textContent = stats.low_stock || 0;
-            document.getElementById('retailSales').textContent = '$' + (stats.retail_sales || 0).toFixed(2);
-            document.getElementById('wholesaleSales').textContent = '$' + (stats.wholesale_sales || 0).toFixed(2);
+            document.getElementById('retailSales').textContent = 'Rs.' + (stats.retail_sales || 0).toLocaleString();
+            document.getElementById('wholesaleSales').textContent = 'Rs.' + (stats.wholesale_sales || 0).toLocaleString();
             document.getElementById('transactionCount').textContent = stats.transaction_count || 0;
             document.getElementById('productsCount').textContent = stats.products_count || 0;
         });

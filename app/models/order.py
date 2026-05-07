@@ -21,7 +21,6 @@ class Order(db.Model):
     subtotal = db.Column(db.Float, default=0.0)
     tax_amount = db.Column(db.Float, default=0.0)
     discount_amount = db.Column(db.Float, default=0.0)
-    delivery_charge = db.Column(db.Float, default=0.0)
     total = db.Column(db.Float, default=0.0)
     
     # Payment
@@ -32,13 +31,13 @@ class Order(db.Model):
     cash_received = db.Column(db.Float)
     change_given = db.Column(db.Float)
     
+        # Credit tracking
+    previous_balance = db.Column(db.Float, default=0.0)
+    new_balance = db.Column(db.Float, default=0.0)
+
     # Return flags
     is_returned = db.Column(db.Boolean, default=False)
     return_date = db.Column(db.DateTime)
-    
-    # Status
-    status = db.Column(db.String(20), default='completed')
-    notes = db.Column(db.Text)
     
     created_at = db.Column(db.DateTime, default=datetime.now)
     
@@ -55,7 +54,8 @@ class Order(db.Model):
         self.subtotal = sum(item.line_total for item in self.items)
         self.discount_amount = sum(item.discount_amount for item in self.items)
         self.tax_amount = 0  # No tax
-        self.total = self.subtotal - self.discount_amount + (self.delivery_charge or 0)
+        self.total = self.subtotal - self.discount_amount
+ 
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
@@ -105,3 +105,13 @@ class Return(db.Model):
         date_str = datetime.now().strftime('%Y%m%d')
         count = Return.query.filter(Return.return_number.like(f'RTN-{date_str}%')).count()
         self.return_number = f'RTN-{date_str}-{count+1:04d}'
+
+class ReturnItem(db.Model):
+    __tablename__ = 'return_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    return_id = db.Column(db.Integer, db.ForeignKey('returns.id'))
+    product_name = db.Column(db.String(200))
+    product_price = db.Column(db.Float)
+    quantity = db.Column(db.Integer, default=1)
+    is_damaged = db.Column(db.Boolean, default=False)

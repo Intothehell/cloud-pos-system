@@ -19,6 +19,7 @@
             margin: 0 auto; 
             padding: 15px;
             background: #fff;
+            line-height: 0.8;
         }
         .header { 
             text-align: center; 
@@ -99,7 +100,7 @@
 </head>
 <body>
     <div class="header">
-        <h3>EASY PAY</h3>
+        <h3><a href="{{ url_for('pos.terminal') }}" style="text-decoration: none; color: inherit;">EASY PAY</a></h3>
         <p>Meegoda, Homagama</p>
         <p>Tel: +(94)75 427 1371</p>
         <p>{{ order.created_at.strftime('%Y-%m-%d %I:%M %p') }}</p>
@@ -150,9 +151,7 @@
         {% if order.discount_amount and order.discount_amount > 0 %}
         <p>Discount: <span style="float: right; color: red;">-${{ "%.2f"|format(order.discount_amount) }}</span></p>
         {% endif %}
-        {% if order.delivery_charge and order.delivery_charge > 0 %}
-        <p>Delivery Charge: <span style="float: right;">${{ "%.2f"|format(order.delivery_charge) }}</span></p>
-        {% endif %}
+
         <p class="grand-total">TOTAL: <span style="float: right;">${{ "%.2f"|format(order.total) }}</span></p>
     </div>
     
@@ -182,9 +181,13 @@
         {% endif %}
         <p style="font-size: 10px;">Printed: {{ order.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
     </div>
-    
+
     <button class="btn-print no-print" onclick="window.print()">🖨️ PRINT BILL</button>
-    
+
+    <div style="text-align: center; margin-top: 15px;" class="no-print">
+        <a href="{{ url_for('pos.terminal') }}" style="display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 8px; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold;">🛒 New Sale</a>
+    </div>
+
     <script>
         window.onload = function() {
             setTimeout(function() {

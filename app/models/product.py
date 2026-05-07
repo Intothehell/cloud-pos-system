@@ -14,7 +14,6 @@ class Product(db.Model):
     # Pricing
     cost_price = db.Column(db.Float, default=0.0)  # What warehouse paid
     wholesale_price = db.Column(db.Float, default=0.0)  # Price for credit/bulk customers
-    retail_price = db.Column(db.Float, nullable=False)  # Price for walk-in customers
     
     # Inventory
     stock_quantity = db.Column(db.Integer, default=0)
@@ -38,7 +37,6 @@ class Product(db.Model):
             'name': self.name,
             'category': self.category,
             'wholesale_price': self.wholesale_price,
-            'retail_price': self.retail_price,
             'stock_quantity': self.stock_quantity,
             'sku': self.sku
         }

@@ -109,3 +109,4 @@ def api_all_returns():
             'customer': r.order.customer_name if r.order else 'N/A'
         } for r in returns]
     })
+

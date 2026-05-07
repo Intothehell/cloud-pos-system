@@ -6,6 +6,7 @@ from app.models.order import Order, OrderItem
 from app.models.customer import Customer, Payment
 from app.models.user import User
 from datetime import datetime
+from app.models.order import Order, OrderItem, Return, ReturnItem
 
 api_bp = Blueprint('api', __name__)
 
@@ -40,7 +41,7 @@ def search_products():
     result = []
     for p in products:
         data = p.to_dict()
-        data['price'] = p.wholesale_price if customer_type == 'wholesale' else p.retail_price
+        data['price'] = p.wholesale_price if customer_type == 'wholesale' else 0
         result.append(data)
     
     return jsonify(result)
@@ -59,7 +60,6 @@ def get_all_products():
         'sku': p.sku or '',
         'cost_price': p.cost_price,
         'wholesale_price': p.wholesale_price,
-        'retail_price': p.retail_price,
         'stock_quantity': p.stock_quantity,
         'min_stock_level': p.min_stock_level,
         'is_active': p.is_active
@@ -94,7 +94,6 @@ def add_product():
         sku=data.get('sku', ''),
         cost_price=float(data.get('cost_price', 0)),
         wholesale_price=float(data.get('wholesale_price', 0)),
-        retail_price=float(data.get('retail_price', 0)),
         stock_quantity=int(data.get('stock_quantity', 0)),
         min_stock_level=int(data.get('min_stock_level', 5)),
         added_by=current_user.id
@@ -129,7 +128,6 @@ def update_product(product_id):
     product.sku = data.get('sku', product.sku)
     product.cost_price = float(data.get('cost_price', product.cost_price))
     product.wholesale_price = float(data.get('wholesale_price', product.wholesale_price))
-    product.retail_price = float(data.get('retail_price', product.retail_price))
     product.min_stock_level = int(data.get('min_stock_level', product.min_stock_level))
     
     db.session.commit()
@@ -198,11 +196,9 @@ def create_order():
             user_id=current_user.id,
             order_type=order_type,
             payment_method=data.get('payment_method', 'cash'),
-            notes=data.get('notes', ''),
             customer_name=data.get('customer_name', ''),
             customer_phone=data.get('customer_phone', ''),
             customer_address=data.get('customer_address', ''),
-            delivery_charge=float(data.get('delivery_charge', 0)),
             sale_type=data.get('sale_type', 'retail')
         )
         order.generate_order_number()
@@ -221,7 +217,7 @@ def create_order():
             if product.stock_quantity < qty:
                 return jsonify({'error': f'Not enough stock for {product.name}'}), 400
             
-            price = product.wholesale_price if customer_type == 'wholesale' else product.retail_price
+            price = product.wholesale_price if customer_type == 'wholesale' else float(item_data.get('price', 0))
             
             order_item = OrderItem(
                 product_id=product.id,
@@ -251,7 +247,7 @@ def create_order():
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
         order.discount_amount = sum(item.discount_amount for item in order.items)
         order.tax_amount = 0
-        order.total = order.subtotal - order.discount_amount + order.delivery_charge
+        order.total = order.subtotal - order.discount_amount
         
         if data.get('payment_method') == 'cash':
             order.cash_received = float(data.get('cash_received', 0))
@@ -262,10 +258,10 @@ def create_order():
         elif data.get('payment_method') == 'credit' and order.customer_id:
             customer = Customer.query.get(order.customer_id)
             if customer:
-                if customer.balance + order.total > customer.credit_limit:
-                    return jsonify({'error': 'Credit limit exceeded!'}), 400
+                order.previous_balance = customer.balance
                 customer.balance += order.total
                 customer.total_purchases += order.total
+                order.new_balance = customer.balance
                 order.payment_status = 'pending'
         
         db.session.add(order)
@@ -275,10 +271,11 @@ def create_order():
             'success': True,
             'order': {
                 'order_number': order.order_number,
+                'previous_balance': order.previous_balance or 0,
+                'new_balance': order.new_balance or 0,                
                 'total': order.total,
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
-                'delivery': order.delivery_charge,
                 'change': order.change_given,
                 'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
@@ -286,6 +283,8 @@ def create_order():
                 'sale_type': order.sale_type,
                 'created_at': order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
                 'items': [{
+                    'id': item.id,
+                    'product_id': item.product_id,
                     'name': item.product_name,
                     'quantity': item.quantity,
                     'price': item.product_price,
@@ -293,7 +292,7 @@ def create_order():
                 } for item in order.items]
             }
         })
-        
+                
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -375,7 +374,8 @@ def order_details(order_number):
         'customer_phone': order.customer_phone or '',
         'subtotal': order.subtotal,
         'discount': order.discount_amount,
-        'delivery': order.delivery_charge or 0,
+        'previous_balance': order.previous_balance or 0,
+        'new_balance': order.new_balance or 0,
         'total': order.total,
         'items': [{
             'name': item.product_name,
@@ -419,7 +419,6 @@ def search_customers():
         'address': c.address,
         'type': c.customer_type,
         'balance': c.balance,
-        'credit_limit': c.credit_limit
     } for c in customers])
 
 @api_bp.route('/customers/add', methods=['POST'])
@@ -460,8 +459,7 @@ def add_customer():
             email=(data.get('email') or '').strip(),
             address=(data.get('address') or '').strip(),
             nic=nic,
-            customer_type=data.get('customer_type', 'wholesale'),
-            credit_limit=float(data.get('credit_limit', 5000))
+            customer_type=data.get('customer_type', 'wholesale')
         )
         db.session.add(customer)
         db.session.commit()
@@ -475,7 +473,6 @@ def add_customer():
                 'nic': customer.nic,
                 'address': customer.address,
                 'balance': customer.balance,
-                'credit_limit': customer.credit_limit,
                 'type': customer.customer_type
             }
         })
@@ -501,7 +498,6 @@ def customer_details(customer_id):
         'nic': customer.nic,
         'customer_type': customer.customer_type,
         'balance': customer.balance,
-        'credit_limit': customer.credit_limit,
         'total_purchases': customer.total_purchases,
         'total_paid': customer.total_paid,
         'payment_history': customer.get_payment_history(),
@@ -627,19 +623,33 @@ def return_order(order_number):
                 )
                 db.session.add(movement)
     
-    # Handle refund
+        # Handle refund
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
-        # Restore stock for refund
-        for item in order.items:
-            product = Product.query.get(item.product_id)
-            if product:
-                product.stock_quantity += item.quantity
+        selected_items = data.get('items', [])
+        
+        # Calculate discount proportion
+        discount_ratio = 1.0
+        if order.subtotal > 0:
+            discount_ratio = 1.0 - (order.discount_amount / order.subtotal)
+        
+        reason_type = data.get('reason_type', 'no_damage')
+
+        for item_data in selected_items:
+            price = float(item_data.get('price', 0))
+            qty = int(item_data.get('quantity', 1))
+            refund_per_item = price * qty * discount_ratio
+            
+            # Only restore stock for non-damaged returns
+            if reason_type != 'damaged':
+                product = Product.query.get(item_data.get('product_id'))
+                if product:
+                    product.stock_quantity += qty
                 movement = StockMovement(
                     product_id=product.id,
                     user_id=current_user.id,
                     movement_type='return',
-                    quantity=item.quantity,
-                    previous_stock=product.stock_quantity - item.quantity,
+                    quantity=qty,
+                    previous_stock=product.stock_quantity - qty,
                     new_stock=product.stock_quantity,
                     reference=f'RTN-{ret.return_number}'
                 )
@@ -662,7 +672,7 @@ def return_order(order_number):
         'return_number': ret.return_number,
         'message': f'Return processed: {ret.return_number}'
     })
-
+ 
 @api_bp.route('/returns/all')
 @login_required
 def get_all_returns():
