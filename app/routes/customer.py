@@ -95,6 +95,7 @@ def edit_customer(customer_id):
     customer.email = request.form.get('email', '').strip()
     customer.address = request.form.get('address', '').strip()
     customer.customer_type = request.form.get('customer_type', 'retail')
+    customer.balance = float(request.form.get('balance', customer.balance))
     
     db.session.commit()
     flash(f'Customer {customer.name} updated!', 'success')
