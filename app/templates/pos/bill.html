@@ -151,7 +151,7 @@
     <div class="totals">
         <p>Subtotal: <span style="float: right;">Rs.{{ "%.2f"|format(order.subtotal) }}</span></p>
         {% if order.discount_amount and order.discount_amount > 0 %}
-        <p>Discount: <span style="float: right; color: red;">-Rs.{{ "%.2f"|format(order.discount_amount) }}</span></p>
+        <p>Discount: <span style="float: right; color: black;">-Rs.{{ "%.2f"|format(order.discount_amount) }}</span></p>
         {% endif %}
 
         <p class="grand-total">TOTAL: <span style="float: right;">Rs.{{ "%.2f"|format(order.total) }}</span></p>
