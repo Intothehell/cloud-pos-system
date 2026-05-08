@@ -93,8 +93,9 @@
         </h1>
         <select id="customerTypeSelect" onchange="changeCustomerType()" 
                 class="glass-card rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400">
-            <option value="retail">🛍️ Retail Sale</option>
             <option value="wholesale">📦 Wholesale / Bulk</option>
+            <option value="retail">🛍️ Retail Sale</option>
+            
         </select>
     </div>
 
@@ -103,15 +104,12 @@
         <!-- LEFT PANEL -->
         <div class="lg:w-7/12 space-y-3">
             
-            <!-- Barcode + Search -->
-            <div class="glass-card rounded-2xl p-4 pulse-glow">
-                <input type="text" id="barcodeInput" 
-                       class="w-full text-lg p-4 pl-12 search-icon-input border-2 border-indigo-200 rounded-xl focus:border-indigo-500 focus:outline-none bg-white/80" 
-                       placeholder="Scan barcode here..." autofocus>
-                <div class="flex gap-2 mt-2">
+            <!-- Search -->
+            <div class="glass-card rounded-2xl p-4">
+                <div class="flex gap-2">
                     <input type="text" id="searchInput" 
-                           class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-400 focus:outline-none text-sm bg-white/80" 
-                           placeholder="Search products...">
+                        class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-400 focus:outline-none text-sm bg-white/80" 
+                        placeholder="Search products..." onkeyup="searchProducts()" autofocus>
                     <button onclick="searchProducts()" 
                             class="card-indigo text-white px-5 py-2.5 rounded-xl hover:opacity-90 font-medium text-sm flex items-center gap-2 shadow-lg">
                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -122,16 +120,6 @@
                 </div>
             </div>
 
-            <!-- Recent Items -->
-            <div id="recentSection" class="hidden glass-card rounded-2xl p-3">
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
-                    </svg>
-                    Recent
-                </h3>
-                <div id="recentItemsList" class="flex flex-wrap gap-1.5"></div>
-            </div>
 
             <!-- Categories -->
             <div id="categoryButtons" class="flex flex-wrap gap-1.5"></div>
@@ -167,12 +155,19 @@
                 <div class="p-4">
                     <div id="wholesaleCustomerSearch" class="hidden">
                         <div class="flex gap-1.5 mb-2">
-                            <input type="text" id="wholesaleCustomerInput" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Search name, phone or NIC...">
+                            <input type="text" id="wholesaleCustomerInput" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Search name, phone or NIC..." onkeyup="searchWholesaleCustomer()">
                             <button onclick="searchWholesaleCustomer()" class="card-indigo text-white px-3 py-2 rounded-xl text-sm">Find</button>
                             <button onclick="showAddCustomerForm()" class="card-emerald text-white px-3 py-2 rounded-xl text-sm">+ New</button>
                         </div>
                         <div id="customerSearchResults" class="max-h-36 overflow-y-auto space-y-1"></div>
                         <div id="selectedWholesaleCustomer" class="text-sm mt-2"></div>
+                    </div>
+                    <div id="balancePaymentSection" class="hidden mt-3 pt-3 border-t border-slate-200">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Pay Old Balance (Rs.)</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="balancePayment" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Amount" value="0" min="0" step="0.01" onchange="updateCartDisplay()">
+                            <button onclick="addBalanceToCart()" class="bg-amber-500 text-white px-3 py-2 rounded-xl text-sm font-medium">Add</button>
+                        </div>
                     </div>
                     <div id="retailCustomerForm" class="space-y-2">
                         <div class="grid grid-cols-2 gap-2">
@@ -203,12 +198,11 @@
                     <div class="space-y-2 text-sm mb-4">
                         <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-medium">Rs.<span id="subtotal">0.00</span></span></div>
                         <div class="flex justify-between items-center">
-                            <span class="text-slate-500">Discount (%)</span>
-                            <input type="number" id="discountPercent" value="0" min="0" max="100" onchange="updateCartDisplay()"
-                                   class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
+                            <span class="text-slate-500">Discount (Rs.)</span>
+                            <input type="number" id="discountAmount" value="0" min="0" step="0.01" onchange="updateCartDisplay()"
+                                class="w-24 border-2 border-slate-200 rounded-lg px-2 py-1 text-right text-sm bg-white/80">
                         </div>
-                        <div class="flex justify-between text-red-500"><span>Discount</span><span>-Rs.<span id="discountAmount">0.00</span></span></div>
-
+                        
                         <div class="flex justify-between font-bold text-lg border-t-2 border-slate-200 pt-3">
                             <span>TOTAL</span><span class="text-indigo-600">Rs.<span id="total">0.00</span></span>
                         </div>
@@ -336,14 +330,22 @@
 <script>
 let cart = [];
 let currentWholesaleCustomer = null;
-let customerType = 'retail';
+let customerType = 'wholesale';
 let recentProducts = [];
 let allProducts = [];
 
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
 function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 
-function init() { loadCategories(); loadAllProducts(); checkLowStock(); document.getElementById('barcodeInput').focus(); }
+function init() { 
+    loadCategories(); 
+    loadAllProducts(); 
+    checkLowStock(); 
+
+        // Apply default customer mode UI
+    changeCustomerType();
+
+    document.getElementById('barcodeInput').focus(); }
 
 function loadAllProducts() { fetch('/api/products/all').then(r=>r.json()).then(p=>{allProducts=p;displayProducts(p);}); }
 function checkLowStock() { fetch('/api/dashboard/stats').then(r=>r.json()).then(s=>{if(s.low_stock>0){document.getElementById('lowStockAlert').classList.remove('hidden');document.getElementById('lowStockCount').textContent=s.low_stock;}}); }
@@ -356,12 +358,6 @@ function changeCustomerType() {
     cart=[];currentWholesaleCustomer=null;updateCartDisplay();
 }
 
-document.getElementById('barcodeInput').addEventListener('keydown',function(e){
-    if(e.key==='Enter'){e.preventDefault();var b=this.value.trim();if(b){fetch('/api/product/barcode/'+encodeURIComponent(b)).then(r=>r.json()).then(p=>{if(p.id){if(p.stock_quantity<=0){alert('Out of stock!');return;}addToCart(p,1);addToRecent(p);}else alert('Not found: '+b);});this.value='';}}
-});
-
-function addToRecent(p){recentProducts=recentProducts.filter(x=>x.id!==p.id);recentProducts.unshift({id:p.id,name:p.name,price:p.price||p.wholesale_price,stock:p.stock_quantity});if(recentProducts.length>8)recentProducts.pop();document.getElementById('recentSection').classList.toggle('hidden',recentProducts.length===0);document.getElementById('recentItemsList').innerHTML=recentProducts.map(x=>'<span onclick="addToCart({id:'+x.id+',name:\''+x.name+'\',price:'+x.price+',stock_quantity:'+x.stock+'},1)" class="cursor-pointer px-3 py-1.5 bg-indigo-50 text-indigo-700 text-xs rounded-full hover:bg-indigo-100 border border-indigo-200">'+x.name.substring(0,14)+'</span>').join('');}
-
 function searchProducts(){var q=document.getElementById('searchInput').value;if(!q){displayProducts(allProducts);return;}fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts);}
 function filterCategory(cat){displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));}
 
@@ -372,7 +368,7 @@ function displayProducts(products){
         var out=(p.stock_quantity||0)<=0,low=!out&&(p.stock_quantity||0)<=5;
         var bg=out?'bg-red-50 border-red-200 opacity-50':low?'bg-amber-50 border-amber-200':'bg-white border-slate-200 hover:border-indigo-300';
         var click=out?'':'onclick="handleProductClick({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',wholesale_price:'+p.wholesale_price+',stock_quantity:'+(p.stock_quantity||0)+'})"';
-        return '<div class="product-card border-2 rounded-2xl p-3 text-center '+bg+'" '+click+'><p class="font-semibold text-xs leading-tight px-1">'+(p.name||'').substring(0,48)+'</p></div>';
+        return '<div class="product-card border-2 rounded-2xl p-4 text-center '+bg+'" '+click+'><p class="font-semibold text-sm leading-tight px-2">'+(p.name||'').substring(0,48)+'</p></div>';
     }).join('');
 }
 
@@ -407,6 +403,16 @@ function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<
 function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
 function clearCart(){cart=[];updateCartDisplay();}
 
+function addBalanceToCart(){
+    if(!currentWholesaleCustomer)return;
+    var amount=parseFloat(document.getElementById('balancePayment').value)||0;
+    if(amount<=0)return;
+    // Remove previous balance payment if exists
+    cart=cart.filter(function(item){return item.id!=='balance_pay';});
+    cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
+    updateCartDisplay();
+}
+
 function updateCartDisplay(){
     var d=document.getElementById('cartItems'),sub=0;
     if(!cart.length){
@@ -414,7 +420,7 @@ function updateCartDisplay(){
     }else{
         d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
     }
-    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100);
+    var da=parseFloat(document.getElementById('discountAmount').value)||0;
     document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da).toFixed(2);
 }
 
@@ -428,7 +434,7 @@ function reviewOrder(){
     var html='',sub=0;
     cart.forEach(function(item){var t=item.price*item.quantity;sub+=t;html+='<div class="flex justify-between py-2 border-b"><div><p class="font-medium text-sm">'+item.name+'</p><p class="text-xs">'+item.quantity+' x Rs.'+item.price.toFixed(2)+'</p></div><span class="font-bold">Rs.'+t.toFixed(2)+'</span></div>';});
     document.getElementById('reviewItems').innerHTML=html;
-    var dp=parseFloat(document.getElementById('discountPercent').value)||0,da=sub*(dp/100);
+    var da=parseFloat(document.getElementById('discountAmount').value)||0;
     document.getElementById('revSubtotal').textContent=sub.toFixed(2);
     document.getElementById('revDiscount').textContent=da.toFixed(2);
     document.getElementById('revTotal').textContent=(sub-da).toFixed(2);
@@ -440,7 +446,14 @@ function confirmPay(method){hideModal('reviewModal');if(method==='cash')processC
 
 // CUSTOMERS
 function searchWholesaleCustomer(){var q=document.getElementById('wholesaleCustomerInput').value;if(!q)return;fetch('/api/customers/search?q='+encodeURIComponent(q)).then(r=>r.json()).then(c=>{var d=document.getElementById('customerSearchResults');d.innerHTML=c.length?c.map(x=>'<div onclick="selectWholesaleCustomer('+JSON.stringify(x).replace(/"/g,'&quot;')+')" class="p-2.5 border-2 rounded-xl mb-1 cursor-pointer hover:border-indigo-300 text-sm"><strong>'+x.name+'</strong> | '+x.phone+'<br><span class="text-xs">Bal: Rs.'+(x.balance||0).toFixed(2)+'</span></div>').join(''):'<p class="text-sm p-2">Not found</p>';});}
-function selectWholesaleCustomer(c){currentWholesaleCustomer=c;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+c.name+' | Bal: Rs.'+(c.balance||0).toFixed(2)+'</div>';document.getElementById('customerSearchResults').innerHTML='';}
+function selectWholesaleCustomer(c){
+    currentWholesaleCustomer=c;
+    document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+c.name+' | Bal: Rs.'+(c.balance||0).toFixed(2)+'</div>';
+    document.getElementById('customerSearchResults').innerHTML='';
+    document.getElementById('balancePaymentSection').classList.remove('hidden');
+    document.getElementById('balancePayment').value='0';
+    document.getElementById('balancePayment').max=c.balance||0;
+}
 function getInfo(){return customerType==='retail'?{name:document.getElementById('custName').value||'Walk-in',phone:document.getElementById('custPhone').value||'',address:document.getElementById('custAddress').value||''}:{name:currentWholesaleCustomer?.name||'Wholesale',phone:currentWholesaleCustomer?.phone||'',address:currentWholesaleCustomer?.address||''};}
 
 // PAYMENTS
@@ -452,10 +465,10 @@ function processCreditPayment(){if(!currentWholesaleCustomer){alert('Select cust
 
 function processSale(method,cash){
     var info=getInfo();
-    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_percent:document.getElementById('discountPercent').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
+    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_amount:document.getElementById('discountAmount').value||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
     .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
-function resetSale(){cart=[];currentWholesaleCustomer=null;['discountPercent','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('barcodeInput').focus();}
+function resetSale(){cart=[];currentWholesaleCustomer=null;['discountAmount','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('searchInput').focus();}
 
 function showInvoice(order,info){
     var itemsHtml = order.items.map(function(i){

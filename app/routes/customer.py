@@ -198,6 +198,7 @@ def record_payment(customer_id):
     count = Order.query.filter(Order.order_number.like(f'CPY-{date_str}%')).count()
     receipt_number = f'CPY-{date_str}-{count+1:04d}'
     
+    previous_bal = customer.balance + amount  # balance before this payment
     receipt = Order(
         order_number=receipt_number,
         order_type='payment',
@@ -212,13 +213,15 @@ def record_payment(customer_id):
         discount_amount=0,
         payment_method=payment_method,
         payment_status='completed',
-        status='completed',
-        notes=reference if reference else ''
+        previous_balance=previous_bal,
+        new_balance=customer.balance
     )
     
     # Add a single item line for the payment
     receipt_item = OrderItem(
+        product_id=0,
         product_name='Credit Payment Received',
+        product_barcode='',
         product_price=amount,
         quantity=1,
         line_total=amount,

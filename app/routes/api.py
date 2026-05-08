@@ -177,6 +177,7 @@ def toggle_product_status(product_id):
     return jsonify({'success': True, 'is_active': product.is_active})
 
 # ============ ORDERS ============
+
 @api_bp.route('/orders', methods=['POST'])
 @login_required
 def create_order():
@@ -206,9 +207,24 @@ def create_order():
         if data.get('customer_id'):
             order.customer_id = data['customer_id']
         
-        discount_percent = float(data.get('discount_percent', 0))
+        discount_amount = float(data.get('discount_amount', 0))
         
         for item_data in data.get('items', []):
+            # Check for balance payment FIRST before product lookup
+            if item_data.get('id') == 'balance_pay':
+                price = float(item_data.get('price', 0))
+                order_item = OrderItem(
+                    product_id=0,
+                    product_name='Balance Payment',
+                    product_barcode='',
+                    product_price=price,
+                    quantity=1,
+                    line_total=price,
+                    discount_amount=0
+                )
+                order.items.append(order_item)
+                continue
+            
             product = Product.query.get(item_data['id'])
             if not product:
                 continue
@@ -217,7 +233,9 @@ def create_order():
             if product.stock_quantity < qty:
                 return jsonify({'error': f'Not enough stock for {product.name}'}), 400
             
-            price = product.wholesale_price if customer_type == 'wholesale' else float(item_data.get('price', 0))
+            price = float(item_data.get('price', 0))
+            if price == 0 and customer_type == 'wholesale':
+                price = product.wholesale_price
             
             order_item = OrderItem(
                 product_id=product.id,
@@ -225,12 +243,9 @@ def create_order():
                 product_barcode=product.barcode,
                 product_price=price,
                 quantity=qty,
-                discount_percent=discount_percent
+                line_total=price * qty,
+                discount_amount=0
             )
-            
-            item_discount = price * qty * (discount_percent / 100)
-            order_item.discount_amount = item_discount
-            order_item.line_total = (price * qty) - item_discount
             
             order.items.append(order_item)
             product.stock_quantity -= qty
@@ -245,7 +260,7 @@ def create_order():
             db.session.add(movement)
         
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
-        order.discount_amount = sum(item.discount_amount for item in order.items)
+        order.discount_amount = discount_amount
         order.tax_amount = 0
         order.total = order.subtotal - order.discount_amount
         
@@ -258,11 +273,23 @@ def create_order():
         elif data.get('payment_method') == 'credit' and order.customer_id:
             customer = Customer.query.get(order.customer_id)
             if customer:
+                balance_pay = sum(item.line_total for item in order.items if item.product_name == 'Balance Payment')
+                purchase_total = order.total - balance_pay  # total includes negative balance_pay
                 order.previous_balance = customer.balance
-                customer.balance += order.total
-                customer.total_purchases += order.total
+                customer.balance += order.total  # adds purchases and subtracts payment
+                customer.total_purchases += purchase_total
                 order.new_balance = customer.balance
                 order.payment_status = 'pending'
+                
+                if balance_pay < 0:
+                    payment = Payment(
+                        customer_id=customer.id,
+                        amount=abs(balance_pay),
+                        payment_method='cash',
+                        received_by=current_user.id
+                    )
+                    customer.total_paid += abs(balance_pay)
+                    db.session.add(payment)
         
         db.session.add(order)
         db.session.commit()
@@ -296,7 +323,7 @@ def create_order():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
+    
 @api_bp.route('/orders/today')
 @login_required
 def today_orders():
@@ -378,6 +405,8 @@ def order_details(order_number):
         'new_balance': order.new_balance or 0,
         'total': order.total,
         'items': [{
+            'id': item.id,
+            'product_id': item.product_id,
             'name': item.product_name,
             'quantity': item.quantity,
             'price': item.product_price,
@@ -606,12 +635,11 @@ def return_order(order_number):
         ret.replacement_product_id = data.get('replacement_product_id')
         ret.replacement_quantity = data.get('replacement_quantity', 1)
         
-        # Reduce stock of replacement item
         if ret.replacement_product_id:
             replacement_product = Product.query.get(ret.replacement_product_id)
             if replacement_product:
                 replacement_product.stock_quantity -= ret.replacement_quantity
-                movement = StockMovement(
+                repl_movement = StockMovement(
                     product_id=replacement_product.id,
                     user_id=current_user.id,
                     movement_type='stock_out',
@@ -621,13 +649,12 @@ def return_order(order_number):
                     reference=f'REPLACE-{ret.return_number}',
                     notes=f'Replacement for order {order_number}'
                 )
-                db.session.add(movement)
+                db.session.add(repl_movement)
     
-        # Handle refund
+    # Handle refund
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
         selected_items = data.get('items', [])
         
-        # Calculate discount proportion
         discount_ratio = 1.0
         if order.subtotal > 0:
             discount_ratio = 1.0 - (order.discount_amount / order.subtotal)
@@ -637,32 +664,29 @@ def return_order(order_number):
         for item_data in selected_items:
             price = float(item_data.get('price', 0))
             qty = int(item_data.get('quantity', 1))
-            refund_per_item = price * qty * discount_ratio
             
-            # Only restore stock for non-damaged returns
             if reason_type != 'damaged':
                 product = Product.query.get(item_data.get('product_id'))
                 if product:
                     product.stock_quantity += qty
-                movement = StockMovement(
-                    product_id=product.id,
-                    user_id=current_user.id,
-                    movement_type='return',
-                    quantity=qty,
-                    previous_stock=product.stock_quantity - qty,
-                    new_stock=product.stock_quantity,
-                    reference=f'RTN-{ret.return_number}'
-                )
-                db.session.add(movement)
+                    rtn_movement = StockMovement(
+                        product_id=product.id,
+                        user_id=current_user.id,
+                        movement_type='return',
+                        quantity=qty,
+                        previous_stock=product.stock_quantity - qty,
+                        new_stock=product.stock_quantity,
+                        reference=f'RTN-{ret.return_number}'
+                    )
+                    db.session.add(rtn_movement)
         
-        # If credit customer, reduce balance
         if order.customer_id and order.payment_method == 'credit':
             customer = Customer.query.get(order.customer_id)
             if customer:
                 customer.balance -= ret.refund_amount
     
-    # Update order status
-    order.status = 'returned'
+    order.is_returned = True
+    order.return_date = datetime.now()
     
     db.session.add(ret)
     db.session.commit()
