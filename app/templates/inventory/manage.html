@@ -256,7 +256,9 @@ function updateStats(products){
     const cats=[...new Set(products.map(p=>p.category).filter(c=>c))];
     document.getElementById('totalCategories').textContent=cats.length;
     const cf=document.getElementById('categoryFilter');
+    const selectedCat = cf.value;  // Save current selection
     cf.innerHTML='<option value="">All Categories</option>'+cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    cf.value = selectedCat;  // Restore selection
     document.getElementById('categoryList').innerHTML=cats.map(c=>`<option value="${c}">`).join('');
 }
 

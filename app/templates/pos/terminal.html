@@ -481,7 +481,7 @@ function showInvoice(order,info){
     }
     
     document.getElementById('invoiceContent').innerHTML = 
-        '<div id="printableInvoice" style="font-family: Arial, sans-serif; font-size: 12px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.2;">' +
+        '<div id="printableInvoice" style="font-family: Courier New, monospace; font-size: 14px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.2;">' +
         '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">' +
         '<h2 style="margin: 0; font-size: 18px; font-weight: 700;"><a href="/pos/terminal" style="text-decoration: none; color: inherit;">EASY PAY</a></h2>' +
         '<p style="margin: 1px 0; font-size: 10px;">Meegoda, Homagama</p>' +
@@ -520,9 +520,9 @@ function printInvoice(){
     w.document.write(
         '<html><head><title>Bill</title>' +
         '<style>' +
-        '@page { size: A4; margin: 8mm; }' +
-        '@media print { body { width: 100%; margin: 0; padding: 0; } }' +
-        'body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #fff; color: #000; }' +
+        '@page { size: 8.5in 5.5in; margin: 4mm; }' +
+        '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 11px; line-height: 1.1; } }' +
+        'body { font-family: "Courier New", monospace; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
         'table { width: 100%; border-collapse: collapse; }' +
         '</style></head>' +
         '<body>' + c + '<script>setTimeout(function(){window.print();}, 400);<\/script></body></html>'

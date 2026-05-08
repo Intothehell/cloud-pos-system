@@ -113,7 +113,7 @@ def delete_customer(customer_id):
     
     # Check if customer has pending balance
     if customer.balance > 0:
-        flash(f'Cannot delete {customer.name}. They have an outstanding balance of ${customer.balance:.2f}. Please settle the balance first.', 'danger')
+        flash(f'Cannot delete {customer.name}. They have an outstanding balance of Rs.{customer.balance:.2f}. Please settle the balance first.', 'danger')
         return redirect(url_for('customer.list_customers'))
     
     customer_name = customer.name
@@ -157,11 +157,11 @@ def record_payment(customer_id):
     
     # Validate amount
     if amount <= 0:
-        flash('Payment amount must be greater than $0.00', 'danger')
+        flash('Payment amount must be greater than Rs.0.00', 'danger')
         return redirect(url_for('customer.list_customers'))
     
     if amount > customer.balance:
-        flash(f'Payment amount cannot exceed the outstanding balance of ${customer.balance:.2f}', 'danger')
+        flash(f'Payment amount cannot exceed the outstanding balance of Rs.{customer.balance:.2f}', 'danger')
         return redirect(url_for('customer.list_customers'))
     
     # Record the payment
@@ -231,5 +231,5 @@ def record_payment(customer_id):
     db.session.add(receipt)
     db.session.commit()
     
-    flash(f'Payment of ${amount:.2f} recorded! New balance: ${customer.balance:.2f}', 'success')
+    flash(f'Payment of Rs.{amount:.2f} recorded! New balance: Rs.{customer.balance:.2f}', 'success')
     return redirect(url_for('pos.bills'))

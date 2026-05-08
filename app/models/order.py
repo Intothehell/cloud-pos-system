@@ -31,7 +31,7 @@ class Order(db.Model):
     cash_received = db.Column(db.Float)
     change_given = db.Column(db.Float)
     
-        # Credit tracking
+    # Credit tracking
     previous_balance = db.Column(db.Float, default=0.0)
     new_balance = db.Column(db.Float, default=0.0)
 
