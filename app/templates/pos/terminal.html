@@ -331,7 +331,6 @@
 let cart = [];
 let currentWholesaleCustomer = null;
 let customerType = 'wholesale';
-let recentProducts = [];
 let allProducts = [];
 
 function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
@@ -345,7 +344,7 @@ function init() {
         // Apply default customer mode UI
     changeCustomerType();
 
-    document.getElementById('barcodeInput').focus(); }
+    document.getElementById('searchInput').focus(); }
 
 function loadAllProducts() { fetch('/api/products/all').then(r=>r.json()).then(p=>{allProducts=p;displayProducts(p);}); }
 function checkLowStock() { fetch('/api/dashboard/stats').then(r=>r.json()).then(s=>{if(s.low_stock>0){document.getElementById('lowStockAlert').classList.remove('hidden');document.getElementById('lowStockCount').textContent=s.low_stock;}}); }
@@ -377,7 +376,7 @@ var pendingProduct = null;
 function handleProductClick(p){
     if(customerType==='wholesale'){
         addToCart({id:p.id, name:p.name, price:p.wholesale_price, stock_quantity:p.stock_quantity}, 1);
-        addToRecent({id:p.id, name:p.name, price:p.wholesale_price, stock:p.stock_quantity});
+        
     }else{
         pendingProduct = p;
         document.getElementById('priceProductName').textContent = p.name;
@@ -391,7 +390,7 @@ function confirmManualPrice(){
     var price = parseFloat(document.getElementById('manualPrice').value);
     if(price && price > 0 && pendingProduct){
         addToCart({id:pendingProduct.id, name:pendingProduct.name, price:price, stock_quantity:pendingProduct.stock_quantity}, 1);
-        addToRecent({id:pendingProduct.id, name:pendingProduct.name, price:price, stock:pendingProduct.stock_quantity});
+        
         hideModal('priceModal');
         pendingProduct = null;
     }

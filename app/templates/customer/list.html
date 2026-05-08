@@ -348,7 +348,7 @@ function showPayment(id,name,balance){
     document.getElementById('paymentForm').action='/customer/record-payment/'+id;
     document.getElementById('payCustName').textContent=name;
     document.getElementById('payBalance').textContent='Rs.'+balance.toLocaleString();
-    document.getElementById('paymentAmount').max = balance.toLocaleString();
+    document.getElementById('paymentAmount').max = balance;
     document.getElementById('maxPaymentAmount').textContent = 'Rs.'+balance.toLocaleString();
     showModal('paymentModal');
 }

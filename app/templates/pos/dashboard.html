@@ -61,7 +61,7 @@
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-slate-800">
-             {{ 'Hello' if current_user else '' }}, <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ current_user.username }}</span> 👋
+            <span id="greetingText">Hello</span>, <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ current_user.username|capitalize }}</span> 👋
         </h1>
         <p class="text-slate-500 mt-1">Here's your business overview</p>
     </div>
@@ -92,7 +92,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Today Sales + Payments</p>
-                    <p class="text-2xl font-bold text-emerald-600" id="todaySales">$0</p>
+                    <p class="text-2xl font-bold text-emerald-600" id="todaySales">Rs.0</p>
                 </div>
                 <div class="stat-icon bg-gradient-green">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,7 +109,7 @@
             <div class="flex items-start justify-between">
                 <div>
                     <p class="text-sm text-slate-500 font-medium mb-1">Total Credit Due</p>
-                    <p class="text-2xl font-bold text-orange-500" id="creditDue">$0</p>
+                    <p class="text-2xl font-bold text-orange-500" id="creditDue">Rs.0</p>
                 </div>
                 <div class="stat-icon bg-gradient-orange">
                     <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -251,6 +251,10 @@ function loadStats() {
             document.getElementById('productsCount').textContent = stats.products_count || 0;
         });
 }
+
+var hour = new Date().getHours();
+var greeting = hour < 12 ? 'Good Morning' : hour < 15 ? 'Good Afternoon' : hour < 20 ? 'Good Evening' : 'Good Night';
+document.getElementById('greetingText').textContent = greeting;
 
 loadStats();
 setInterval(loadStats, 5000);

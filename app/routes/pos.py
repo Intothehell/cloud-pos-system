@@ -85,7 +85,7 @@ def api_all_transactions():
             } for item in o.items],
             'time': o.created_at.strftime('%H:%M:%S'),
             'date': o.created_at.strftime('%Y-%m-%d'),
-            'notes': o.notes or ''
+            'notes': ''
         } for o in orders]
     })
 

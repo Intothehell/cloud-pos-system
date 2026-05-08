@@ -140,8 +140,8 @@
             <tr>
                 <td>{{ item.product_name[:20] }}{% if item.product_name|length > 20 %}...{% endif %}</td>
                 <td class="text-right">{{ item.quantity }}</td>
-                <td class="text-right">${{ "%.2f"|format(item.product_price) }}</td>
-                <td class="text-right">${{ "%.2f"|format(item.line_total) }}</td>
+                <td class="text-right">Rs.{{ "%.2f"|format(item.product_price) }}</td>
+                <td class="text-right">Rs.{{ "%.2f"|format(item.line_total) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -149,12 +149,12 @@
     
     <!-- Totals -->
     <div class="totals">
-        <p>Subtotal: <span style="float: right;">${{ "%.2f"|format(order.subtotal) }}</span></p>
+        <p>Subtotal: <span style="float: right;">Rs.{{ "%.2f"|format(order.subtotal) }}</span></p>
         {% if order.discount_amount and order.discount_amount > 0 %}
-        <p>Discount: <span style="float: right; color: red;">-${{ "%.2f"|format(order.discount_amount) }}</span></p>
+        <p>Discount: <span style="float: right; color: red;">-Rs.{{ "%.2f"|format(order.discount_amount) }}</span></p>
         {% endif %}
 
-        <p class="grand-total">TOTAL: <span style="float: right;">${{ "%.2f"|format(order.total) }}</span></p>
+        <p class="grand-total">TOTAL: <span style="float: right;">Rs.{{ "%.2f"|format(order.total) }}</span></p>
     </div>
     
     <!-- Payment Info -->
@@ -162,8 +162,8 @@
         <p><strong>Payment Method:</strong> {{ order.payment_method.upper() }}</p>
         
         {% if order.payment_method == 'cash' and order.cash_received %}
-        <p>Cash Received: <span style="float: right;">${{ "%.2f"|format(order.cash_received) }}</span></p>
-        <p>Change: <span style="float: right;">${{ "%.2f"|format(order.change_given) }}</span></p>
+        <p>Cash Received: <span style="float: right;">Rs.{{ "%.2f"|format(order.cash_received) }}</span></p>
+        <p>Change: <span style="float: right;">Rs.{{ "%.2f"|format(order.change_given) }}</span></p>
         {% endif %}
         
         <p>

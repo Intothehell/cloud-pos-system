@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request, render_template
 from flask_login import login_required, current_user
 from app import db
 from app.models.product import Product, StockMovement
-from app.models.order import Order, OrderItem
+
 from app.models.customer import Customer, Payment
 from app.models.user import User
 from datetime import datetime
@@ -49,8 +49,7 @@ def search_products():
 @api_bp.route('/products/all')
 @login_required
 def get_all_products():
-    products = Product.query.order_by(Product.category, Product.name).all()
-    
+       
     products = Product.query.order_by(Product.category, Product.name).all()
     return jsonify([{
         'id': p.id,
@@ -566,7 +565,7 @@ def record_payment(customer_id):
     return jsonify({
         'success': True,
         'new_balance': customer.balance,
-        'message': f'Payment of ${amount:.2f} recorded'
+        'message': f'Payment of Rs.{amount:.2f} recorded'
     })
 
 # ============ DASHBOARD ============
