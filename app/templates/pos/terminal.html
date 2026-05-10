@@ -405,7 +405,16 @@ function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<
 function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
 function clearCart(){cart=[];updateCartDisplay();}
 
-
+function addBalanceToCart(){
+    if(!currentWholesaleCustomer)return;
+    var amount=parseFloat(document.getElementById('balancePayment').value)||0;
+    if(amount<=0)return;
+    cart=cart.filter(function(item){return item.id!=='balance_pay';});
+    if(amount>0){
+        cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
+    }
+    updateCartDisplay();
+}
 
 function updateCartDisplay(){
     var d=document.getElementById('cartItems'),sub=0;
