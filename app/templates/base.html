@@ -91,7 +91,7 @@
                         </svg>
                         Bills
                     </a>
-                    <a href="{{ url_for('pos.returns') }}" class="nav-link px-3 py-2 text-sm text-red-400 hover:text-red-300 flex items-center gap-2">
+                    <a href="{{ url_for('pos.returns') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 14 4 9 9 4"></polyline>
                             <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
@@ -177,7 +177,7 @@
                 </svg>
                 Bills
             </a>
-            <a href="{{ url_for('pos.returns') }}" class="flex flex-col items-center text-xs text-red-400 hover:text-red-500 px-1 py-1">
+            <a href="{{ url_for('pos.returns') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="9 14 4 9 9 4"></polyline>
                     <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
@@ -234,6 +234,26 @@
     setInterval(updateClock, 1000);
     </script>
     
+    <!-- Back to Top Button -->
+    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" id="backToTop" class="fixed bottom-20 lg:bottom-6 right-4 z-50 w-10 h-10 text-white rounded-full shadow-lg hidden items-center justify-center transition" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+    </button>
+
+    <script>
+    window.addEventListener('scroll', function() {
+        var btn = document.getElementById('backToTop');
+        if (window.scrollY > 300) {
+            btn.classList.remove('hidden');
+            btn.classList.add('flex');
+        } else {
+            btn.classList.add('hidden');
+            btn.classList.remove('flex');
+        }
+    });
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

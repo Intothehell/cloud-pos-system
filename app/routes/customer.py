@@ -5,6 +5,8 @@ from app.models.customer import Customer, Payment
 from app.models.order import Order
 from datetime import datetime
 from app.models.order import Order, OrderItem
+import csv
+import io
 
 customer_bp = Blueprint('customer', __name__)
 
@@ -112,7 +114,7 @@ def delete_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     
     # Check if customer has pending balance
-    if customer.balance > 0:
+    if customer.balance > 0 and current_user.role != 'owner':
         flash(f'Cannot delete {customer.name}. They have an outstanding balance of Rs.{customer.balance:.2f}. Please settle the balance first.', 'danger')
         return redirect(url_for('customer.list_customers'))
     
@@ -233,3 +235,5 @@ def record_payment(customer_id):
     
     flash(f'Payment of Rs.{amount:.2f} recorded! New balance: Rs.{customer.balance:.2f}', 'success')
     return redirect(url_for('pos.bills'))
+
+
