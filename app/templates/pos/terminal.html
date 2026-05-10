@@ -271,6 +271,9 @@
                 <button onclick="confirmPay('card')" class="card-blue text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">💳 Card</button>
                 <button onclick="confirmPay('credit')" class="card-amber text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">📋 Credit</button>
             </div>
+            <div id="revCreditOnlyBtn" class="hidden">
+                <button onclick="confirmPay('credit')" class="w-full card-amber text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">📋 Credit</button>
+            </div>
         </div>
         <div class="px-6 pb-4">
             <button onclick="hideModal('reviewModal')" class="w-full bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300 transition">
@@ -402,15 +405,7 @@ function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<
 function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
 function clearCart(){cart=[];updateCartDisplay();}
 
-function addBalanceToCart(){
-    if(!currentWholesaleCustomer)return;
-    var amount=parseFloat(document.getElementById('balancePayment').value)||0;
-    if(amount<=0)return;
-    // Remove previous balance payment if exists
-    cart=cart.filter(function(item){return item.id!=='balance_pay';});
-    cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
-    updateCartDisplay();
-}
+
 
 function updateCartDisplay(){
     var d=document.getElementById('cartItems'),sub=0;
@@ -419,6 +414,7 @@ function updateCartDisplay(){
     }else{
         d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
     }
+    sub = cart.filter(i=>i.id!=='balance_pay').reduce((s,i)=>s+(i.price*i.quantity),0);
     var da=parseFloat(document.getElementById('discountAmount').value)||0;
     document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da).toFixed(2);
 }
@@ -438,7 +434,18 @@ function reviewOrder(){
     document.getElementById('revDiscount').textContent=da.toFixed(2);
     document.getElementById('revTotal').textContent=(sub-da).toFixed(2);
     document.getElementById('revRetailBtns').classList.toggle('hidden',customerType!=='retail');
-    document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
+
+    // Check if balance payment is entered
+    var balancePay = parseFloat(document.getElementById('balancePayment').value) || 0;
+    if (customerType === 'wholesale' && balancePay > 0) {
+        // Show only Credit button
+        document.getElementById('revWholesaleBtns').classList.add('hidden');
+        document.getElementById('revCreditOnlyBtn').classList.remove('hidden');
+    } else {
+        // Show normal Cash/Card/Credit
+        document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
+        document.getElementById('revCreditOnlyBtn').classList.add('hidden');
+    }
     showModal('reviewModal');
 }
 function confirmPay(method){hideModal('reviewModal');if(method==='cash')processCashPayment();else if(method==='card')processCardPayment();else processCreditPayment();}

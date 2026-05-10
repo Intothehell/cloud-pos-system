@@ -209,20 +209,7 @@ def create_order():
         discount_amount = float(data.get('discount_amount', 0))
         
         for item_data in data.get('items', []):
-            # Check for balance payment FIRST before product lookup
-            if item_data.get('id') == 'balance_pay':
-                price = float(item_data.get('price', 0))
-                order_item = OrderItem(
-                    product_id=0,
-                    product_name='Balance Payment',
-                    product_barcode='',
-                    product_price=price,
-                    quantity=1,
-                    line_total=price,
-                    discount_amount=0
-                )
-                order.items.append(order_item)
-                continue
+
             
             product = Product.query.get(item_data['id'])
             if not product:
@@ -257,6 +244,7 @@ def create_order():
                 reference=order.order_number
             )
             db.session.add(movement)
+        
         
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
         order.discount_amount = discount_amount
