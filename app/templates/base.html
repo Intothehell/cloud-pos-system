@@ -98,6 +98,15 @@
                         </svg>
                         Returns
                     </a>
+                    {% if current_user.role == 'owner' %}
+                    <a href="{{ url_for('auth.manage_users') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                        </svg>
+                        Users
+                    </a>
+                    {% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -175,6 +184,15 @@
                 </svg>
                 Returns
             </a>
+            {% if current_user.role == 'owner' %}
+            <a href="{{ url_for('auth.manage_users') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+                Users
+            </a>
+            {% endif %}
         </div>
     </div>
     {% endif %}
