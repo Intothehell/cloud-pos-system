@@ -35,6 +35,9 @@ class Order(db.Model):
     previous_balance = db.Column(db.Float, default=0.0)
     new_balance = db.Column(db.Float, default=0.0)
 
+    # Credit payment at sale
+    credit_paid = db.Column(db.Float, default=0.0)
+
     # Return flags
     is_returned = db.Column(db.Boolean, default=False)
     return_date = db.Column(db.DateTime)

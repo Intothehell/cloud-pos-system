@@ -272,23 +272,36 @@ def create_order():
         elif data.get('payment_method') == 'credit' and order.customer_id:
             customer = Customer.query.get(order.customer_id)
             if customer:
-                balance_pay = sum(item.line_total for item in order.items if item.product_name == 'Balance Payment')
-                purchase_total = order.total - balance_pay  # total includes negative balance_pay
-                order.previous_balance = customer.balance
-                customer.balance += order.total  # adds purchases and subtracts payment
-                customer.total_purchases += purchase_total
-                order.new_balance = customer.balance
-                order.payment_status = 'pending'
+                # Get balance payment from frontend
+                balance_payment = float(data.get('balance_payment', 0))
                 
-                if balance_pay < 0:
+                # Remove Balance Payment item from items for subtotal calculation
+                real_items = [item for item in order.items if item.product_name != 'Balance Payment']
+                order.subtotal = sum(item.product_price * item.quantity for item in real_items)
+                order.total = order.subtotal - order.discount_amount
+                order.credit_paid = balance_payment
+                
+                # Store balances
+                order.previous_balance = customer.balance
+                
+                # Add purchase to balance
+                customer.balance += order.total
+                customer.total_purchases += order.total
+                
+                # Subtract credit payment if any
+                if balance_payment > 0:
+                    customer.balance -= balance_payment
+                    customer.total_paid += balance_payment
                     payment = Payment(
                         customer_id=customer.id,
-                        amount=abs(balance_pay),
+                        amount=balance_payment,
                         payment_method='cash',
                         received_by=current_user.id
                     )
-                    customer.total_paid += abs(balance_pay)
                     db.session.add(payment)
+                
+                order.new_balance = customer.balance
+                order.payment_status = 'pending'
         
         db.session.add(order)
         db.session.commit()
@@ -302,6 +315,7 @@ def create_order():
                 'total': order.total,
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
+                'credit_paid': order.credit_paid or 0,
                 'change': order.change_given,
                 'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
@@ -400,6 +414,7 @@ def order_details(order_number):
         'customer_phone': order.customer_phone or '',
         'subtotal': order.subtotal,
         'discount': order.discount_amount,
+        'credit_paid': order.credit_paid or 0,
         'previous_balance': order.previous_balance or 0,
         'new_balance': order.new_balance or 0,
         'total': order.total,
