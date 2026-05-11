@@ -174,7 +174,7 @@
                             <input type="text" id="custName" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Customer Name">
                             <input type="text" id="custPhone" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Phone Number">
                         </div>
-                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Address (for delivery)" rows="2"></textarea>
+                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Address" rows="2"></textarea>
                     </div>
                 </div>
             </div>
@@ -316,11 +316,15 @@
 <!-- Add Customer Modal -->
 <div id="addCustomerModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold mb-4">➕ Add Wholesale Customer</h3>
+        <h3 class="text-lg font-bold mb-4">➕ Add Customer</h3>
         <div class="space-y-2">
             <input type="text" id="wcName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Full Name*">
             <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Phone*">
             <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="NIC Number*">
+            <select id="wcType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80">
+                <option value="wholesale">📦 Wholesale</option>
+                <option value="retail">🛍️ Retail</option>
+            </select>
             <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Address" rows="2"></textarea>
         </div>
         <div class="flex gap-2 mt-3">
@@ -547,7 +551,7 @@ function printInvoice(){
 }
 
 function showAddCustomerForm(){showModal('addCustomerModal');}
-function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,customer_type:document.getElementById('wcType').value})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
 function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl">'+c+'</button>');});}
 
 init();
