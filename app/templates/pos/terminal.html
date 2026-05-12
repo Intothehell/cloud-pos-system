@@ -174,7 +174,7 @@
                             <input type="text" id="custName" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Customer Name">
                             <input type="text" id="custPhone" class="border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Phone Number">
                         </div>
-                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Address (for delivery)" rows="2"></textarea>
+                        <textarea id="custAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Address" rows="2"></textarea>
                     </div>
                 </div>
             </div>
@@ -271,6 +271,9 @@
                 <button onclick="confirmPay('card')" class="card-blue text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">💳 Card</button>
                 <button onclick="confirmPay('credit')" class="card-amber text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">📋 Credit</button>
             </div>
+            <div id="revCreditOnlyBtn" class="hidden">
+                <button onclick="confirmPay('credit')" class="w-full card-amber text-white py-3 rounded-xl font-bold hover:opacity-90 text-sm">📋 Credit</button>
+            </div>
         </div>
         <div class="px-6 pb-4">
             <button onclick="hideModal('reviewModal')" class="w-full bg-slate-200 py-3 rounded-xl font-medium hover:bg-slate-300 transition">
@@ -313,11 +316,15 @@
 <!-- Add Customer Modal -->
 <div id="addCustomerModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-sm p-6">
-        <h3 class="text-lg font-bold mb-4">➕ Add Wholesale Customer</h3>
+        <h3 class="text-lg font-bold mb-4">➕ Add Customer</h3>
         <div class="space-y-2">
             <input type="text" id="wcName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Full Name*">
             <input type="text" id="wcPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Phone*">
             <input type="text" id="wcNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="NIC Number*">
+            <select id="wcType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80">
+                <option value="wholesale">📦 Wholesale</option>
+                <option value="retail">🛍️ Retail</option>
+            </select>
             <textarea id="wcAddress" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Address" rows="2"></textarea>
         </div>
         <div class="flex gap-2 mt-3">
@@ -406,9 +413,10 @@ function addBalanceToCart(){
     if(!currentWholesaleCustomer)return;
     var amount=parseFloat(document.getElementById('balancePayment').value)||0;
     if(amount<=0)return;
-    // Remove previous balance payment if exists
     cart=cart.filter(function(item){return item.id!=='balance_pay';});
-    cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
+    if(amount>0){
+        cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
+    }
     updateCartDisplay();
 }
 
@@ -419,6 +427,7 @@ function updateCartDisplay(){
     }else{
         d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm animate-in"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
     }
+    sub = cart.filter(i=>i.id!=='balance_pay').reduce((s,i)=>s+(i.price*i.quantity),0);
     var da=parseFloat(document.getElementById('discountAmount').value)||0;
     document.getElementById('subtotal').textContent=sub.toFixed(2);document.getElementById('discountAmount').textContent=da.toFixed(2);document.getElementById('total').textContent=(sub-da).toFixed(2);
 }
@@ -438,7 +447,18 @@ function reviewOrder(){
     document.getElementById('revDiscount').textContent=da.toFixed(2);
     document.getElementById('revTotal').textContent=(sub-da).toFixed(2);
     document.getElementById('revRetailBtns').classList.toggle('hidden',customerType!=='retail');
-    document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
+
+    // Check if balance payment is entered
+    var balancePay = parseFloat(document.getElementById('balancePayment').value) || 0;
+    if (customerType === 'wholesale' && balancePay > 0) {
+        // Show only Credit button
+        document.getElementById('revWholesaleBtns').classList.add('hidden');
+        document.getElementById('revCreditOnlyBtn').classList.remove('hidden');
+    } else {
+        // Show normal Cash/Card/Credit
+        document.getElementById('revWholesaleBtns').classList.toggle('hidden',customerType!=='wholesale');
+        document.getElementById('revCreditOnlyBtn').classList.add('hidden');
+    }
     showModal('reviewModal');
 }
 function confirmPay(method){hideModal('reviewModal');if(method==='cash')processCashPayment();else if(method==='card')processCardPayment();else processCreditPayment();}
@@ -480,7 +500,7 @@ function showInvoice(order,info){
     }
     
     document.getElementById('invoiceContent').innerHTML = 
-        '<div id="printableInvoice" style="font-family: Courier New, monospace; font-size: 14px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.2;">' +
+        '<div id="printableInvoice" style="font-family: Arial, sans-serif; font-size: 14px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.2;">' +
         '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">' +
         '<h2 style="margin: 0; font-size: 18px; font-weight: 700;"><a href="/pos/terminal" style="text-decoration: none; color: inherit;">EASY PAY</a></h2>' +
         '<p style="margin: 1px 0; font-size: 10px;">Meegoda, Homagama</p>' +
@@ -522,7 +542,7 @@ function printInvoice(){
         '<style>' +
         '@page { size: 8.5in 5.5in; margin: 4mm; }' +
         '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 11px; line-height: 1.1; } }' +
-        'body { font-family: "Courier New", monospace; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
+        'body { font-family: "Arial", sans-serif; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
         'table { width: 100%; border-collapse: collapse; }' +
         '</style></head>' +
         '<body>' + c + '<script>setTimeout(function(){window.print();}, 400);<\/script></body></html>'
@@ -531,7 +551,7 @@ function printInvoice(){
 }
 
 function showAddCustomerForm(){showModal('addCustomerModal');}
-function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,customer_type:'wholesale'})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
+function saveWholesaleCustomer(){fetch('/api/customers/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('wcName').value,phone:document.getElementById('wcPhone').value,nic:document.getElementById('wcNic').value,address:document.getElementById('wcAddress').value,customer_type:document.getElementById('wcType').value})}).then(r=>r.json()).then(r=>{if(r.success){currentWholesaleCustomer=r.customer;document.getElementById('selectedWholesaleCustomer').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+r.customer.name+' added</div>';hideModal('addCustomerModal');}else alert(r.error);});}
 function loadCategories(){fetch('/api/products/categories').then(r=>r.json()).then(cats=>{var d=document.getElementById('categoryButtons');d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';(cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl">'+c+'</button>');});}
 
 init();

@@ -209,20 +209,7 @@ def create_order():
         discount_amount = float(data.get('discount_amount', 0))
         
         for item_data in data.get('items', []):
-            # Check for balance payment FIRST before product lookup
-            if item_data.get('id') == 'balance_pay':
-                price = float(item_data.get('price', 0))
-                order_item = OrderItem(
-                    product_id=0,
-                    product_name='Balance Payment',
-                    product_barcode='',
-                    product_price=price,
-                    quantity=1,
-                    line_total=price,
-                    discount_amount=0
-                )
-                order.items.append(order_item)
-                continue
+
             
             product = Product.query.get(item_data['id'])
             if not product:
@@ -257,6 +244,7 @@ def create_order():
                 reference=order.order_number
             )
             db.session.add(movement)
+        
         
         order.subtotal = sum(item.product_price * item.quantity for item in order.items)
         order.discount_amount = discount_amount
@@ -630,6 +618,7 @@ def return_order(order_number):
     
     data = request.json
     return_type = data.get('return_type', 'refund')  # refund, replacement, credit_note
+    reason_type = data.get('reason_type', 'no_damage')
     
     # Create return record
     ret = Return(
@@ -643,6 +632,22 @@ def return_order(order_number):
         status='completed'
     )
     ret.generate_return_number()
+    
+    db.session.add(ret)
+    db.session.flush()  # Get ret.id without full commit
+    
+    # Save returned items to ReturnItem records
+    selected_items = data.get('items', [])
+    for item_data in selected_items:
+        product = Product.query.get(item_data.get('product_id'))
+        return_item = ReturnItem(
+            return_id=ret.id,
+            product_name=product.name if product else 'Unknown Item',
+            product_price=float(item_data.get('price', 0)),
+            quantity=int(item_data.get('quantity', 1)),
+            is_damaged=(reason_type == 'damaged')
+        )
+        db.session.add(return_item)
     
     # Handle replacement
     if return_type == 'replacement':
@@ -667,14 +672,6 @@ def return_order(order_number):
     
     # Handle refund
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
-        selected_items = data.get('items', [])
-        
-        discount_ratio = 1.0
-        if order.subtotal > 0:
-            discount_ratio = 1.0 - (order.discount_amount / order.subtotal)
-        
-        reason_type = data.get('reason_type', 'no_damage')
-
         for item_data in selected_items:
             price = float(item_data.get('price', 0))
             qty = int(item_data.get('quantity', 1))
@@ -702,13 +699,34 @@ def return_order(order_number):
     order.is_returned = True
     order.return_date = datetime.now()
     
-    db.session.add(ret)
     db.session.commit()
+    
+    # Build return bill data from saved items
+    saved_items = ReturnItem.query.filter_by(return_id=ret.id).all()
+    returned_items = [{
+        'name': ri.product_name,
+        'price': ri.product_price,
+        'quantity': ri.quantity,
+        'total': ri.product_price * ri.quantity,
+        'is_damaged': ri.is_damaged
+    } for ri in saved_items]
     
     return jsonify({
         'success': True,
         'return_number': ret.return_number,
-        'message': f'Return processed: {ret.return_number}'
+        'message': f'Return processed: {ret.return_number}',
+        'return_details': {
+            'return_number': ret.return_number,
+            'return_type': ret.return_type,
+            'reason': ret.reason,
+            'refund_amount': ret.refund_amount,
+            'refund_method': ret.refund_method,
+            'order_number': order.order_number,
+            'customer_name': order.customer_name or 'Walk-in Customer',
+            'customer_phone': order.customer_phone or '',
+            'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'items': returned_items
+        }
     })
  
 @api_bp.route('/returns/all')
@@ -732,4 +750,34 @@ def get_all_returns():
             'processed_by': r.processor.username if r.processor else 'N/A',
             'customer': r.order.customer_name if r.order else 'N/A'
         } for r in returns]
+    })
+
+@api_bp.route('/returns/<return_number>/details')
+@login_required
+def return_details(return_number):
+    """Get return details for bill/receipt"""
+    ret = Return.query.filter_by(return_number=return_number).first()
+    if not ret:
+        return jsonify({'error': 'Return not found'}), 404
+    
+    order = ret.order
+    items = ReturnItem.query.filter_by(return_id=ret.id).all()
+    
+    return jsonify({
+        'return_number': ret.return_number,
+        'return_type': ret.return_type,
+        'reason': ret.reason,
+        'refund_amount': ret.refund_amount,
+        'refund_method': ret.refund_method,
+        'order_number': order.order_number if order else 'N/A',
+        'customer_name': order.customer_name if order else 'Walk-in Customer',
+        'customer_phone': order.customer_phone if order else '',
+        'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'items': [{
+            'name': ri.product_name,
+            'price': ri.product_price,
+            'quantity': ri.quantity,
+            'total': ri.product_price * ri.quantity,
+            'is_damaged': ri.is_damaged
+        } for ri in items]
     })

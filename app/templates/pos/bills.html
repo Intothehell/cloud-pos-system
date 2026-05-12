@@ -55,9 +55,13 @@
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Search</label>
                 <input type="text" id="searchQuery" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" placeholder="Invoice, name or phone..." onkeyup="loadBills()">
             </div>
+            <!-- All date button -->
             <div class="hidden sm:block">
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Date</label>
-                <input type="date" id="filterDate" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                <div class="flex gap-1">
+                    <input type="date" id="filterDate" class="flex-1 border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                    <button onclick="document.getElementById('filterDate').value='';loadBills()" class="bg-slate-200 px-3 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-slate-300">All</button>
+                </div>
             </div>
             <div>
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
@@ -273,7 +277,7 @@ function viewBill(orderNumber){
         }
         
         document.getElementById('viewInvoiceContent').innerHTML=
-        '<div style="font-family: Courier New, monospace; font-size: 14px; max-width: 800px; margin: 0 auto; color: #000000; line-height: 1.2; padding: 5px 0;">'+
+        '<div style="font-family: Arial, sans-serif; font-size: 14px; max-width: 800px; margin: 0 auto; color: #000000; line-height: 1.2; padding: 5px 0;">'+
         '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">'+
         '<h2 style="margin: 0; font-size: 18px; font-weight: 700;"><a href="/pos/terminal" style="text-decoration: none; color: inherit;">EASY PAY</a></h2>'+
         '<p style="margin: 1px 0; font-size: 10px;">Meegoda, Homagama</p>'+
@@ -309,7 +313,7 @@ function printBill(){
         '<style>' +
         '@page { size: 8.5in 5.5in; margin: 4mm; }' +
         '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 11px; line-height: 1.15; } }' +
-        'body { font-family: "Courier New", monospace; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
+        'body { font-family: "Arial", sans-serif; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
         'table { width: 100%; border-collapse: collapse; }' +
         '</style></head>' +
         '<body>' + c + '<script>setTimeout(function(){window.print();}, 400);<\/script></body></html>'

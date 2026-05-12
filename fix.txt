@@ -9,25 +9,6 @@ milintha, staff, milintha@001
 eranga, staff, 002@eran
 
 
-Retail (Cash/Card):
-
-Refund: Money back to customer, item goes back to inventory
-
-Replacement: No money back, swap damaged item for same item from inventory (stock -1 for replacement, +1 for returned)
-
-Partial return: Customer bought 3 items, returns 1 - refund for that 1 item, restock that 1 item
-
-Wholesale Cash/Card:
-
-Same as retail - cash/card refund or replacement
-
-Wholesale Credit:
-
-Refund: Reduce their credit balance (not cash back), restock item
-
-Replacement: No balance change, swap items in inventory
-
-
 
 Today for the customer payment issue, we made these changes in `routes/customer.py` `record_payment` function:
 
