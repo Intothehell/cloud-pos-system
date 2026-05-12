@@ -283,7 +283,7 @@ def create_order():
                     payment = Payment(
                         customer_id=customer.id,
                         amount=balance_payment,
-                        payment_method='cash',
+                        payment_method=data.get('balance_payment_method', 'cash'),
                         received_by=current_user.id
                     )
                     db.session.add(payment)
@@ -580,17 +580,37 @@ def dashboard_stats():
         db.func.date(Order.created_at) == today
     ).all()
     
+    # Cash sales from POS (excluding payment receipts CPY-)
+    cash_sales = sum(o.total for o in today_orders if o.payment_method == 'cash' and o.order_type != 'payment')
+    card_sales = sum(o.total for o in today_orders if o.payment_method == 'card' and o.order_type != 'payment')
+    
+    # All balance payments today (from POS terminal + customer page)
+    today_payments = Payment.query.filter(
+        db.func.date(Payment.created_at) == today
+    ).all()
+    
+    cash_payments = sum(p.amount for p in today_payments if p.payment_method == 'cash')
+    card_payments = sum(p.amount for p in today_payments if p.payment_method in ('card', 'bank_transfer'))
+    cheque_payments = sum(p.amount for p in today_payments if p.payment_method == 'check')
+    
+    cash_in_hand = cash_sales + cash_payments
+    to_bank = card_sales + card_payments
+    by_cheque = cheque_payments
+    
     return jsonify({
-        'today_sales': sum(o.total for o in today_orders),
+        'today_sales': sum(o.total for o in today_orders if o.order_type != 'payment'),
         'retail_sales': sum(o.total for o in today_orders if o.order_type == 'retail'),
         'wholesale_sales': sum(o.total for o in today_orders if o.order_type == 'wholesale'),
         'transaction_count': len(today_orders),
+        'cash_in_hand': cash_in_hand,
+        'to_bank': to_bank,
+        'by_cheque': by_cheque,
         'products_count': Product.query.filter_by(is_active=True).count(),
         'low_stock': Product.query.filter(
             Product.stock_quantity <= Product.min_stock_level,
             Product.is_active == True
         ).count(),
-        'total_credit': db.session.query(db.func.sum(Customer.balance)).scalar() or 0,
+        'total_credit': db.session.query(db.func.sum(Customer.balance)).filter(Customer.is_active == True).scalar() or 0,
         'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count()
     })
 

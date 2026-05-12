@@ -166,6 +166,11 @@
                         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Pay Old Balance (Rs.)</label>
                         <div class="flex gap-2">
                             <input type="number" id="balancePayment" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Amount" value="0" min="0" step="0.01" onchange="updateCartDisplay()">
+                            <select id="balancePaymentMethod" class="border-2 border-slate-200 rounded-xl px-2 py-2 text-sm bg-white/80">
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="check">Cheque</option>
+                            </select>
                             <button onclick="addBalanceToCart()" class="bg-amber-500 text-white px-3 py-2 rounded-xl text-sm font-medium">Add</button>
                         </div>
                     </div>
@@ -484,7 +489,7 @@ function processCreditPayment(){if(!currentWholesaleCustomer){alert('Select cust
 
 function processSale(method,cash){
     var info=getInfo();
-    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.filter(i=>i.id!=='balance_pay').map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_amount:document.getElementById('discountAmount').value||0,balance_payment:parseFloat(document.getElementById('balancePayment').value)||0,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
+    fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:cart.filter(i=>i.id!=='balance_pay').map(i=>({id:i.id,quantity:i.quantity,price:i.price})),payment_method:method,cash_received:cash,discount_amount:document.getElementById('discountAmount').value||0,balance_payment:parseFloat(document.getElementById('balancePayment').value)||0,balance_payment_method:document.getElementById('balancePaymentMethod').value,customer_id:currentWholesaleCustomer?.id||null,customer_name:info.name,customer_phone:info.phone,customer_address:info.address,sale_type:customerType})})
     .then(r=>r.json()).then(data=>{if(data.success){if(method==='cash')fetch('/api/open-drawer');showInvoice(data.order,info);resetSale();checkLowStock();loadAllProducts();}else alert(data.error);});
 }
 function resetSale(){cart=[];currentWholesaleCustomer=null;['discountAmount','custName','custPhone','custAddress'].forEach(id=>document.getElementById(id).value='');document.getElementById('selectedWholesaleCustomer').innerHTML='';updateCartDisplay();document.getElementById('searchInput').focus();}
