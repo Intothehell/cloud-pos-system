@@ -580,6 +580,10 @@ def dashboard_stats():
         db.func.date(Order.created_at) == today
     ).all()
     
+    today_returns = Return.query.filter(
+        db.func.date(Return.created_at) == today
+    ).all()
+    
     # Cash sales from POS (excluding payment receipts CPY-)
     cash_sales = sum(o.total for o in today_orders if o.payment_method == 'cash' and o.order_type != 'payment')
     card_sales = sum(o.total for o in today_orders if o.payment_method == 'card' and o.order_type != 'payment')
@@ -593,14 +597,29 @@ def dashboard_stats():
     card_payments = sum(p.amount for p in today_payments if p.payment_method in ('card', 'bank_transfer'))
     cheque_payments = sum(p.amount for p in today_payments if p.payment_method == 'check')
     
-    cash_in_hand = cash_sales + cash_payments
-    to_bank = card_sales + card_payments
+    # Refunds today by method
+    cash_refunds = sum(r.refund_amount for r in today_returns if r.refund_method == 'cash')
+    card_refunds = sum(r.refund_amount for r in today_returns if r.refund_method == 'card')
+    
+    # Retail and Wholesale sales
+    retail_sales = sum(o.total for o in today_orders if o.order_type == 'retail')
+    wholesale_sales = sum(o.total for o in today_orders if o.order_type == 'wholesale')
+    
+    # Subtract returns from sales by original order type
+    for r in today_returns:
+        if r.order and r.order.order_type == 'retail':
+            retail_sales -= r.refund_amount
+        elif r.order and r.order.order_type == 'wholesale':
+            wholesale_sales -= r.refund_amount
+    
+    cash_in_hand = cash_sales + cash_payments - cash_refunds
+    to_bank = card_sales + card_payments - card_refunds
     by_cheque = cheque_payments
     
     return jsonify({
-        'today_sales': sum(o.total for o in today_orders if o.order_type != 'payment'),
-        'retail_sales': sum(o.total for o in today_orders if o.order_type == 'retail'),
-        'wholesale_sales': sum(o.total for o in today_orders if o.order_type == 'wholesale'),
+        'today_sales': retail_sales + wholesale_sales,
+        'retail_sales': retail_sales,
+        'wholesale_sales': wholesale_sales,
         'transaction_count': len(today_orders),
         'cash_in_hand': cash_in_hand,
         'to_bank': to_bank,
@@ -613,7 +632,6 @@ def dashboard_stats():
         'total_credit': db.session.query(db.func.sum(Customer.balance)).filter(Customer.is_active == True).scalar() or 0,
         'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count()
     })
-
 
 # ============ DRAWER ============
 @api_bp.route('/open-drawer')
