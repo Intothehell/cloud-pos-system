@@ -528,7 +528,7 @@ function showInvoice(order,info){
         '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-top: 4px; padding-top: 4px; border-top: 1px solid #cbd5e1;"><span>TOTAL</span><span>Rs.'+order.total.toFixed(2)+'</span></p>' +
         '</div>' +
         '<p style="margin: 3px 0; font-size: 11px;"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>' +
-        (order.credit_paid > 0 ? '<p style="margin: 3px 0; font-size: 11px;"><strong>Credit Paid:</strong> Rs.'+(order.credit_paid||0).toFixed(2)+'</p>' : '') +
+        (order.credit_paid > 0 ? '<p style="margin: 3px 0; font-size: 11px;"><strong>Credit Paid:</strong> Rs.'+(order.credit_paid||0).toFixed(2)+' - '+(order.credit_paid_method==='card'?'Card':order.credit_paid_method==='check'?'Cheque':'Cash')+'</p>' : '') +
         creditInfo +
         (order.change ? '<p style="margin: 3px 0; font-size: 11px;"><strong>Change:</strong> Rs.'+order.change.toFixed(2)+'</p>' : '') +
         '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 10px; line-height: 1.1;">' +

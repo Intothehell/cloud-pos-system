@@ -304,6 +304,7 @@ def create_order():
                 'subtotal': order.subtotal,
                 'discount': order.discount_amount,
                 'credit_paid': order.credit_paid or 0,
+                'credit_paid_method': data.get('balance_payment_method', 'cash') if order.credit_paid > 0 else None,
                 'change': order.change_given,
                 'cash_received': order.cash_received,
                 'payment_method': order.payment_method,
