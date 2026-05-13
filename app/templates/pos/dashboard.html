@@ -91,7 +91,7 @@
             <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-400 rounded-full -mr-8 -mt-8 opacity-20"></div>
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-sm text-slate-500 font-medium mb-1">Today Sales + Payments</p>
+                    <p class="text-sm text-slate-500 font-medium mb-1">Total Sales</p>
                     <p class="text-2xl font-bold text-emerald-600" id="todaySales">Rs.0</p>
                 </div>
                 <div class="stat-icon bg-gradient-green">
@@ -216,7 +216,7 @@
     <!-- Today Summary -->
     <div class="glass-card rounded-3xl p-6">
         <h2 class="text-lg font-semibold text-slate-700 mb-4">Today's Summary</h2>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
                 <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Retail Sales</p>
                 <p class="text-2xl font-bold text-indigo-600" id="retailSales">Rs.0</p>
@@ -230,8 +230,16 @@
                 <p class="text-2xl font-bold text-emerald-600" id="transactionCount">0</p>
             </div>
             <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
-                <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Products</p>
-                <p class="text-2xl font-bold text-slate-600" id="productsCount">0</p>
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">Cash in Hand</p>
+                <p class="text-2xl font-bold text-green-600" id="cashInHand">Rs.0</p>
+            </div>
+            <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">To Bank</p>
+                <p class="text-2xl font-bold text-blue-600" id="toBank">Rs.0</p>
+            </div>
+            <div class="bg-white/50 rounded-2xl p-4 text-center border border-white/80">
+                <p class="text-xs text-slate-400 uppercase tracking-wider font-medium mb-2">By Cheque</p>
+                <p class="text-2xl font-bold text-purple-600" id="byCheque">Rs.0</p>
             </div>
         </div>
     </div>
@@ -248,7 +256,9 @@ function loadStats() {
             document.getElementById('retailSales').textContent = 'Rs.' + (stats.retail_sales || 0).toLocaleString();
             document.getElementById('wholesaleSales').textContent = 'Rs.' + (stats.wholesale_sales || 0).toLocaleString();
             document.getElementById('transactionCount').textContent = stats.transaction_count || 0;
-            document.getElementById('productsCount').textContent = stats.products_count || 0;
+            document.getElementById('cashInHand').textContent = 'Rs.' + (stats.cash_in_hand || 0).toLocaleString();
+            document.getElementById('toBank').textContent = 'Rs.' + (stats.to_bank || 0).toLocaleString();
+            document.getElementById('byCheque').textContent = 'Rs.' + (stats.by_cheque || 0).toLocaleString();
         });
 }
 

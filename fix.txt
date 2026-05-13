@@ -10,14 +10,8 @@ eranga, staff, 002@eran
 
 
 
-Today for the customer payment issue, we made these changes in `routes/customer.py` `record_payment` function:
+5. Return refunds don't create Payment records
+When a cash refund is processed, customer.balance is adjusted for credit customers, but no Payment record is created tracking the refund. This means the refund doesn't appear in the customer's payment history. If you ever want that traceability, you'd add a Payment record with a negative amount.
 
-1. **Removed `notes` field** from the receipt Order creation (the `notes` column doesn't exist in Order model)
-
-2. **Added required fields to OrderItem** - `product_id=0` and `product_barcode=''` since those columns can't be null
-
-3. **Removed `status='completed'`** from receipt Order creation (column removed from model)
-
-4. **Ran `add_columns_safe.py`** to add `previous_balance` and `new_balance` columns to the database
-
-That should fix the payment issue. Is it working now?
+2. Balance payment method on the invoice
+The invoice shows "Credit Paid: Rs.X" but doesn't show how it was paid (cash/card/cheque). Adding the method would help with reconciliation:
