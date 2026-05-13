@@ -540,9 +540,9 @@ function printInvoice(){
     w.document.write(
         '<html><head><title>Bill</title>' +
         '<style>' +
-        '@page { size: 8.5in 5.5in; margin: 4mm; }' +
-        '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 11px; line-height: 1.1; } }' +
-        'body { font-family: "Arial", sans-serif; font-size: 10px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
+        '@page { size: 8in 5.5in; margin: 4mm; }' +
+        '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 14px; line-height: 1.15; } }' +
+        'body { font-family: Arial, Helvetica, sans-serif; font-weight: 300; font-size: 14px; max-width: 100%; margin: 0 auto; padding: 8px; background: #fff; color: #000; line-height: 1.15; }' +
         'table { width: 100%; border-collapse: collapse; }' +
         '</style></head>' +
         '<body>' + c + '<script>setTimeout(function(){window.print();}, 400);<\/script></body></html>'
