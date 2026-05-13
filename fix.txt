@@ -8,7 +8,7 @@ manager, manager, glass#1324
 milintha, staff, milintha@001
 eranga, staff, 002@eran
 
-
+B/
 
 5. Return refunds don't create Payment records
 When a cash refund is processed, customer.balance is adjusted for credit customers, but no Payment record is created tracking the refund. This means the refund doesn't appear in the customer's payment history. If you ever want that traceability, you'd add a Payment record with a negative amount.

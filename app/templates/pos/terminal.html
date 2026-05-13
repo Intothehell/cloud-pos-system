@@ -496,48 +496,48 @@ function resetSale(){cart=[];currentWholesaleCustomer=null;['discountAmount','cu
 
 function showInvoice(order,info){
     var itemsHtml = order.items.map(function(i){
-        return '<tr><td style="padding: 1px 0; font-size: 11px;">'+i.name+'</td><td style="text-align: right; font-size: 11px;">'+i.quantity+'</td><td style="text-align: right; font-size: 11px;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right; font-size: 11px;">Rs.'+i.total.toFixed(2)+'</td></tr>';
+        return '<tr><td style="padding: 1px 0; font-size: 14px;">'+i.name+'</td><td style="text-align: right; font-size: 14px;">'+i.quantity+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.total.toFixed(2)+'</td></tr>';
     }).join('');
     
     var creditInfo = '';
     if (order.payment_method === 'credit') {
-        creditInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 11px;"><span><strong>Previous Balance:</strong> Rs.'+(order.previous_balance||0).toFixed(2)+'</span><span><strong>New Balance:</strong> Rs.'+(order.new_balance||0).toFixed(2)+'</span></p>';
+        creditInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 14px;"><span><strong>Previous Balance:</strong> Rs.'+(order.previous_balance||0).toFixed(2)+'</span><span><strong>New Balance:</strong> Rs.'+(order.new_balance||0).toFixed(2)+'</span></p>';
     }
     
     document.getElementById('invoiceContent').innerHTML = 
-        '<div id="printableInvoice" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.2; font-weight: 300;">' +
+        '<div id="printableInvoice" style="font-family: Arial, Helvetica, sans-serif; font-size: 14px; max-width: 800px; margin: 0 auto; padding: 5px 20px; color: #000000; line-height: 1.3; font-weight: 300;">' +
         '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">' +
-        '<h2 style="margin: 0; font-size: 18px; font-weight: 700;"><a href="/pos/terminal" style="text-decoration: none; color: inherit;">EASY PAY</a></h2>' +
-        '<p style="margin: 1px 0; font-size: 10px;">Meegoda, Homagama</p>' +
-        '<p style="margin: 1px 0; font-size: 10px;">Tel: +(94)75 427 1371</p>' +
-        '<p style="margin: 1px 0; color: #64748b; font-size: 10px;">'+order.created_at+'</p>' +
+        '<h2 style="margin: 0; font-size: 18px; font-weight: 700;">EASY PAY</h2>' +
+        '<p style="margin: 1px 0; font-size: 14px;">Meegoda, Homagama</p>' +
+        '<p style="margin: 1px 0; font-size: 14px;">Tel: +(94)75 427 1371</p>' +
+        '<p style="margin: 1px 0; color: #64748b; font-size: 14px;">'+order.created_at+'</p>' +
         '</div>' +
-        '<p style="text-align: center; font-weight: 700; font-size: 13px; margin: 4px 0;">INVOICE #'+order.order_number+'</p>' +
-        '<div style="border-bottom: 0.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 4px; font-size: 11px; line-height: 1.3;">' +
+        '<p style="text-align: center; font-weight: 700; font-size: 14px; margin: 4px 0;">INVOICE #'+order.order_number+'</p>' +
+        '<div style="border-bottom: 0.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 4px; font-size: 14px; line-height: 1.3;">' +
         '<p style="margin: 1px 0;"><strong>Customer:</strong> '+info.name+'</p>' +
         (info.phone ? '<p style="margin: 1px 0;"><strong>Phone:</strong> '+info.phone+'</p>' : '') +
         '<p style="margin: 1px 0;"><strong>Sale Type:</strong> '+(order.sale_type||'RETAIL').toUpperCase()+'</p>' +
         '</div>' +
-        '<table style="width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; line-height: 1.2;">' +
+        '<table style="width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 14px; line-height: 1.3;">' +
         '<tr style="border-bottom: 0.5px solid #cbd5e1;"><th style="text-align: left; padding: 3px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>' +
         itemsHtml +
         '</table>' +
-        '<div style="border-top: 1px solid #cbd5e1; border-bottom: 0.5px solid #cbd5e1; padding: 5px 0; margin: 5px 0; font-size: 12px; line-height: 1.3;">' +
+        '<div style="border-top: 1px solid #cbd5e1; border-bottom: 0.5px solid #cbd5e1; padding: 5px 0; margin: 5px 0; font-size: 14px; line-height: 1.3;">' +
         '<p style="display: flex; justify-content: space-between; margin: 1px 0;"><span>Subtotal</span><span>Rs.'+order.subtotal.toFixed(2)+'</span></p>' +
         '<p style="display: flex; justify-content: space-between; color: #000000; margin: 1px 0;"><span>Discount</span><span>-Rs.'+order.discount.toFixed(2)+'</span></p>' +
         '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-top: 4px; padding-top: 4px; border-top: 1px solid #cbd5e1;"><span>TOTAL</span><span>Rs.'+order.total.toFixed(2)+'</span></p>' +
         '</div>' +
-        '<p style="margin: 3px 0; font-size: 11px;"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>' +
-        (order.credit_paid > 0 ? '<p style="margin: 3px 0; font-size: 11px;"><strong>Credit Paid:</strong> Rs.'+(order.credit_paid||0).toFixed(2)+' - '+(order.credit_paid_method==='card'?'Card':order.credit_paid_method==='check'?'Cheque':'Cash')+'</p>' : '') +
+        '<p style="margin: 3px 0; font-size: 14px;"><strong>Payment:</strong> '+order.payment_method.toUpperCase()+'</p>' +
+        (order.credit_paid > 0 ? '<p style="margin: 3px 0; font-size: 14px;"><strong>Credit Paid:</strong> Rs.'+(order.credit_paid||0).toFixed(2)+' - '+(order.credit_paid_method==='card'?'Card':order.credit_paid_method==='check'?'Cheque':'Cash')+'</p>' : '') +
         creditInfo +
-        (order.change ? '<p style="margin: 3px 0; font-size: 11px;"><strong>Change:</strong> Rs.'+order.change.toFixed(2)+'</p>' : '') +
-        '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 10px; line-height: 1.1;">' +
+        (order.change ? '<p style="margin: 3px 0; font-size: 14px;"><strong>Change:</strong> Rs.'+order.change.toFixed(2)+'</p>' : '') +
+        '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 12px; line-height: 1.1;">' +
         '<p style="margin: 0;">Thank you for your purchase!</p>' +
         '<p style="margin: 0;">Please come again</p>' +
         '</div></div>';
     showModal('invoiceModal');
 }
- 
+
 
 function printInvoice(){
     var c = document.getElementById('printableInvoice').innerHTML;
