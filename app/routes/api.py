@@ -618,7 +618,8 @@ def dashboard_stats():
     to_bank = card_sales + card_payments - card_refunds
     by_cheque = cheque_payments
     
-    # Overdue customers: balance > 0, no payment in 4 days, has pending credit order 4+ days old
+    # Overdue customers: balance > 0, no payment in 4 days, 
+    # AND (has pending credit order 4+ days old OR has never ordered)
     four_days_ago = datetime.now() - timedelta(days=4)
     overdue_customers = Customer.query.filter(
         Customer.is_active == True,
@@ -626,11 +627,14 @@ def dashboard_stats():
         Customer.balance > 0,
         ~Customer.payments.any(db.and_(Payment.created_at >= four_days_ago))
     ).filter(
-        Customer.orders.any(db.and_(
-            Order.payment_method == 'credit',
-            Order.payment_status == 'pending',
-            Order.created_at < four_days_ago
-        ))
+        db.or_(
+            Customer.orders.any(db.and_(
+                Order.payment_method == 'credit',
+                Order.payment_status == 'pending',
+                Order.created_at < four_days_ago
+            )),
+            ~Customer.orders.any()
+        )
     ).count()
 
     return jsonify({
@@ -664,11 +668,14 @@ def overdue_customers_list():
         Customer.balance > 0,
         ~Customer.payments.any(db.and_(Payment.created_at >= four_days_ago))
     ).filter(
-        Customer.orders.any(db.and_(
-            Order.payment_method == 'credit',
-            Order.payment_status == 'pending',
-            Order.created_at < four_days_ago
-        ))
+        db.or_(
+            Customer.orders.any(db.and_(
+                Order.payment_method == 'credit',
+                Order.payment_status == 'pending',
+                Order.created_at < four_days_ago
+            )),
+            ~Customer.orders.any()
+        )
     ).order_by(Customer.balance.desc()).all()
     
     return jsonify({
