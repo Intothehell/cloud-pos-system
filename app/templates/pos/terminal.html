@@ -496,7 +496,7 @@ function resetSale(){cart=[];currentWholesaleCustomer=null;['discountAmount','cu
 
 function showInvoice(order,info){
     var itemsHtml = order.items.map(function(i){
-        return '<tr><td style="padding: 1px 0; font-size: 14px;">'+i.name+'</td><td style="text-align: right; font-size: 14px;">'+i.quantity+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.total.toFixed(2)+'</td></tr>';
+        return '<tr style="border-bottom: 0.5px solid #d1d5db;"><td style="padding: 1px 0; font-size: 14px;">'+i.name+'</td><td style="text-align: right; font-size: 14px;">'+i.quantity+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.total.toFixed(2)+'</td></tr>';
     }).join('');
     
     var creditInfo = '';
