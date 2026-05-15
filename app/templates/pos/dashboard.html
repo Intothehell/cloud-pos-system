@@ -175,7 +175,7 @@
             </a>
             
             <!-- Inventory -->
-            {% if current_user.role in ['owner','manager'] %}
+            {% if current_user.role in ['owner','manager','reviewer'] %}
             <a href="{{ url_for('inventory.manage') }}" class="action-card bg-gradient-green rounded-2xl p-5 text-center text-white shadow-lg group">
                 <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition">
                     <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

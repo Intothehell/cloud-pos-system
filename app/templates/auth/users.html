@@ -32,6 +32,7 @@
                         <span class="px-2 py-0.5 rounded-full text-xs font-medium 
                             {{ 'bg-purple-100 text-purple-800' if u.role == 'owner' else 
                                'bg-indigo-100 text-indigo-800' if u.role == 'manager' else 
+                               'bg-amber-100 text-amber-700' if u.role == 'reviewer' else 
                                'bg-slate-200 text-slate-600' }}">{{ u.role }}</span>
                     </td>
                     <td class="px-4 py-3 text-center">
@@ -82,6 +83,7 @@
                         <option value="staff">Staff</option>
                         <option value="manager">Manager</option>
                         <option value="owner">Owner</option>
+                        <option value="reviewer">Reviewer (Read-only)</option>
                     </select>
                 </div>
             </div>
