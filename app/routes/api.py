@@ -369,7 +369,7 @@ def get_all_orders():
     if payment != 'all':
         query = query.filter(Order.payment_method == payment)
     
-    orders = query.order_by(Order.created_at.desc()).limit(100).all()
+    orders = query.order_by(Order.created_at.desc()).all()
     
     return jsonify({
         'orders': [{
