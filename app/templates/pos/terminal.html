@@ -501,7 +501,7 @@ function showInvoice(order,info){
     
     var creditInfo = '';
     if (order.payment_method === 'credit') {
-        creditInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 14px;"><span><strong>Previous Balance:</strong> Rs.'+(order.previous_balance||0).toFixed(2)+'</span><span><strong>New Balance:</strong> Rs.'+(order.new_balance||0).toFixed(2)+'</span></p>';
+        creditInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 14px;"><span>Previous Balance: Rs.'+(order.previous_balance||0).toFixed(2)+'</span><span style="font-weight: 700;">New Balance: Rs.'+(order.new_balance||0).toFixed(2)+'</span></p>';
     }
     
     document.getElementById('invoiceContent').innerHTML = 
