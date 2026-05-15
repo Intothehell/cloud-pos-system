@@ -60,10 +60,22 @@
     
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-slate-800">
-            <span id="greetingText">Hello</span>, <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ current_user.username|capitalize }}</span> 👋
-        </h1>
-        <p class="text-slate-500 mt-1">Here's your business overview</p>
+        <div class="flex items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-800">
+                    <span id="greetingText">Hello</span>, <span class="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">{{ current_user.username|capitalize }}</span> 👋
+                </h1>
+                <p class="text-slate-500 mt-1">Here's your business overview</p>
+            </div>
+            <div id="overdueBell" class="relative hidden ml-auto">
+                <button onclick="showOverdueCustomers()" class="relative p-2 rounded-xl bg-amber-50 hover:bg-amber-100 transition border border-amber-200" title="Customers with overdue payments">
+                    <svg class="w-6 h-6 text-amber-500" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                    </svg>
+                    <span id="overdueCount" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Stats Grid -->
@@ -245,6 +257,27 @@
     </div>
 </div>
 
+<!-- Overdue Customers Modal -->
+<div id="overdueModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4" style="backdrop-filter: blur(4px); background: rgba(0,0,0,0.4);">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold flex items-center gap-2">
+                <span class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-amber-500" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                        <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>
+                    </svg>
+                </span>
+                Overdue Payments
+            </h3>
+            <button onclick="hideModal('overdueModal')" class="bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium">Close</button>
+        </div>
+        <p class="text-sm text-slate-500 mb-4">Customers with no payments in the last 4 days</p>
+        <div id="overdueList" class="space-y-2">
+            <p class="text-center text-slate-400 py-4">Loading...</p>
+        </div>
+    </div>
+</div>
+
 <script>
 function loadStats() {
     fetch('/api/dashboard/stats')
@@ -259,6 +292,13 @@ function loadStats() {
             document.getElementById('cashInHand').textContent = 'Rs.' + (stats.cash_in_hand || 0).toLocaleString();
             document.getElementById('toBank').textContent = 'Rs.' + (stats.to_bank || 0).toLocaleString();
             document.getElementById('byCheque').textContent = 'Rs.' + (stats.by_cheque || 0).toLocaleString();
+                        var overdueCount = stats.overdue_customers || 0;
+            if (overdueCount > 0) {
+                document.getElementById('overdueBell').classList.remove('hidden');
+                document.getElementById('overdueCount').textContent = overdueCount;
+            } else {
+                document.getElementById('overdueBell').classList.add('hidden');
+            }
         });
 }
 
@@ -272,5 +312,30 @@ document.addEventListener('visibilitychange', function() {
     if (!document.hidden) loadStats();
 });
 window.addEventListener('focus', loadStats);
+
+function showOverdueCustomers() {
+    fetch('/api/dashboard/overdue-customers')
+        .then(r => r.json())
+        .then(data => {
+            var list = document.getElementById('overdueList');
+            if (!data.customers.length) {
+                list.innerHTML = '<p class="text-center text-slate-400 py-4">No overdue customers 🎉</p>';
+            } else {
+                list.innerHTML = data.customers.map(function(c) {
+                    return '<div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">' +
+                        '<div>' +
+                            '<p class="font-medium text-sm">' + c.name + '</p>' +
+                            '<p class="text-xs text-slate-400">' + c.phone + ' | Last payment: ' + (c.last_payment || 'Never') + '</p>' +
+                        '</div>' +
+                        '<span class="font-bold text-red-600 text-sm">Rs.' + c.balance.toLocaleString() + '</span>' +
+                    '</div>';
+                }).join('');
+            }
+            showModal('overdueModal');
+        });
+}
+
+function showModal(id) { document.getElementById(id).classList.remove('hidden'); document.getElementById(id).classList.add('flex'); }
+function hideModal(id) { document.getElementById(id).classList.add('hidden'); document.getElementById(id).classList.remove('flex'); }
 </script>
 {% endblock %}

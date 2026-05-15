@@ -7,6 +7,7 @@ from app.models.customer import Customer, Payment
 from app.models.user import User
 from datetime import datetime
 from app.models.order import Order, OrderItem, Return, ReturnItem
+from datetime import datetime, timedelta
 
 api_bp = Blueprint('api', __name__)
 
@@ -617,6 +618,15 @@ def dashboard_stats():
     to_bank = card_sales + card_payments - card_refunds
     by_cheque = cheque_payments
     
+    # Overdue customers: balance > 0, no payment in last 4 days
+    four_days_ago = datetime.now() - timedelta(days=4)
+    overdue_customers = Customer.query.filter(
+        Customer.is_active == True,
+        Customer.customer_type == 'wholesale',
+        Customer.balance > 0,
+        ~Customer.payments.any(db.and_(Payment.created_at >= four_days_ago))
+    ).count()
+
     return jsonify({
         'today_sales': retail_sales + wholesale_sales,
         'retail_sales': retail_sales,
@@ -631,7 +641,32 @@ def dashboard_stats():
             Product.is_active == True
         ).count(),
         'total_credit': db.session.query(db.func.sum(Customer.balance)).filter(Customer.is_active == True).scalar() or 0,
-        'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count()
+        'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count(),
+        'overdue_customers': overdue_customers
+    })
+
+@api_bp.route('/dashboard/overdue-customers')
+@login_required
+def overdue_customers_list():
+    """Get list of overdue customers for the reminder modal"""
+    from datetime import timedelta
+    four_days_ago = datetime.now() - timedelta(days=4)
+    
+    customers = Customer.query.filter(
+        Customer.is_active == True,
+        Customer.customer_type == 'wholesale',
+        Customer.balance > 0,
+        ~Customer.payments.any(db.and_(Payment.created_at >= four_days_ago))
+    ).order_by(Customer.balance.desc()).all()
+    
+    return jsonify({
+        'customers': [{
+            'id': c.id,
+            'name': c.name,
+            'phone': c.phone,
+            'balance': c.balance,
+            'last_payment': c.payments[-1].created_at.strftime('%Y-%m-%d') if c.payments else 'Never'
+        } for c in customers]
     })
 
 # ============ DRAWER ============
