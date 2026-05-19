@@ -119,6 +119,8 @@ def delete_customer(customer_id):
         return redirect(url_for('customer.list_customers'))
     
     customer_name = customer.name
+    customer.phone = f"{customer.phone}_deleted_{customer.id}"
+    customer.nic = f"{customer.nic}_deleted_{customer.id}"
     customer.is_active = False
     db.session.commit()
     
@@ -236,4 +238,25 @@ def record_payment(customer_id):
     flash(f'Payment of Rs.{amount:.2f} recorded! New balance: Rs.{customer.balance:.2f}', 'success')
     return redirect(url_for('pos.bills'))
 
-
+@customer_bp.route('/settle-orders/<int:customer_id>', methods=['POST'])
+@login_required
+def settle_orders(customer_id):
+    """Mark all pending orders as completed for a customer"""
+    if current_user.role not in ['owner', 'manager']:
+        flash('Permission denied', 'danger')
+        return redirect(url_for('customer.list_customers'))
+    
+    customer = Customer.query.get_or_404(customer_id)
+    
+    pending_orders = Order.query.filter_by(
+        customer_id=customer.id,
+        payment_status='pending'
+    ).all()
+    
+    count = len(pending_orders)
+    for order in pending_orders:
+        order.payment_status = 'completed'
+    
+    db.session.commit()
+    flash(f'{count} pending orders settled for {customer.name}.', 'success')
+    return redirect(url_for('customer.list_customers'))

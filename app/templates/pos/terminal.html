@@ -370,7 +370,17 @@ function changeCustomerType() {
 }
 
 function searchProducts(){var q=document.getElementById('searchInput').value;if(!q){displayProducts(allProducts);return;}fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts);}
-function filterCategory(cat){displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));}
+function filterCategory(cat){
+    displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));
+    // Update button styles
+    document.querySelectorAll('#categoryButtons button').forEach(function(btn){
+        if(btn.textContent.trim() === cat || (cat === 'all' && btn.textContent.trim() === 'All')){
+            btn.className = 'px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl';
+        } else {
+            btn.className = 'px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl';
+        }
+    });
+}
 
 function displayProducts(products){
     var g=document.getElementById('productGrid');

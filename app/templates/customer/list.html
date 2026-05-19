@@ -21,6 +21,27 @@
     .gradient-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
     .gradient-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
     .modal-backdrop { backdrop-filter: blur(4px); background: rgba(0,0,0,0.4); }
+
+    .copy-toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        z-index: 9999;
+        animation: fadeInOut 1.5s ease forwards;
+    }
+    @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+        15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        75% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+    }
 </style>
 {% endblock %}
 
@@ -97,6 +118,9 @@
                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
+                {% if customer.balance == 0 %}
+                    <button onclick="confirmSettle({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100" title="Settle pending">✓</button>
+                {% endif %}
                 {% endif %}
             </div>
         </div>
@@ -145,6 +169,9 @@
                                 <button onclick="confirmDelete({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-red-50 text-red-600 text-xs font-medium rounded-lg hover:bg-red-100">
                                     <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                 </button>
+                                {% if customer.balance == 0 %}
+                                <button onclick="confirmSettle({{ customer.id }}, '{{ customer.name }}')" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100" title="Settle pending orders">✓</button>
+                                {% endif %}
                                 {% endif %}
                             </div>
                         </td>
@@ -320,6 +347,21 @@
     </div>
 </div>
 
+<!-- Confirm Settle Modal -->
+<div id="settleModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-4 sm:p-6 text-center">
+        <svg class="w-12 h-12 mx-auto mb-3 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><polyline points="9 12 12 15 16 9"></polyline></svg>
+        <h3 class="text-lg font-bold text-slate-800">Settle Orders?</h3>
+        <p class="text-sm text-slate-500 mt-1" id="settleMsg"></p>
+        <div class="flex gap-2 mt-4">
+            <button type="button" onclick="closeSettle()" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium text-sm">Cancel</button>
+            <form id="settleForm" method="POST" class="flex-1">
+                <button type="submit" class="w-full gradient-emerald text-white py-2.5 rounded-xl font-medium text-sm">Confirm</button>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 function showModal(id){document.getElementById(id).classList.remove('hidden');document.getElementById(id).classList.add('flex');}
 function hideModal(id){document.getElementById(id).classList.add('hidden');document.getElementById(id).classList.remove('flex');}
@@ -348,15 +390,77 @@ function filterTable(){
 function showPayment(id,name,balance){
     document.getElementById('paymentForm').action='/customer/record-payment/'+id;
     document.getElementById('payCustName').textContent=name;
-    document.getElementById('payBalance').textContent='Rs.'+balance.toLocaleString();
+    document.getElementById('payBalance').textContent='Rs.'+Number(balance).toFixed(2);
     document.getElementById('paymentAmount').max = balance;
-    document.getElementById('maxPaymentAmount').textContent = 'Rs.'+balance.toLocaleString();
+    document.getElementById('maxPaymentAmount').textContent = 'Rs.'+Number(balance).toFixed(2);
     showModal('paymentModal');
 }
 
 function viewCustomer(id){
     fetch('/api/customers/'+id+'/details').then(r=>r.json()).then(c=>{
-        document.getElementById('customerDetails').innerHTML=
+        function groupByMonth(items, dateKey) {
+            var groups = {};
+            items.forEach(function(item){
+                var d = new Date(item[dateKey]);
+                var month = d.toLocaleString('default', {month:'long', year:'numeric'});
+                if(!groups[month]) groups[month] = [];
+                groups[month].push(item);
+            });
+            return groups;
+        }
+        
+            function buildSection(title, items, columns, emptyMsg) {
+            var sectionId = title.replace(/\s+/g,'');
+            var html = '<div class="border border-slate-200 rounded-xl mb-3 overflow-hidden">';
+            html += '<div class="flex items-center justify-between p-3 bg-slate-50 cursor-pointer" onclick="toggleSection(\''+sectionId+'\')">';
+            html += '<h5 class="font-semibold text-sm">'+title+' ('+items.length+')</h5>';
+            html += '<svg id="'+sectionId+'Icon" class="w-4 h-4 text-slate-400 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            html += '</div>';
+            html += '<div id="'+sectionId+'" class="">';
+            
+            if(items.length === 0){
+                html += '<p class="px-3 py-4 text-center text-slate-400 text-xs">'+emptyMsg+'</p>';
+            } else {
+                var grouped = groupByMonth(items, 'created_at');
+                var monthKeys = Object.keys(grouped).sort().reverse();
+                monthKeys.forEach(function(month, mi){
+                    var monthId = sectionId + '_' + mi;
+                    html += '<div class="bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 cursor-pointer flex items-center justify-between" onclick="toggleSection(\''+monthId+'\')">';
+                    html += '<span>'+month+' ('+grouped[month].length+')</span>';
+                    html += '<svg id="'+monthId+'Icon" class="w-3 h-3 text-slate-400 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+                    html += '</div>';
+                    html += '<div id="'+monthId+'">';
+                    html += '<table class="w-full text-xs"><tbody>';
+                    grouped[month].forEach(function(item){
+                        html += '<tr class="border-b border-slate-100">';
+                        columns.forEach(function(col){
+                            var val = item[col.key];
+                            if(col.key === 'order_number'){
+                                html += '<td class="px-3 py-2"><span class="font-medium text-indigo-600">'+val+'</span><button onclick="event.stopPropagation();copyToClipboard(\''+val+'\')" class="text-slate-300 hover:text-indigo-500 ml-1.5" title="Copy"><svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>';
+                            } else if(col.key === 'return_number'){
+                                html += '<td class="px-3 py-2 font-medium text-red-600">'+val+'</td>';
+                            } else if(col.key === 'method' || col.key === 'payment_status' || col.key === 'refund_method'){
+                                html += '<td class="px-3 py-2 text-slate-500">'+(val ? val.charAt(0).toUpperCase()+val.slice(1) : '')+'</td>';
+                            } else if(col.key === 'reference'){
+                                html += '<td class="px-3 py-2 text-slate-400 text-xs">'+(val||'-')+'</td>';
+                            } else if(col.key === 'date'){
+                                html += '<td class="px-3 py-2 text-slate-500 whitespace-nowrap">'+val+'</td>';
+                            } else if(col.align === 'right'){
+                                html += '<td class="px-3 py-2 text-right font-medium '+(col.red?'text-red-600':'')+'">'+val+'</td>';
+                            } else {
+                                html += '<td class="px-3 py-2">'+val+'</td>';
+                            }
+                        });
+                        html += '</tr>';
+                    });
+                    html += '</tbody></table></div>';
+                });
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        document.getElementById('customerDetails').innerHTML =
         '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><h4 class="text-lg font-bold">'+c.name+'</h4>'+
         '<p class="text-sm text-slate-600"><strong>Phone:</strong> '+c.phone+'</p>'+
         '<p class="text-sm text-slate-600"><strong>Email:</strong> '+(c.email||'-')+'</p>'+
@@ -365,16 +469,27 @@ function viewCustomer(id){
         '<p class="text-sm"><strong>Type:</strong> <span class="px-2 py-0.5 rounded-full text-xs '+(c.customer_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+c.customer_type+'</span></p></div>'+
         '<div class="bg-slate-50 rounded-xl p-4"><h5 class="font-semibold text-sm mb-2">Credit Summary</h5>'+
         '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">Rs.'+c.balance.toLocaleString()+'</strong></p>'+
-        
+        (c.balance === 0 ? '<p class="text-xs text-amber-600 mt-1">⚠ Pending orders may exist</p>' : '')+
         '<p class="text-sm">Total Purchases: Rs.'+c.total_purchases.toLocaleString()+'</p>'+
         '<p class="text-sm">Total Paid: Rs.'+c.total_paid.toLocaleString()+'</p></div></div>'+
-        '<div class="mb-4"><h5 class="font-semibold text-sm mb-2">Payment History</h5><table class="w-full text-xs"><thead><tr class="bg-slate-100"><th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-right">Amount</th><th class="px-3 py-2 text-left">Method</th></tr></thead><tbody>'+
-        (c.payment_history.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No payments</td></tr>':c.payment_history.map(p=>'<tr><td class="px-3 py-2">'+p.date+'</td><td class="px-3 py-2 text-right font-medium">Rs.'+p.amount.toLocaleString()+'</td><td class="px-3 py-2">'+p.method+'</td></tr>').join(''))+
-        '</tbody></table></div><div><h5 class="font-semibold text-sm mb-2">Recent Orders</h5><table class="w-full text-xs"><thead><tr class="bg-slate-100"><th class="px-3 py-2 text-left">Order</th><th class="px-3 py-2 text-right">Total</th><th class="px-3 py-2 text-left">Status</th></tr></thead><tbody>'+
-        (c.recent_orders.length===0?'<tr><td colspan="3" class="px-3 py-2 text-center text-slate-400">No orders</td></tr>':c.recent_orders.map(o=>'<tr><td class="px-3 py-2">'+o.order_number+'</td><td class="px-3 py-2 text-right font-medium">Rs.'+o.total.toLocaleString()+'</td><td class="px-3 py-2">'+o.payment_status+'</td></tr>').join(''))+
-        '</tbody></table></div>';
+        buildSection('Payment History', c.payment_history, [{key:'date'},{key:'amount',align:'right'},{key:'method'},{key:'reference'}], 'No payments')+
+        buildSection('Recent Orders', c.recent_orders, [{key:'order_number'},{key:'total',align:'right'},{key:'payment_status'}], 'No orders')+
+        buildSection('Recent Returns', c.recent_returns||[], [{key:'return_number'},{key:'refund_amount',align:'right',red:true},{key:'refund_method'}], 'No returns');
+        
         showModal('viewCustomerModal');
     });
+}
+
+function toggleSection(id) {
+    var el = document.getElementById(id);
+    var icon = document.getElementById(id+'Icon');
+    if(el.classList.contains('hidden')){
+        el.classList.remove('hidden');
+        icon.style.transform = 'rotate(0deg)';
+    } else {
+        el.classList.add('hidden');
+        icon.style.transform = 'rotate(-90deg)';
+    }
 }
 
 function closeEditCustomer(){hideModal('editCustomerModal');}
@@ -392,5 +507,35 @@ function editCustomer(id){
         showModal('editCustomerModal');
     });
 }
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function(){
+        showCopyToast('Copied: ' + text);
+    }).catch(function(){
+        var input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showCopyToast('Copied: ' + text);
+    });
+}
+
+function showCopyToast(msg) {
+    var toast = document.createElement('div');
+    toast.className = 'copy-toast';
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.remove(); }, 1600);
+}
+
+function confirmSettle(id, name){
+    document.getElementById('settleForm').action = '/customer/settle-orders/' + id;
+    document.getElementById('settleMsg').textContent = 'Mark all pending orders as completed for ' + name + '?';
+    showModal('settleModal');
+}
+
+function closeSettle(){ hideModal('settleModal'); }
 </script>
 {% endblock %}

@@ -37,6 +37,7 @@ class Order(db.Model):
 
     # Credit payment at sale
     credit_paid = db.Column(db.Float, default=0.0)
+    balance_payment_method = db.Column(db.String(20))  # cash, card, check
 
     # Return flags
     is_returned = db.Column(db.Boolean, default=False)

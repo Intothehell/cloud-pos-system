@@ -268,6 +268,7 @@ def create_order():
                 order.subtotal = sum(item.product_price * item.quantity for item in real_items)
                 order.total = order.subtotal - order.discount_amount
                 order.credit_paid = balance_payment
+                order.balance_payment_method = data.get('balance_payment_method', 'cash')
                 
                 # Store balances
                 order.previous_balance = customer.balance
@@ -326,6 +327,7 @@ def create_order():
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
     
+
 @api_bp.route('/orders/today')
 @login_required
 def today_orders():
@@ -366,9 +368,14 @@ def get_all_orders():
     if sale_type != 'all':
         query = query.filter(Order.order_type == sale_type)
     if payment != 'all':
-        query = query.filter(Order.payment_method == payment)
+        query = query.filter(
+            db.or_(
+                Order.payment_method == payment,
+                Order.balance_payment_method == payment
+            )
+        )
     
-    orders = query.order_by(Order.created_at.desc()).limit(100).all()
+    orders = query.order_by(Order.created_at.desc()).all()
     
     return jsonify({
         'orders': [{
@@ -380,7 +387,9 @@ def get_all_orders():
             'item_count': len(o.items),
             'total': o.total,
             'payment_method': o.payment_method,
-            'payment_status': o.payment_status
+            'payment_status': o.payment_status,
+            'balance_payment_method': o.balance_payment_method or '',
+            'item_names': ' '.join([item.product_name for item in o.items])
         } for o in orders],
         'total_sales': sum(o.total for o in orders)
     })
@@ -571,6 +580,8 @@ def record_payment(customer_id):
         'new_balance': customer.balance,
         'message': f'Payment of Rs.{amount:.2f} recorded'
     })
+
+
 
 # ============ DASHBOARD ============
 @api_bp.route('/dashboard/stats')
