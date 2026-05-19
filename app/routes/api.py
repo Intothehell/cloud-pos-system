@@ -531,6 +531,11 @@ def customer_details(customer_id):
     orders = Order.query.filter_by(customer_id=customer_id)\
         .order_by(Order.created_at.desc()).limit(20).all()
     
+    # Get returns for this customer
+    order_ids = [o.id for o in orders]
+    returns = Return.query.filter(Return.order_id.in_(order_ids))\
+        .order_by(Return.created_at.desc()).all() if order_ids else []
+    
     return jsonify({
         'id': customer.id,
         'name': customer.name,
@@ -548,7 +553,13 @@ def customer_details(customer_id):
             'total': o.total,
             'payment_status': o.payment_status,
             'created_at': o.created_at.strftime('%Y-%m-%d %H:%M')
-        } for o in orders]
+        } for o in orders],
+        'recent_returns': [{
+            'return_number': r.return_number,
+            'refund_amount': r.refund_amount,
+            'refund_method': r.refund_method,
+            'created_at': r.created_at.strftime('%Y-%m-%d %H:%M')
+        } for r in returns]
     })
 
 @api_bp.route('/customers/<int:customer_id>/payment', methods=['POST'])
@@ -625,6 +636,19 @@ def dashboard_stats():
         elif r.order and r.order.order_type == 'wholesale':
             wholesale_sales -= r.refund_amount
     
+    # Top 3 selling items today (by quantity sold)
+    top_items = db.session.query(
+        OrderItem.product_name,
+        db.func.sum(OrderItem.quantity).label('total_qty')
+    ).join(Order, OrderItem.order_id == Order.id)\
+     .filter(db.func.date(Order.created_at) == today)\
+     .filter(Order.order_type != 'payment')\
+     .group_by(OrderItem.product_name)\
+     .order_by(db.func.sum(OrderItem.quantity).desc())\
+     .limit(3).all()
+    
+    top_items_list = [{'name': item.product_name, 'qty': int(item.total_qty)} for item in top_items]
+    
     cash_in_hand = cash_sales + cash_payments - cash_refunds
     to_bank = card_sales + card_payments - card_refunds
     by_cheque = cheque_payments
@@ -663,7 +687,8 @@ def dashboard_stats():
         ).count(),
         'total_credit': db.session.query(db.func.sum(Customer.balance)).filter(Customer.is_active == True).scalar() or 0,
         'wholesale_customers': Customer.query.filter_by(customer_type='wholesale', is_active=True).count(),
-        'overdue_customers': overdue_customers
+        'overdue_customers': overdue_customers,
+        'top_items': top_items_list
     })
 
 @api_bp.route('/dashboard/overdue-customers')
@@ -742,6 +767,32 @@ def return_order(order_number):
     
     # Save returned items to ReturnItem records
     selected_items = data.get('items', [])
+    
+    # Validate: don't allow returning more than original order quantity
+    for item_data in selected_items:
+        product_id = item_data.get('product_id')
+        return_qty = int(item_data.get('quantity', 1))
+        
+        # Find the original order item
+        original_item = OrderItem.query.filter_by(
+            order_id=order.id,
+            product_id=product_id
+        ).first()
+        
+        if original_item:
+            # Sum all previously returned quantities for this order item
+            already_returned = db.session.query(db.func.sum(ReturnItem.quantity))\
+                .join(Return, ReturnItem.return_id == Return.id)\
+                .filter(Return.order_id == order.id)\
+                .filter(ReturnItem.product_name == original_item.product_name)\
+                .scalar() or 0
+            
+            max_returnable = original_item.quantity - already_returned
+            if return_qty > max_returnable:
+                return jsonify({
+                    'error': f'Cannot return {return_qty} x {original_item.product_name}. Only {max_returnable} remaining (original: {original_item.quantity}, already returned: {int(already_returned)})'
+                }), 400
+    
     for item_data in selected_items:
         product = Product.query.get(item_data.get('product_id'))
         return_item = ReturnItem(
@@ -859,6 +910,7 @@ def get_all_returns():
 @api_bp.route('/returns/<return_number>/details')
 @login_required
 def return_details(return_number):
+
     """Get return details for bill/receipt"""
     ret = Return.query.filter_by(return_number=return_number).first()
     if not ret:
@@ -885,3 +937,94 @@ def return_details(return_number):
             'is_damaged': ri.is_damaged
         } for ri in items]
     })
+
+@api_bp.route('/returns/damaged-items')
+@login_required
+def damaged_items():
+    """Get damaged returned items grouped by product"""
+    from sqlalchemy import func
+    
+    items = db.session.query(
+        ReturnItem.product_name,
+        func.sum(ReturnItem.quantity).label('total_qty'),
+        Product.barcode,
+        Product.category,
+        Product.cost_price,
+        Product.id.label('product_id')
+    ).outerjoin(Product, ReturnItem.product_name == Product.name)\
+     .filter(ReturnItem.is_damaged == True)\
+     .filter(ReturnItem.quantity > 0)\
+     .group_by(ReturnItem.product_name)\
+     .order_by(ReturnItem.product_name).all()
+    
+    return jsonify({
+        'items': [{
+            'product_name': item.product_name,
+            'quantity': int(item.total_qty),
+            'barcode': item.barcode or '',
+            'category': item.category or 'Unknown',
+            'cost_price': item.cost_price or 0,
+            'product_id': item.product_id
+        } for item in items]
+    })
+
+@api_bp.route('/returns/damaged-items/adjust', methods=['POST'])
+@login_required
+def adjust_damaged_item():
+    """Adjust quantity of damaged items by product name"""
+    if current_user.role not in ['owner', 'manager']:
+        return jsonify({'error': 'Permission denied'}), 403
+    
+    data = request.json
+    product_name = data.get('product_name')
+    qty = int(data.get('quantity', 0))
+    adj_type = data.get('type', 'remove')
+    
+    if not product_name or qty < 1:
+        return jsonify({'error': 'Invalid data'}), 400
+    
+    # Get all damaged items for this product, oldest first
+    items = db.session.query(ReturnItem)\
+        .join(Return, ReturnItem.return_id == Return.id)\
+        .filter(ReturnItem.product_name == product_name)\
+        .filter(ReturnItem.is_damaged == True)\
+        .filter(ReturnItem.quantity > 0)\
+        .order_by(Return.created_at.asc()).all()
+    
+    total_available = sum(i.quantity for i in items)
+    
+    if adj_type == 'remove':
+        if qty > total_available:
+            return jsonify({'error': f'Only {total_available} available'}), 400
+        
+        remaining = qty
+        for item in items:
+            if remaining <= 0:
+                break
+            if item.quantity >= remaining:
+                item.quantity -= remaining
+                remaining = 0
+            else:
+                remaining -= item.quantity
+                item.quantity = 0
+    
+    elif adj_type == 'add':
+        # Add to the most recent return item
+        if items:
+            items[-1].quantity += qty
+        else:
+            return jsonify({'error': 'No existing damaged item found for this product'}), 400
+    
+    elif adj_type == 'set':
+        # Set exact quantity on the most recent item
+        if items:
+            diff = qty - total_available
+            items[-1].quantity += diff
+        elif qty > 0:
+            return jsonify({'error': 'No existing damaged item found'}), 400
+    
+    db.session.commit()
+    
+    # Return updated total
+    updated_total = sum(i.quantity for i in items)
+    return jsonify({'success': True, 'new_quantity': updated_total})
