@@ -34,6 +34,22 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
+    # Block reviewer role from modifying data
+    from flask import request, flash, redirect, url_for
+    from flask_login import current_user
+    
+    READ_ONLY_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
+    READ_ONLY_PATHS = {'/auth/logout', '/auth/login'}  # Always allowed
+    
+    @app.before_request
+    def block_reviewer_writes():
+        if current_user.is_authenticated and current_user.role == 'reviewer':
+            if request.method in READ_ONLY_METHODS and request.path not in READ_ONLY_PATHS:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.path.startswith('/api/'):
+                    return jsonify({'error': 'Reviewer accounts are read-only'}), 403
+                flash('Reviewer accounts are read-only. No changes can be made.', 'warning')
+                return redirect(request.referrer or url_for('pos.dashboard'))
+    
     with app.app_context():
         from app.models.user import User
         from app.models.customer import Customer, Payment

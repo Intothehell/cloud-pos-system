@@ -64,7 +64,7 @@
                         </svg>
                         POS
                     </a>
-                    {% if current_user.role in ['owner','manager'] %}
+                    {% if current_user.role in ['owner','manager','reviewer'] %}
                     <a href="{{ url_for('inventory.manage') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -98,7 +98,7 @@
                         </svg>
                         Returns
                     </a>
-                    {% if current_user.role == 'owner' %}
+                    {% if current_user.role in ['owner','reviewer'] %}
                     <a href="{{ url_for('auth.manage_users') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -166,7 +166,7 @@
                 </svg>
                 POS
             </a>
-            {% if current_user.role in ['owner','manager'] %}
+            {% if current_user.role in ['owner','manager','reviewer'] %}
             <a href="{{ url_for('inventory.manage') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -194,7 +194,7 @@
                 </svg>
                 Returns
             </a>
-            {% if current_user.role == 'owner' %}
+            {% if current_user.role in ['owner','reviewer'] %}
             <a href="{{ url_for('auth.manage_users') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
