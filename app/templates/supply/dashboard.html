@@ -1,0 +1,104 @@
+{% extends "supply/base_supply.html" %}
+
+{% block title %}Supply Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+    .bg-gradient-emerald { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .bg-gradient-teal { background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); }
+    .bg-gradient-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .bg-gradient-rose { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .stat-icon {
+        width: 48px; height: 48px; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255, 255, 255, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+    
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-800">
+            <span id="greetingText">Hello</span>, <span class="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">{{ current_user.username|capitalize }}</span> 👋
+        </h1>
+        <p class="text-slate-500 mt-1">Supply management overview</p>
+    </div>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+        <div class="glass-card rounded-3xl p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">Today's Purchases</p>
+                    <p class="text-2xl font-bold text-emerald-600" id="todayPurchases">Rs.0</p>
+                </div>
+                <div class="stat-icon bg-gradient-emerald">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="1" x2="12" y2="23"></line>
+                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-3xl p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">Payable to Suppliers</p>
+                    <p class="text-2xl font-bold text-amber-600" id="payableAmount">Rs.0</p>
+                </div>
+                <div class="stat-icon bg-gradient-amber">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-3xl p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">Suppliers</p>
+                    <p class="text-2xl font-bold text-slate-800" id="supplierCount">0</p>
+                </div>
+                <div class="stat-icon bg-gradient-teal">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-3xl p-6">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm text-slate-500 font-medium mb-1">Low Stock</p>
+                    <p class="text-2xl font-bold text-rose-500" id="lowStock">0</p>
+                </div>
+                <div class="stat-icon bg-gradient-rose">
+                    <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card rounded-3xl p-6">
+        <h2 class="text-lg font-semibold text-slate-700 mb-4">Supply mode ready</h2>
+        <p class="text-slate-500">Supplier management, supply terminal, and purchase tracking coming soon.</p>
+    </div>
+</div>
+
+<script>
+var hour = new Date().getHours();
+var greeting = hour < 12 ? 'Good Morning' : hour < 15 ? 'Good Afternoon' : hour < 20 ? 'Good Evening' : 'Good Night';
+document.getElementById('greetingText').textContent = greeting;
+</script>
+{% endblock %}
