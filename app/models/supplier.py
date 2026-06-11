@@ -42,6 +42,7 @@ class SupplierPayment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'))
+    supply_bill_id = db.Column(db.Integer, db.ForeignKey('supply_bills.id'), nullable=True)
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(20))  # cash, bank_transfer, check
     reference_number = db.Column(db.String(50))

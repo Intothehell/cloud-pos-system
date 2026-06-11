@@ -1,0 +1,271 @@
+{% extends "supply/base_supply.html" %}
+
+{% block title %}Supply Terminal{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --glass-bg: rgba(255, 255, 255, 0.75);
+        --glass-border: rgba(255, 255, 255, 0.4);
+    }
+    
+    body {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 30%, #fdf2f8 70%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+    
+    .glass-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--glass-border);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    }
+    
+    .card-emerald { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .card-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .card-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    
+    .product-card { 
+        transition: all 0.2s ease; 
+        cursor: pointer; 
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+    .product-card:hover { 
+        transform: translateY(-3px); 
+        box-shadow: 0 12px 30px rgba(0,0,0,0.12);
+        background: rgba(255, 255, 255, 0.95);
+    }
+    
+    .qty-btn { transition: all 0.1s; user-select: none; }
+    .qty-btn:active { transform: scale(0.9); }
+    
+    .modal-backdrop { 
+        backdrop-filter: blur(4px);
+        background: rgba(0, 0, 0, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-4">
+    
+    <!-- Header -->
+    <div class="mb-4">
+        <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+            <span class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                </svg>
+            </span>
+            Supply Terminal
+        </h1>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-4">
+        
+        <!-- LEFT PANEL -->
+        <div class="lg:w-7/12 space-y-3">
+            
+            <!-- Search -->
+            <div class="glass-card rounded-2xl p-4">
+                <div class="flex gap-2">
+                    <input type="text" id="searchInput" 
+                        class="flex-1 border-2 border-slate-200 rounded-xl px-4 py-2.5 focus:border-emerald-400 focus:outline-none text-sm bg-white/80" 
+                        placeholder="Search products..." onkeyup="searchProducts()" autofocus>
+                    <button onclick="searchProducts()" 
+                            class="card-emerald text-white px-5 py-2.5 rounded-xl hover:opacity-90 font-medium text-sm flex items-center gap-2 shadow-lg">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div id="categoryButtons" class="flex flex-wrap gap-1.5"></div>
+
+            <!-- Product Grid -->
+            <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" style="max-height: 420px; overflow-y: auto;">
+                <div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">
+                    <p>Search products to add stock</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL -->
+        <div class="lg:w-5/12 space-y-3">
+            
+            <!-- Supplier Card -->
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50/80 border-b flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                    </svg>
+                    <span class="font-semibold text-sm text-slate-700">Supplier</span>
+                </div>
+                <div class="p-4">
+                    <div class="flex gap-1.5 mb-2">
+                        <input type="text" id="supplierInput" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Search supplier..." onkeyup="searchSupplier()">
+                        <button onclick="searchSupplier()" class="card-emerald text-white px-3 py-2 rounded-xl text-sm">Find</button>
+                    </div>
+                    <div id="supplierResults" class="max-h-36 overflow-y-auto space-y-1"></div>
+                    <div id="selectedSupplier" class="text-sm mt-2"></div>
+                </div>
+            </div>
+
+            <!-- Cart Card -->
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-4 py-3 bg-slate-900/90 text-white flex justify-between items-center rounded-t-2xl">
+                    <span class="font-semibold text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                        </svg>
+                        Current Supply
+                    </span>
+                    <button onclick="clearCart()" class="text-xs text-slate-400 hover:text-red-400">Clear</button>
+                </div>
+                <div id="cartItems" class="divide-y divide-slate-100" style="max-height: 220px; overflow-y: auto;">
+                    <div class="text-center text-slate-400 py-8">Cart is empty</div>
+                </div>
+                <div class="p-4 bg-slate-50/50 rounded-b-2xl">
+                    <div class="space-y-2 text-sm mb-4">
+                        <div class="flex justify-between font-bold text-lg">
+                            <span>TOTAL</span><span class="text-emerald-600">Rs.<span id="total">0.00</span></span>
+                        </div>
+                    </div>
+                    
+                    <button onclick="processSupply()" class="w-full card-emerald text-white py-3 rounded-xl font-bold hover:opacity-90 transition text-lg shadow-lg">
+                        ✅ Receive Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let cart = [];
+let currentSupplier = null;
+let allProducts = [];
+
+function init() { 
+    loadCategories(); 
+    loadAllProducts();
+    document.getElementById('searchInput').focus(); 
+}
+
+function loadAllProducts() { 
+    fetch('/api/products/all').then(r=>r.json()).then(p=>{allProducts=p;displayProducts(p);}); 
+}
+
+function searchProducts(){
+    var q=document.getElementById('searchInput').value;
+    if(!q){displayProducts(allProducts);return;}
+    fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type=wholesale').then(r=>r.json()).then(displayProducts);
+}
+
+function filterCategory(cat){
+    displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));
+    document.querySelectorAll('#categoryButtons button').forEach(function(btn){
+        if(btn.textContent.trim() === cat || (cat === 'all' && btn.textContent.trim() === 'All')){
+            btn.className = 'px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl';
+        } else {
+            btn.className = 'px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl';
+        }
+    });
+}
+
+function displayProducts(products){
+    var g=document.getElementById('productGrid');
+    if(!products.length){g.innerHTML='<div class="col-span-full text-center text-slate-400 py-12 glass-card rounded-2xl">No products</div>';return;}
+    g.innerHTML=products.map(p=>{
+        return '<div class="product-card border-2 rounded-2xl p-4 text-center bg-white border-slate-200 hover:border-emerald-300" onclick="addToCart({id:'+p.id+',name:\''+(p.name||'').replace(/'/g,"\\'")+'\',cost_price:'+p.cost_price+'})">'+
+            '<p class="font-semibold text-sm leading-tight px-2">'+(p.name||'').substring(0,48)+'</p>'+
+            '<p class="text-xs text-slate-400 mt-1">Cost: Rs.'+p.cost_price.toFixed(2)+' | Stock: '+p.stock_quantity+'</p>'+
+        '</div>';
+    }).join('');
+}
+
+function addToCart(p){
+    var ex=cart.find(i=>i.id===p.id);
+    if(ex){ex.quantity+=1;}else{cart.push({id:p.id,name:p.name,price:p.cost_price||0,quantity:1});}
+    updateCartDisplay();
+}
+
+function changeQty(i,c){var item=cart[i],n=item.quantity+c;if(n<=0)cart.splice(i,1);else item.quantity=n;updateCartDisplay();}
+function removeFromCart(i){cart.splice(i,1);updateCartDisplay();}
+function clearCart(){cart=[];updateCartDisplay();}
+
+function updateCartDisplay(){
+    var d=document.getElementById('cartItems'),sub=0;
+    if(!cart.length){
+        d.innerHTML='<div class="text-center text-slate-400 py-8">Cart is empty</div>';
+    }else{
+        d.innerHTML=cart.map((item,i)=>{var t=item.price*item.quantity;sub+=t;return '<div class="flex items-center gap-2 px-4 py-3 text-sm"><div class="flex-1"><p class="font-semibold">'+item.name+'</p><p class="text-xs">Rs.'+item.price.toFixed(2)+' each</p></div><button onclick="changeQty('+i+',-1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">-</button><input type="number" value="'+item.quantity+'" onchange="manualQty('+i+',this)" class="w-14 text-center border-2 rounded-lg py-1 text-sm"><button onclick="changeQty('+i+',1)" class="qty-btn w-8 h-8 bg-slate-100 rounded-lg font-bold">+</button><span class="font-bold w-20 text-right">Rs.'+t.toFixed(2)+'</span><button onclick="removeFromCart('+i+')" class="text-red-400 hover:text-red-600 font-bold text-lg">&times;</button></div>';}).join('');
+    }
+    document.getElementById('total').textContent=sub.toFixed(2);
+}
+
+function manualQty(i,inp){var n=parseInt(inp.value),item=cart[i];if(isNaN(n)||n<=0)inp.value=item.quantity;else item.quantity=n;updateCartDisplay();}
+
+// SUPPLIER
+function searchSupplier(){
+    var q=document.getElementById('supplierInput').value;
+    if(!q)return;
+    fetch('/supply/api/suppliers/search?q='+encodeURIComponent(q))
+        .then(r=>r.json())
+        .then(suppliers=>{
+            var d=document.getElementById('supplierResults');
+            d.innerHTML=suppliers.length?suppliers.map(s=>'<div onclick="selectSupplier('+JSON.stringify(s).replace(/"/g,'&quot;')+')" class="p-2.5 border-2 rounded-xl mb-1 cursor-pointer hover:border-emerald-300 text-sm"><strong>'+s.name+'</strong> | '+s.phone+'<br><span class="text-xs">Payable: Rs.'+s.balance.toFixed(2)+'</span></div>').join(''):'<p class="text-sm p-2">Not found</p>';
+        });
+}
+
+function selectSupplier(s){
+    currentSupplier=s;
+    document.getElementById('selectedSupplier').innerHTML='<div class="bg-emerald-50 text-emerald-700 px-3 py-2 rounded-xl text-sm">✅ '+s.name+' | Payable: Rs.'+s.balance.toFixed(2)+'</div>';
+    document.getElementById('supplierResults').innerHTML='';
+}
+
+function processSupply(){
+    if(!cart.length){alert('Cart empty!');return;}
+    if(!currentSupplier){alert('Select a supplier!');return;}
+    
+    fetch('/supply/api/orders',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            supplier_id: currentSupplier.id,
+            items: cart.map(i=>({id:i.id, quantity:i.quantity, price:i.price}))
+        })
+    })
+    .then(r=>r.json())
+    .then(data=>{
+        if(data.success){
+            alert('Supply recorded! Order: '+data.order_number);
+            cart=[];currentSupplier=null;
+            updateCartDisplay();
+            document.getElementById('selectedSupplier').innerHTML='';
+            loadAllProducts();
+        } else {
+            alert('Error: '+data.error);
+        }
+    });
+}
+
+function loadCategories(){
+    fetch('/api/products/categories').then(r=>r.json()).then(cats=>{
+        var d=document.getElementById('categoryButtons');
+        d.innerHTML='<button onclick="filterCategory(\'all\')" class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl">All</button>';
+        (cats||[]).forEach(c=>d.innerHTML+='<button onclick="filterCategory(\''+c+'\')" class="px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl">'+c+'</button>');
+    });
+}
+
+init();
+</script>
+{% endblock %}

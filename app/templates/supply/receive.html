@@ -1,0 +1,463 @@
+{% extends "supply/base_supply.html" %}
+
+{% block title %}Receive Stock{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-5">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Receive stock</h1>
+            <p class="text-sm text-slate-500 mt-1">Enter supplier document lines and update live inventory after review.</p>
+        </div>
+        <span class="text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Live inventory update</span>
+    </div>
+
+    <div id="messageBox" class="hidden mb-4 border px-4 py-3 rounded-xl text-sm"></div>
+
+    {% if not can_write %}
+    <div class="mb-4 bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-xl text-sm">
+        Your role can view supply data, but only owner and manager accounts can receive stock.
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="lg:col-span-2 space-y-4">
+            <div class="glass-card rounded-2xl p-4 relative z-[80] overflow-visible">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Supplier</label>
+                        <div class="flex gap-2">
+                            <input id="supplierSearch" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none" placeholder="Search supplier name, phone or NIC..." autocomplete="off">
+                            <a href="{{ url_for('supply.suppliers') }}" class="px-3 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-sm font-semibold hover:bg-slate-200">New</a>
+                        </div>
+                        <div id="supplierResults" class="mt-2 space-y-1 max-h-36 overflow-y-auto"></div>
+                        <div id="selectedSupplier" class="hidden mt-2 bg-indigo-50 border border-indigo-200 text-indigo-800 rounded-xl px-3 py-2 text-sm"></div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Supplier document</label>
+                        <input id="supplierInvoice" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none" placeholder="Invoice, note, or reference">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Intake date</label>
+                        <input id="billDate" type="date" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4">
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Add product line</label>
+                <div class="relative">
+                    <div class="flex gap-2">
+                        <input id="productSearch" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none" placeholder="Search barcode, SKU, category or product..." autocomplete="off">
+                    <button type="button" id="productSearchBtn" class="gradient-indigo text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg hover:opacity-90">Search</button>
+                    </div>
+                    <div id="productDropdown" class="hidden fixed bg-white border border-slate-200 rounded-2xl shadow-2xl overflow-hidden overflow-y-auto"></div>
+                </div>
+                <p class="text-xs text-slate-400 mt-2">Search uses existing inventory items only. Try several keywords like product name and category.</p>
+            </div>
+
+            <div class="glass-card rounded-2xl overflow-hidden">
+                <div class="px-4 py-3 bg-slate-900 text-white flex justify-between items-center">
+                    <span class="text-sm font-semibold">Intake lines</span>
+                    <button type="button" onclick="clearLines()" class="text-xs text-slate-300 hover:text-white">Clear</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead><tr class="bg-slate-50 text-slate-500">
+                            <th class="px-3 py-3 text-left font-semibold">Product</th>
+                            <th class="px-3 py-3 text-right font-semibold">Qty</th>
+                            <th class="px-3 py-3 text-right font-semibold">Unit cost</th>
+                            <th class="px-3 py-3 text-right font-semibold">Wholesale</th>
+                            <th class="px-3 py-3 text-right font-semibold">Line total</th>
+                            <th class="px-3 py-3 text-center font-semibold"></th>
+                        </tr></thead>
+                        <tbody id="lineTable" class="divide-y divide-slate-100">
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <aside class="space-y-4">
+            <div class="glass-card rounded-2xl p-4">
+                <h2 class="text-sm font-semibold text-slate-700 mb-3">Payment summary</h2>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Discount (Rs)</label>
+                        <input id="discountAmount" type="number" min="0" step="0.01" value="0" oninput="renderLines()" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none text-right">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Paid now (Rs)</label>
+                        <input id="paidAmount" type="number" min="0" step="0.01" value="0" oninput="renderLines()" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none text-right">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Payment method</label>
+                        <select id="paymentMethod" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none">
+                            <option value="credit">Credit</option>
+                            <option value="cash">Cash</option>
+                            <option value="card">Card</option>
+                            <option value="check">Cheque</option>
+                            <option value="bank_transfer">Bank transfer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label>
+                        <textarea id="notes" rows="3" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none" placeholder="Optional receiving notes"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-4">
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><strong id="subtotalText">Rs.0.00</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Discount</span><strong id="discountText">Rs.0.00</strong></div>
+                    <div class="flex justify-between text-lg border-t border-slate-200 pt-3"><span class="font-bold">Total</span><strong id="totalText" class="text-slate-900">Rs.0.00</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Paid now</span><strong id="paidText" class="text-emerald-600">Rs.0.00</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Payable</span><strong id="balanceText" class="text-amber-600">Rs.0.00</strong></div>
+                </div>
+                <button type="button" onclick="openReview()" class="mt-4 w-full gradient-indigo text-white py-3 rounded-xl font-bold hover:opacity-90 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed" {% if not can_write %}disabled{% endif %}>Review intake note</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<div id="reviewModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto p-5">
+        <div class="flex justify-between items-start gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-slate-800">Confirm stock receiving</h3>
+                <p class="text-sm text-slate-500">This will create a supply intake note and update live stock.</p>
+            </div>
+            <button onclick="hideModal('reviewModal')" class="text-slate-400 hover:text-red-500 text-xl leading-none">&times;</button>
+        </div>
+        <div id="reviewContent" class="text-sm space-y-3"></div>
+        <div class="flex gap-2 mt-5">
+            <button onclick="hideModal('reviewModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-300">Back</button>
+            <button onclick="submitBill()" id="confirmBtn" class="flex-1 gradient-indigo text-white py-2.5 rounded-xl text-sm font-bold hover:opacity-90">Confirm receive</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var canWrite = {{ 'true' if can_write else 'false' }};
+var selectedSupplier = null;
+var lines = [];
+var searchTimers = {};
+var productResults = [];
+var supplierResults = [];
+var activeProductIndex = -1;
+document.getElementById('billDate').value = new Date().toISOString().slice(0, 10);
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setMessage(type, text) {
+    var box = document.getElementById('messageBox');
+    box.className = 'mb-4 border px-4 py-3 rounded-xl text-sm ' + (type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800');
+    box.textContent = text;
+    box.classList.remove('hidden');
+}
+
+function debounce(key, fn) {
+    clearTimeout(searchTimers[key]);
+    searchTimers[key] = setTimeout(fn, 180);
+}
+
+function searchSuppliers() {
+    debounce('suppliers', function() {
+        var q = document.getElementById('supplierSearch').value.trim();
+        fetch('/supply/api/suppliers/search?q=' + encodeURIComponent(q))
+            .then(function(r){return r.json();})
+            .then(function(items){
+                supplierResults = items || [];
+                renderSupplierResults();
+            })
+            .catch(function(){
+                supplierResults = [];
+                document.getElementById('supplierResults').innerHTML = '<p class="text-sm text-red-500 px-2 py-3">Supplier search failed. Try again.</p>';
+            });
+    });
+}
+
+function renderSupplierResults() {
+    var box = document.getElementById('supplierResults');
+    box.innerHTML = supplierResults.length ? supplierResults.map(function(s, index){
+        return '<button type="button" data-supplier-index="' + index + '" class="w-full text-left p-2.5 border-2 border-slate-100 bg-white/80 hover:border-indigo-300 rounded-xl text-sm">' +
+            '<strong>' + escapeHtml(s.name) + '</strong><span class="text-slate-500"> | ' + escapeHtml(s.phone || '-') + '</span><br>' +
+            '<span class="text-xs text-amber-600">Payable: ' + money(s.balance) + '</span>' +
+        '</button>';
+    }).join('') : '<p class="text-sm text-slate-400 px-2 py-3">No suppliers found</p>';
+}
+
+function selectSupplier(s) {
+    selectedSupplier = s;
+    document.getElementById('supplierResults').innerHTML = '';
+    document.getElementById('supplierSearch').value = s.name;
+    var selected = document.getElementById('selectedSupplier');
+    selected.innerHTML = '<strong>' + escapeHtml(s.name) + '</strong><span class="text-indigo-600"> | Current payable: ' + money(s.balance) + '</span>';
+    selected.classList.remove('hidden');
+}
+
+function searchProducts() {
+    debounce('products', function() {
+        var q = document.getElementById('productSearch').value.trim();
+        var dropdown = document.getElementById('productDropdown');
+        dropdown.innerHTML = '<div class="px-4 py-3 text-sm text-slate-400">' + (q ? 'Searching products...' : 'Loading existing products...') + '</div>';
+        positionProductDropdown();
+        dropdown.classList.remove('hidden');
+        fetch('/supply/api/products/search?q=' + encodeURIComponent(q))
+            .then(function(r){return r.json();})
+            .then(function(items){
+                productResults = items || [];
+                activeProductIndex = productResults.length ? 0 : -1;
+                renderProductDropdown();
+            })
+            .catch(function(){
+                productResults = [];
+                activeProductIndex = -1;
+                dropdown.innerHTML = '<div class="px-4 py-4 text-sm text-red-500">Product search failed. Try again.</div>';
+                dropdown.classList.remove('hidden');
+            });
+    });
+}
+
+function renderProductDropdown() {
+    var dropdown = document.getElementById('productDropdown');
+    positionProductDropdown();
+    if (!productResults.length) {
+        dropdown.innerHTML = '<div class="px-4 py-4 text-sm text-slate-400">No products found in the item database</div>';
+        dropdown.classList.remove('hidden');
+        return;
+    }
+    dropdown.innerHTML = productResults.map(function(p, i){
+        var active = i === activeProductIndex ? 'bg-indigo-50 border-indigo-200' : 'bg-white border-transparent hover:bg-slate-50';
+        return '<button type="button" data-product-index="' + i + '" class="w-full text-left px-4 py-3 border-l-4 ' + active + '">' +
+            '<div class="flex justify-between gap-3">' +
+                '<div class="min-w-0"><p class="font-semibold text-sm text-slate-800 truncate">' + escapeHtml(p.name) + '</p>' +
+                '<p class="text-xs text-slate-500">' + escapeHtml(p.barcode || 'No barcode') + (p.sku ? ' | ' + escapeHtml(p.sku) : '') + ' | ' + escapeHtml(p.category || 'Uncategorized') + '</p></div>' +
+                '<div class="text-right shrink-0"><p class="text-xs font-semibold text-slate-700">Stock ' + p.stock_quantity + '</p><p class="text-xs text-slate-500">Cost ' + money(p.cost_price) + '</p><p class="text-xs text-slate-500">Wholesale ' + money(p.wholesale_price) + '</p></div>' +
+            '</div>' +
+        '</button>';
+    }).join('');
+    dropdown.classList.remove('hidden');
+}
+
+function positionProductDropdown() {
+    var input = document.getElementById('productSearch');
+    var dropdown = document.getElementById('productDropdown');
+    if (!input || !dropdown) return;
+    var rect = input.getBoundingClientRect();
+    var viewportPadding = 12;
+    var top = Math.min(rect.bottom + 8, window.innerHeight - 120);
+    var left = Math.max(viewportPadding, rect.left);
+    var width = Math.min(rect.width + document.getElementById('productSearchBtn').getBoundingClientRect().width + 8, window.innerWidth - left - viewportPadding);
+    dropdown.style.position = 'fixed';
+    dropdown.style.zIndex = '2147483647';
+    dropdown.style.top = top + 'px';
+    dropdown.style.left = left + 'px';
+    dropdown.style.width = width + 'px';
+    dropdown.style.maxHeight = Math.max(160, window.innerHeight - top - viewportPadding) + 'px';
+}
+
+function handleProductKeys(event) {
+    if (document.getElementById('productDropdown').classList.contains('hidden')) return;
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        activeProductIndex = Math.min(activeProductIndex + 1, productResults.length - 1);
+        renderProductDropdown();
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        activeProductIndex = Math.max(activeProductIndex - 1, 0);
+        renderProductDropdown();
+    } else if (event.key === 'Enter') {
+        if (activeProductIndex >= 0 && productResults[activeProductIndex]) {
+            event.preventDefault();
+            selectProductResult(activeProductIndex);
+        }
+    } else if (event.key === 'Escape') {
+        document.getElementById('productDropdown').classList.add('hidden');
+    }
+}
+
+function selectProductResult(index) {
+    var p = productResults[index];
+    if (!p) return;
+    if (lines.some(function(line){return line.product_id === p.id;})) {
+        setMessage('error', 'This product is already on the bill. Update the existing line quantity instead.');
+        return;
+    }
+    lines.push({
+        product_id: p.id,
+        name: p.name,
+        barcode: p.barcode,
+        category: p.category,
+        stock: p.stock_quantity,
+        quantity: 1,
+        unit_cost: Number(p.cost_price || 0),
+        wholesale_price: Number(p.wholesale_price || 0)
+    });
+    document.getElementById('productSearch').value = '';
+    document.getElementById('productDropdown').classList.add('hidden');
+    productResults = [];
+    activeProductIndex = -1;
+    renderLines();
+}
+
+document.addEventListener('click', function(event) {
+    var input = document.getElementById('productSearch');
+    var dropdown = document.getElementById('productDropdown');
+    if (input && dropdown && !input.contains(event.target) && !dropdown.contains(event.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+function updateLine(index, field, value) {
+    if (!lines[index]) return;
+    lines[index][field] = field === 'quantity' ? parseInt(value || '0', 10) : Number(value || 0);
+    renderLines();
+}
+
+function removeLine(index) { lines.splice(index, 1); renderLines(); }
+function clearLines() { lines = []; renderLines(); }
+
+function totals() {
+    var subtotal = lines.reduce(function(sum, line){return sum + (Number(line.quantity || 0) * Number(line.unit_cost || 0));}, 0);
+    var discount = Math.max(Number(document.getElementById('discountAmount').value || 0), 0);
+    var total = Math.max(subtotal - discount, 0);
+    var paid = Math.max(Number(document.getElementById('paidAmount').value || 0), 0);
+    return {subtotal:subtotal, discount:discount, total:total, paid:paid, balance:Math.max(total - paid, 0)};
+}
+
+function renderLines() {
+    var body = document.getElementById('lineTable');
+    if (!lines.length) {
+        body.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>';
+    } else {
+        body.innerHTML = lines.map(function(line, i){
+            var lineTotal = Number(line.quantity || 0) * Number(line.unit_cost || 0);
+            return '<tr class="hover:bg-slate-50">' +
+                '<td class="px-3 py-3"><p class="font-semibold">' + escapeHtml(line.name) + '</p><p class="text-xs text-slate-400">' + escapeHtml(line.barcode || 'No barcode') + ' | ' + escapeHtml(line.category || 'Uncategorized') + ' | Current stock: ' + line.stock + '</p></td>' +
+                '<td class="px-3 py-3 text-right"><input type="number" min="1" value="' + line.quantity + '" data-line-index="' + i + '" data-line-field="quantity" class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
+                '<td class="px-3 py-3 text-right"><input type="number" min="0" step="0.01" value="' + line.unit_cost + '" data-line-index="' + i + '" data-line-field="unit_cost" class="w-28 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
+                '<td class="px-3 py-3 text-right"><input type="number" min="0" step="0.01" value="' + line.wholesale_price + '" data-line-index="' + i + '" data-line-field="wholesale_price" class="w-28 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
+                '<td class="px-3 py-3 text-right font-semibold">' + money(lineTotal) + '</td>' +
+                '<td class="px-3 py-3 text-center"><button type="button" data-remove-index="' + i + '" class="text-red-500 hover:text-red-700">&times;</button></td>' +
+            '</tr>';
+        }).join('');
+    }
+    var t = totals();
+    document.getElementById('subtotalText').textContent = money(t.subtotal);
+    document.getElementById('discountText').textContent = money(t.discount);
+    document.getElementById('totalText').textContent = money(t.total);
+    document.getElementById('paidText').textContent = money(t.paid);
+    document.getElementById('balanceText').textContent = money(t.balance);
+}
+
+function validateBill() {
+    if (!canWrite) return 'Permission denied.';
+    if (!selectedSupplier) return 'Select a supplier before receiving stock.';
+    if (!lines.length) return 'Add at least one product line.';
+    for (var i = 0; i < lines.length; i++) {
+        if (!lines[i].quantity || lines[i].quantity <= 0) return 'Quantity must be greater than 0 for ' + lines[i].name + '.';
+        if (lines[i].unit_cost < 0) return 'Unit cost cannot be negative for ' + lines[i].name + '.';
+    }
+    var t = totals();
+    if (t.paid > t.total) return 'Paid amount cannot exceed bill total.';
+    return '';
+}
+
+function openReview() {
+    var error = validateBill();
+    if (error) { setMessage('error', error); return; }
+    var t = totals();
+    document.getElementById('reviewContent').innerHTML =
+        '<div class="bg-slate-50 rounded-xl p-3"><p><strong>Supplier:</strong> ' + escapeHtml(selectedSupplier.name) + '</p><p><strong>Document:</strong> ' + escapeHtml(document.getElementById('supplierInvoice').value || '-') + '</p><p><strong>Lines:</strong> ' + lines.length + '</p></div>' +
+        '<div class="divide-y divide-slate-100 border rounded-xl overflow-hidden">' + lines.map(function(line){return '<div class="p-3 flex justify-between gap-3"><span>' + escapeHtml(line.name) + '<br><span class="text-xs text-slate-500">Qty ' + line.quantity + ' at ' + money(line.unit_cost) + '</span></span><strong>' + money(line.quantity * line.unit_cost) + '</strong></div>';}).join('') + '</div>' +
+        '<div class="bg-indigo-50 border border-indigo-100 rounded-xl p-3 space-y-1"><p class="flex justify-between"><span>Total</span><strong>' + money(t.total) + '</strong></p><p class="flex justify-between"><span>Paid now</span><strong class="text-emerald-600">' + money(t.paid) + '</strong></p><p class="flex justify-between"><span>Supplier payable</span><strong class="text-amber-600">' + money(t.balance) + '</strong></p></div>';
+    showModal('reviewModal');
+}
+
+function submitBill() {
+    var error = validateBill();
+    if (error) { setMessage('error', error); hideModal('reviewModal'); return; }
+    document.getElementById('confirmBtn').disabled = true;
+    fetch('/supply/api/bills', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            supplier_id: selectedSupplier.id,
+            supplier_invoice: document.getElementById('supplierInvoice').value,
+            bill_date: document.getElementById('billDate').value,
+            discount_amount: document.getElementById('discountAmount').value,
+            paid_amount: document.getElementById('paidAmount').value,
+            payment_method: document.getElementById('paymentMethod').value,
+            notes: document.getElementById('notes').value,
+            items: lines.map(function(line) {
+                return {
+                    product_id: line.product_id,
+                    quantity: line.quantity,
+                    unit_cost: line.unit_cost,
+                    wholesale_price: line.wholesale_price
+                };
+            })
+        })
+    }).then(function(r){return r.json().then(function(data){return {ok:r.ok, data:data};});})
+    .then(function(result){
+        document.getElementById('confirmBtn').disabled = false;
+        if (!result.ok || result.data.error) {
+            setMessage('error', result.data.error || 'Supply bill could not be saved.');
+            hideModal('reviewModal');
+            return;
+        }
+        window.location.href = '/supply/bills/' + result.data.bill.bill_number;
+    });
+}
+
+document.getElementById('supplierSearch').addEventListener('input', function() {
+    selectedSupplier = null;
+    document.getElementById('selectedSupplier').classList.add('hidden');
+    searchSuppliers();
+});
+document.getElementById('supplierSearch').addEventListener('focus', searchSuppliers);
+document.getElementById('supplierResults').addEventListener('mousedown', function(event) {
+    var button = event.target.closest('[data-supplier-index]');
+    if (!button) return;
+    event.preventDefault();
+    selectSupplier(supplierResults[Number(button.dataset.supplierIndex)]);
+});
+document.getElementById('productSearch').addEventListener('input', searchProducts);
+document.getElementById('productSearch').addEventListener('focus', function() { positionProductDropdown(); searchProducts(); });
+document.getElementById('productSearch').addEventListener('keydown', handleProductKeys);
+document.getElementById('productSearchBtn').addEventListener('click', searchProducts);
+document.getElementById('productDropdown').addEventListener('mousedown', function(event) {
+    var button = event.target.closest('[data-product-index]');
+    if (!button) return;
+    event.preventDefault();
+    selectProductResult(Number(button.dataset.productIndex));
+});
+document.getElementById('lineTable').addEventListener('change', function(event) {
+    var input = event.target.closest('[data-line-index]');
+    if (!input) return;
+    updateLine(Number(input.dataset.lineIndex), input.dataset.lineField, input.value);
+});
+document.getElementById('lineTable').addEventListener('click', function(event) {
+    var button = event.target.closest('[data-remove-index]');
+    if (!button) return;
+    removeLine(Number(button.dataset.removeIndex));
+});
+document.body.appendChild(document.getElementById('productDropdown'));
+window.addEventListener('resize', positionProductDropdown);
+window.addEventListener('scroll', positionProductDropdown, true);
+
+renderLines();
+</script>
+{% endblock %}

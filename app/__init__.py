@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from flask_cors import CORS
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -36,7 +36,7 @@ def create_app():
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
     
     # Block reviewer role from modifying data
-    from flask import request, flash, redirect, url_for
+    from flask import request, flash, redirect, url_for, jsonify
     from flask_login import current_user
     
     READ_ONLY_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
@@ -57,7 +57,32 @@ def create_app():
         from app.models.product import Product, StockMovement
         from app.models.order import Order, OrderItem, Return
         from app.models.supplier import Supplier, SupplierPayment
+        from app.models.supply import SupplyBill, SupplyBillItem, SupplyReturn, LedgerOffset
         
         db.create_all()
+        _ensure_compat_columns()
     
     return app
+
+
+def _ensure_compat_columns():
+    inspector = inspect(db.engine)
+    table_names = inspector.get_table_names()
+    if 'suppliers' in table_names:
+        existing = {col['name'] for col in inspector.get_columns('suppliers')}
+        if 'linked_customer_id' not in existing:
+            db.session.execute(text('ALTER TABLE suppliers ADD COLUMN linked_customer_id INTEGER'))
+            db.session.commit()
+    if 'supplier_payments' in table_names:
+        existing = {col['name'] for col in inspector.get_columns('supplier_payments')}
+        if 'supply_bill_id' not in existing:
+            db.session.execute(text('ALTER TABLE supplier_payments ADD COLUMN supply_bill_id INTEGER'))
+            db.session.commit()
+    if 'supply_returns' in table_names:
+        existing = {col['name'] for col in inspector.get_columns('supply_returns')}
+        if 'payable_adjusted' not in existing:
+            db.session.execute(text('ALTER TABLE supply_returns ADD COLUMN payable_adjusted FLOAT DEFAULT 0.0'))
+            db.session.commit()
+        if 'credit_amount' not in existing:
+            db.session.execute(text('ALTER TABLE supply_returns ADD COLUMN credit_amount FLOAT DEFAULT 0.0'))
+            db.session.commit()
