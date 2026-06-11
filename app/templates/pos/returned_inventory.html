@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Returned Items Inventory{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #f0f4ff 0%, #e8f0fe 30%, #fdf2f8 70%, #fef3c7 100%);
+        min-height: 100vh;
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.75);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+    }
+    .gradient-rose { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+    .gradient-indigo { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .gradient-emerald { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .gradient-amber { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
+    .modal-backdrop { backdrop-filter: blur(4px); background: rgba(0,0,0,0.4); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-2 sm:px-4 py-3 sm:py-4">
+    
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <h1 class="text-lg sm:text-2xl font-bold text-slate-800 flex items-center gap-2 sm:gap-3">
+            <span class="w-8 h-8 sm:w-10 sm:h-10 gradient-rose rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 14 4 9 9 4"></polyline>
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                </svg>
+            </span>
+            <span class="hidden xs:inline">Returned Items (Damaged)</span>
+            <span class="xs:hidden">Damaged Items</span>
+        </h1>
+        <a href="{{ url_for('pos.returns') }}" class="bg-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm hover:bg-slate-300">
+            ← Back to Returns
+        </a>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5">
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-rose rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalItems">-</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Products</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5">
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-amber rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalQty">-</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Total Qty</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5">
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-emerald rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalValue">-</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Value</p>
+                </div>
+            </div>
+        </div>
+        <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-5">
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="w-8 h-8 sm:w-12 sm:h-12 gradient-indigo rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <svg class="w-4 h-4 sm:w-6 sm:h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect></svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-lg sm:text-2xl font-bold text-slate-800 truncate" id="totalCategories">-</p>
+                    <p class="text-[10px] sm:text-xs text-slate-400 uppercase tracking-wider font-medium">Categories</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <div>
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Search</label>
+                <input type="text" id="itemSearch" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" placeholder="Search by name..." onkeyup="loadItems()">
+            </div>
+            <div>
+                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Category</label>
+                <select id="categoryFilter" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadItems()">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-card rounded-xl sm:rounded-2xl overflow-hidden">
+        <!-- Mobile Cards -->
+        <div class="block lg:hidden divide-y divide-slate-100" id="mobileCards">
+            <div class="px-3 py-6 text-center text-slate-400 text-sm">Loading...</div>
+        </div>
+        
+        <!-- Desktop Table -->
+        <div class="hidden lg:block overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="bg-slate-900 text-white">
+                        <th class="px-4 py-3 text-left font-medium">Barcode</th>
+                        <th class="px-4 py-3 text-left font-medium">Product</th>
+                        <th class="px-4 py-3 text-left font-medium">Category</th>
+                        <th class="px-4 py-3 text-right font-medium">Cost</th>
+                        <th class="px-4 py-3 text-center font-medium">Qty</th>
+                        <th class="px-4 py-3 text-center font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="itemsTable" class="divide-y divide-slate-100">
+                    <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+<div id="adjustModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-4 sm:p-6">
+        <h3 class="text-base sm:text-lg font-bold mb-2 sm:mb-3">Adjust: <span id="adjProductName"></span></h3>
+        <p class="text-xs sm:text-sm text-slate-500 mb-2 sm:mb-3">Current Qty: <strong id="adjCurrentQty"></strong></p>
+        <select id="adjType" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm mb-2">
+            <option value="remove">Remove (-)</option>
+            <option value="add">Add (+)</option>
+            <option value="set">Set Exact</option>
+        </select>
+        <input type="number" id="adjQty" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm mb-2" min="1" placeholder="Quantity">
+        <input type="text" id="adjNotes" class="w-full border-2 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" placeholder="Notes (disposed, sold as scrap...)">
+        <div class="flex gap-2 mt-3 sm:mt-4">
+            <button onclick="hideModal('adjustModal')" class="flex-1 bg-slate-200 py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">Cancel</button>
+            <button onclick="saveAdjustment()" class="flex-1 gradient-indigo text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl font-medium text-xs sm:text-sm">Save</button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentAdjustItem = null;
+
+function showModal(id){document.getElementById(id).classList.remove('hidden');document.getElementById(id).classList.add('flex');}
+function hideModal(id){document.getElementById(id).classList.add('hidden');document.getElementById(id).classList.remove('flex');}
+
+function loadItems(){
+    fetch('/api/returns/damaged-items')
+        .then(r => r.json())
+        .then(data => {
+            var items = data.items;
+            var search = (document.getElementById('itemSearch').value||'').toLowerCase();
+            var cat = document.getElementById('categoryFilter').value;
+            
+            if(search) items = items.filter(i => i.product_name.toLowerCase().includes(search));
+            if(cat) items = items.filter(i => i.category === cat);
+            
+            // Stats
+            document.getElementById('totalItems').textContent = items.length;
+            document.getElementById('totalQty').textContent = items.reduce((s,i) => s + i.quantity, 0);
+            document.getElementById('totalValue').textContent = 'Rs.' + items.reduce((s,i) => s + i.cost_price * i.quantity, 0).toLocaleString();
+            var cats = [...new Set(data.items.map(i => i.category))];
+            document.getElementById('totalCategories').textContent = cats.length;
+            
+            // Category dropdown
+            var cf = document.getElementById('categoryFilter');
+            var selectedCat = cf.value;
+            cf.innerHTML = '<option value="">All Categories</option>' + cats.map(c => '<option value="'+c+'">'+c+'</option>').join('');
+            cf.value = selectedCat;
+            
+            // Desktop
+            var tbody = document.getElementById('itemsTable');
+            if(!items.length){
+                tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No damaged items</td></tr>';
+            } else {
+                tbody.innerHTML = items.map(function(i){
+                    return '<tr class="hover:bg-slate-50">'+
+                        '<td class="px-4 py-3 text-xs text-slate-500">'+(i.barcode||'-')+'</td>'+
+                        '<td class="px-4 py-3 font-medium">'+i.product_name+'</td>'+
+                        '<td class="px-4 py-3 text-slate-500">'+i.category+'</td>'+
+                        '<td class="px-4 py-3 text-right">'+(i.cost_price?'Rs.'+i.cost_price.toFixed(2):'-')+'</td>'+
+                        '<td class="px-4 py-3 text-center font-bold text-rose-600">'+i.quantity+'</td>'+
+                        '<td class="px-4 py-3 text-center"><button onclick="showAdjust(\''+i.product_name.replace(/'/g,"\\'")+'\','+i.quantity+')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg hover:bg-indigo-100">Adjust</button></td>'+
+                    '</tr>';
+                }).join('');
+            }
+            
+            // Mobile
+            var mobile = document.getElementById('mobileCards');
+            if(!items.length){
+                mobile.innerHTML = '<div class="px-3 py-6 text-center text-slate-400 text-sm">No damaged items</div>';
+            } else {
+                mobile.innerHTML = items.map(function(i){
+                    return '<div class="p-3"><div class="flex justify-between items-start mb-2"><div><p class="font-semibold text-sm">'+i.product_name+'</p><p class="text-xs text-slate-400">'+i.category+' | Barcode: '+(i.barcode||'-')+'</p></div><span class="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800">'+i.quantity+'</span></div><div class="flex justify-between items-center text-xs"><span class="text-slate-500">Cost: '+(i.cost_price?'Rs.'+i.cost_price.toFixed(2):'-')+'</span><button onclick="showAdjust(\''+i.product_name.replace(/'/g,"\\'")+'\','+i.quantity+')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs">Adjust</button></div></div>';
+                }).join('');
+            }
+        });
+}
+
+function showAdjust(name, qty){
+    currentAdjustItem = name;
+    document.getElementById('adjProductName').textContent = name;
+    document.getElementById('adjCurrentQty').textContent = qty;
+    document.getElementById('adjQty').value = '';
+    document.getElementById('adjNotes').value = '';
+    showModal('adjustModal');
+}
+
+function saveAdjustment(){
+    var qty = parseInt(document.getElementById('adjQty').value) || 0;
+    var type = document.getElementById('adjType').value;
+    
+    if(qty < 1){ alert('Enter quantity'); return; }
+    
+    fetch('/api/returns/damaged-items/adjust', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            product_name: currentAdjustItem,
+            type: type,
+            quantity: qty
+        })
+    })
+    .then(r => r.json())
+    .then(r => {
+        if(r.success){
+            hideModal('adjustModal');
+            loadItems();
+        } else {
+            alert(r.error);
+        }
+    });
+}
+
+loadItems();
+</script>
+{% endblock %}

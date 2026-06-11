@@ -36,6 +36,10 @@ def bills():
 def returns():
     return render_template('pos/returns.html')
 
+@pos_bp.route('/returned-inventory')
+@login_required
+def returned_inventory():
+    return render_template('pos/returned_inventory.html')
 # ============ API ROUTES ============
 
 @pos_bp.route('/api/sales/summary')

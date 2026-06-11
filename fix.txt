@@ -1,6 +1,7 @@
 # to use when updating existing db recordsok just forget it for now. we have to change logins credentials of owner and staff. so new logins are like,
 
 vt5m1pf0QIV#cu0& - pw
+B/W(*&afzT+5RXt - hostin
 
 username, role, password
 loshan, owner, HiMary9089
@@ -8,7 +9,10 @@ manager, manager, glass#1324
 milintha, staff, milintha@001
 eranga, staff, 002@eran
 
+<<<<<<< HEAD
+=======
 B/
+>>>>>>> 13fcf711f3659b3f98923122bb1be418fdeb1f44
 
 5. Return refunds don't create Payment records
 When a cash refund is processed, customer.balance is adjusted for credit customers, but no Payment record is created tracking the refund. This means the refund doesn't appear in the customer's payment history. If you ever want that traceability, you'd add a Payment record with a negative amount.

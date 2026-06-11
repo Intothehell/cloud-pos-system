@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/easypay-logo.png') }}">
     
-    <title>{% block title %}Furniture POS{% endblock %}</title>
+    <title>{% block title %}Supply Management{% endblock %}</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -18,12 +18,10 @@
         .nav-link:hover { background: rgba(255,255,255,0.08); border-radius: 8px; }
         .nav-link.active { background: rgba(255,255,255,0.12); border-radius: 8px; }
         
-        /* SVG Icon Styles */
         .icon { width: 20px; height: 20px; display: inline-block; vertical-align: middle; }
         .icon-sm { width: 16px; height: 16px; }
         .icon-lg { width: 24px; height: 24px; }
         
-        /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -34,106 +32,70 @@
 <body class="bg-slate-100 min-h-screen">
     
     <!-- Top Navigation -->
-    <nav class="bg-slate-900 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
+    <nav class="bg-emerald-900 text-white shadow-lg fixed top-0 left-0 right-0 z-50">
         <div class="flex justify-between items-center px-4 lg:px-6 h-16">
-            <!-- Logo & Nav Links -->
             <div class="flex items-center gap-6">
-                <!-- Logo -->
-                <a href="{{ url_for('pos.dashboard') }}" class="flex items-center gap-2 text-lg font-bold tracking-tight">
+                <a href="{{ url_for('supply.dashboard') }}" class="flex items-center gap-2 text-lg font-bold tracking-tight">
                     <img src="{{ url_for('static', filename='img/easypay-logo.png') }}" 
-                        alt="EASY PAY" 
-                        class="w-8 h-8 object-contain">
-                    <span class="text-indigo-400">EASY</span>Pay
+                        alt="EASY PAY" class="w-8 h-8 object-contain">
+                    <span class="text-emerald-400">EASY</span>Pay <span class="text-emerald-300 text-sm">Supply</span>
                 </a>
                 
                 {% if current_user.is_authenticated %}
-                <!-- Desktop Nav -->
                 <div class="hidden lg:flex items-center gap-1 ml-4">
-                    <a href="{{ url_for('pos.dashboard') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.dashboard') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
                             <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
                         </svg>
                         Dashboard
                     </a>
-                    <a href="{{ url_for('pos.terminal') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.terminal') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                            <line x1="6" y1="8" x2="6" y2="8"></line><line x1="10" y1="8" x2="10" y2="8"></line>
-                            <line x1="14" y1="8" x2="18" y2="8"></line>
                         </svg>
-                        POS
+                        Supply In
                     </a>
-                    {% if current_user.role in ['owner','manager','reviewer'] %}
-                    <a href="{{ url_for('inventory.manage') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.inventory') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
-                            <line x1="12" y1="22.08" x2="12" y2="12"></line>
                         </svg>
                         Inventory
                     </a>
-                    {% endif %}
-                    <a href="{{ url_for('customer.list_customers') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.suppliers') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                             <circle cx="9" cy="7" r="4"></circle>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                         </svg>
-                        Customers
+                        Suppliers
                     </a>
-                    <a href="{{ url_for('pos.bills') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.bills') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                            <polyline points="14 2 14 8 20 8"></polyline>
-                            <line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
                         </svg>
                         Bills
                     </a>
-                    <a href="{{ url_for('pos.returns') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
+                    <a href="{{ url_for('supply.returns') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="9 14 4 9 9 4"></polyline>
                             <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
                         </svg>
                         Returns
                     </a>
-                    {% if current_user.role in ['owner','reviewer'] %}
-                    <a href="{{ url_for('auth.manage_users') }}" class="nav-link px-3 py-2 text-sm text-slate-300 hover:text-white flex items-center gap-2">
-                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                        </svg>
-                        Users
-                    </a>
-                    {% endif %}
                 </div>
                 {% endif %}
             </div>
             
-            <!-- Right Side -->
             {% if current_user.is_authenticated %}
             <div class="flex items-center gap-4">
-                <!-- Calculator -->
-                <a href="calc:" class="text-slate-400 hover:text-indigo-400 transition" title="Calculator">
-                    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="4" y="2" width="16" height="20" rx="2"></rect>
-                        <line x1="8" y1="6" x2="16" y2="6"></line>
-                        <line x1="8" y1="10" x2="16" y2="10"></line>
-                        <line x1="8" y1="14" x2="12" y2="14"></line>
-                    </svg>
-                </a>
+                <span id="liveClock" class="hidden sm:block text-base font-mono bg-emerald-800 px-3 py-1.5 rounded-lg text-emerald-300 border border-emerald-700"></span>
                 
-                <!-- Clock -->
-                <span id="liveClock" class="hidden sm:block text-base font-mono bg-slate-800 px-3 py-1.5 rounded-lg text-indigo-400 border border-slate-700"></span>
-                
-                <!-- User -->
                 <div class="flex items-center gap-3">
                     <div class="hidden sm:block text-right">
                         <p class="text-sm font-medium leading-tight">{{ current_user.username|capitalize }}</p>
-                        <p class="text-xs text-slate-400 leading-tight">{{ current_user.role }}</p>
+                        <p class="text-xs text-emerald-400 leading-tight">{{ current_user.role }}</p>
                     </div>
-                    <div class="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-indigo-400">
+                    <div class="w-9 h-9 bg-emerald-600 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-emerald-400">
                         {{ current_user.username[0]|upper }}
                     </div>
                     <a href="{{ url_for('auth.logout') }}" class="text-slate-400 hover:text-red-400 transition" title="Logout">
@@ -153,56 +115,38 @@
     {% if current_user.is_authenticated %}
     <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-50 safe-area-bottom">
         <div class="flex justify-around py-2">
-            <a href="{{ url_for('pos.dashboard') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+            <a href="{{ url_for('supply.dashboard') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-emerald-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
                     <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
                 </svg>
                 Home
             </a>
-            <a href="{{ url_for('pos.terminal') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+            <a href="{{ url_for('supply.terminal') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-emerald-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="4" width="20" height="16" rx="2"></rect>
                 </svg>
-                POS
+                Supply
             </a>
-            {% if current_user.role in ['owner','manager','reviewer'] %}
-            <a href="{{ url_for('inventory.manage') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
-                </svg>
-                Stock
-            </a>
-            {% endif %}
-            <a href="{{ url_for('customer.list_customers') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+            <a href="{{ url_for('supply.suppliers') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-emerald-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                     <circle cx="9" cy="7" r="4"></circle>
                 </svg>
-                Clients
+                Suppliers
             </a>
-            <a href="{{ url_for('pos.bills') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+            <a href="{{ url_for('supply.bills') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-emerald-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 </svg>
                 Bills
             </a>
-            <a href="{{ url_for('pos.returns') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
+            <a href="{{ url_for('supply.inventory') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-emerald-600 px-1 py-1">
                 <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="9 14 4 9 9 4"></polyline>
-                    <path d="M20 20v-7a4 4 0 0 0-4-4H4"></path>
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                 </svg>
-                Returns
+                Stock
             </a>
-            {% if current_user.role in ['owner','reviewer'] %}
-            <a href="{{ url_for('auth.manage_users') }}" class="flex flex-col items-center text-xs text-slate-400 hover:text-indigo-600 px-1 py-1">
-                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                </svg>
-                Users
-            </a>
-            {% endif %}
         </div>
     </div>
     {% endif %}
@@ -222,16 +166,9 @@
             {% endif %}
         {% endwith %}
 
-        
         {% block content %}{% endblock %}
-        
-        <!-- Footer Credit -->
-        <footer class="max-w-7xl mx-auto px-4 py-4 text-center text-xs text-slate-400 mt-8">
-            Developed by <a href="https://www.devcodedesigns.com" target="_blank" class="text-indigo-500 hover:text-indigo-700 font-medium">devCode</a> | www.devcodedesigns.com
-        </footer>
     </div>
     
-    <!-- Clock Script -->
     <script>
     function updateClock() {
         const now = new Date();
@@ -244,8 +181,7 @@
     setInterval(updateClock, 1000);
     </script>
     
-    <!-- Back to Top Button -->
-    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" id="backToTop" class="fixed bottom-20 lg:bottom-6 right-4 z-50 w-10 h-10 text-white rounded-full shadow-lg hidden items-center justify-center transition" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <button onclick="window.scrollTo({top:0,behavior:'smooth'})" id="backToTop" class="fixed bottom-20 lg:bottom-6 right-4 z-50 w-10 h-10 text-white rounded-full shadow-lg hidden items-center justify-center transition" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
         <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="18 15 12 9 6 15"></polyline>
         </svg>

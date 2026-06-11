@@ -1,0 +1,12 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\calc]
+@="URL:Calculator Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\calc\shell]
+
+[HKEY_CLASSES_ROOT\calc\shell\open]
+
+[HKEY_CLASSES_ROOT\calc\shell\open\command]
+@="calc.exe"

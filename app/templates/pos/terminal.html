@@ -166,7 +166,8 @@
                         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Pay Old Balance (Rs.)</label>
                         <div class="flex gap-2">
                             <input type="number" id="balancePayment" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2 text-sm bg-white/80" placeholder="Amount" value="0" min="0" step="0.01" onchange="updateCartDisplay()">
-                            <select id="balancePaymentMethod" class="border-2 border-slate-200 rounded-xl px-2 py-2 text-sm bg-white/80">
+                            <select id="balancePaymentMethod" class="border-2 border-slate-200 rounded-xl px-2 py-2 text-sm bg-white/80" required>
+                                <option value="">-- Select --</option>
                                 <option value="cash">Cash</option>
                                 <option value="card">Card</option>
                                 <option value="check">Cheque</option>
@@ -370,7 +371,17 @@ function changeCustomerType() {
 }
 
 function searchProducts(){var q=document.getElementById('searchInput').value;if(!q){displayProducts(allProducts);return;}fetch('/api/products/search?q='+encodeURIComponent(q)+'&customer_type='+customerType).then(r=>r.json()).then(displayProducts);}
-function filterCategory(cat){displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));}
+function filterCategory(cat){
+    displayProducts(cat==='all'?allProducts:allProducts.filter(p=>p.category===cat));
+    // Update button styles
+    document.querySelectorAll('#categoryButtons button').forEach(function(btn){
+        if(btn.textContent.trim() === cat || (cat === 'all' && btn.textContent.trim() === 'All')){
+            btn.className = 'px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl';
+        } else {
+            btn.className = 'px-4 py-2 bg-white border-2 text-xs font-semibold rounded-xl';
+        }
+    });
+}
 
 function displayProducts(products){
     var g=document.getElementById('productGrid');
@@ -418,6 +429,8 @@ function addBalanceToCart(){
     if(!currentWholesaleCustomer)return;
     var amount=parseFloat(document.getElementById('balancePayment').value)||0;
     if(amount<=0)return;
+    var method=document.getElementById('balancePaymentMethod').value;
+    if(!method){alert('Please select a payment method');return;}
     cart=cart.filter(function(item){return item.id!=='balance_pay';});
     if(amount>0){
         cart.push({id:'balance_pay',name:'Balance Payment',price:-amount,quantity:1,max:1,isBalance:true});
@@ -546,7 +559,7 @@ function printInvoice(){
     w.document.write(
         '<html><head><title>Bill</title>' +
         '<style>' +
-        '@page { size: 7.7in 5.5in; margin: 4mm; }' +
+        '@page { size: 8in 5.5in; margin: 4mm; }' +
         '@media print { body { width: 100%; margin: 0; padding: 0; font-size: 15px; line-height: 1.15; } }' +
         'body { font-family: Arial, Helvetica, sans-serif; font-weight: 300; font-size: 15px; max-width: 100%; margin: 0 auto; padding: 4px 0px; background: #fff; color: #000; line-height: 1.15; }' +
         'table { width: 100%; border-collapse: collapse; }' +

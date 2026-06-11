@@ -292,7 +292,8 @@ function loadStats() {
             document.getElementById('cashInHand').textContent = 'Rs.' + (stats.cash_in_hand || 0).toLocaleString();
             document.getElementById('toBank').textContent = 'Rs.' + (stats.to_bank || 0).toLocaleString();
             document.getElementById('byCheque').textContent = 'Rs.' + (stats.by_cheque || 0).toLocaleString();
-                        var overdueCount = stats.overdue_customers || 0;
+            
+            var overdueCount = stats.overdue_customers || 0;
             if (overdueCount > 0) {
                 document.getElementById('overdueBell').classList.remove('hidden');
                 document.getElementById('overdueCount').textContent = overdueCount;

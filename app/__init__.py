@@ -27,7 +27,8 @@ def create_app():
     from app.routes.customer import customer_bp
     from app.routes.api import api_bp
     from app.routes.inventory import inventory_bp
-    
+    from app.routes.supply import supply_bp
+    app.register_blueprint(supply_bp, url_prefix='/supply')
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(pos_bp, url_prefix='/pos')
     app.register_blueprint(customer_bp, url_prefix='/customer')
@@ -55,6 +56,7 @@ def create_app():
         from app.models.customer import Customer, Payment
         from app.models.product import Product, StockMovement
         from app.models.order import Order, OrderItem, Return
+        from app.models.supplier import Supplier, SupplierPayment
         
         db.create_all()
     
