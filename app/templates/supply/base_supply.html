@@ -147,7 +147,11 @@
     function showModal(id){document.getElementById(id).classList.remove('hidden');document.getElementById(id).classList.add('flex');}
     function hideModal(id){document.getElementById(id).classList.add('hidden');document.getElementById(id).classList.remove('flex');}
     function money(n){return 'Rs.' + Number(n || 0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});}
-    </script>
+    function copyToClipboard(text){
+        if(navigator.clipboard){navigator.clipboard.writeText(text);return;}
+        var input=document.createElement('input');input.value=text;document.body.appendChild(input);input.select();document.execCommand('copy');input.remove();
+    }
+</script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

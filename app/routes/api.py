@@ -5,11 +5,29 @@ from app.models.product import Product, StockMovement
 
 from app.models.customer import Customer, Payment
 from app.models.user import User
+from app.models.supplier import Supplier
 from datetime import datetime
 from app.models.order import Order, OrderItem, Return, ReturnItem
 from datetime import datetime, timedelta
+from sqlalchemy import text
 
 api_bp = Blueprint('api', __name__)
+
+
+def return_item_order_item_id_enabled():
+    try:
+        rows = db.session.execute(text("PRAGMA table_info(return_items)")).fetchall()
+        return any(row[1] == 'order_item_id' for row in rows)
+    except Exception:
+        return False
+
+
+def return_item_order_item_ids(return_item_ids):
+    if not return_item_ids or not return_item_order_item_id_enabled():
+        return {}
+    ids = ','.join(str(int(item_id)) for item_id in return_item_ids)
+    rows = db.session.execute(text(f"SELECT id, order_item_id FROM return_items WHERE id IN ({ids})")).fetchall()
+    return {row[0]: row[1] for row in rows}
 
 # ============ PRODUCTS ============
 @api_bp.route('/product/barcode/<barcode>')
@@ -27,15 +45,31 @@ def search_products():
     customer_type = request.args.get('customer_type', 'retail')
     
     if query:
-        products = Product.query.filter(
-            Product.is_active == True,
-            db.or_(
-                Product.name.ilike(f'%{query}%'),
-                Product.barcode.ilike(f'%{query}%'),
-                Product.sku.ilike(f'%{query}%'),
-                Product.category.ilike(f'%{query}%')
-            )
-        ).limit(50).all()
+        terms = [term for term in query.lower().split() if term]
+        products = Product.query.filter(Product.is_active == True).all()
+        if terms:
+            def matches(product):
+                haystack = ' '.join([
+                    product.name or '',
+                    product.barcode or '',
+                    product.sku or '',
+                    product.category or ''
+                ]).lower()
+                return all(term in haystack for term in terms)
+
+            products = [product for product in products if matches(product)]
+
+        exact = []
+        partial = []
+        query_lower = query.lower()
+        for product in products:
+            barcode = (product.barcode or '').lower()
+            sku = (product.sku or '').lower()
+            if barcode == query_lower or sku == query_lower:
+                exact.append(product)
+            else:
+                partial.append(product)
+        products = (exact + partial)[:50]
     else:
         products = Product.query.filter_by(is_active=True).limit(50).all()
     
@@ -43,6 +77,10 @@ def search_products():
     for p in products:
         data = p.to_dict()
         data['price'] = p.wholesale_price if customer_type == 'wholesale' else 0
+        data['cost_price'] = p.cost_price or 0
+        data['retail_price'] = p.retail_price or 0
+        data['min_stock_level'] = p.min_stock_level or 0
+        data['is_active'] = p.is_active
         result.append(data)
     
     return jsonify(result)
@@ -59,6 +97,7 @@ def get_all_products():
         'category': p.category or 'Uncategorized',
         'sku': p.sku or '',
         'cost_price': p.cost_price,
+        'retail_price': p.retail_price,
         'wholesale_price': p.wholesale_price,
         'stock_quantity': p.stock_quantity,
         'min_stock_level': p.min_stock_level,
@@ -86,14 +125,21 @@ def add_product():
     if Product.query.filter_by(barcode=data.get('barcode')).first():
         return jsonify({'error': 'Barcode exists'}), 400
     
+    cost_price = float(data.get('cost_price', 0) or 0)
+    wholesale_price = float(data.get('wholesale_price', 0) or 0)
+    retail_price = data.get('retail_price')
+    if retail_price in (None, ''):
+        retail_price = wholesale_price if wholesale_price > 0 else cost_price
+
     product = Product(
         barcode=data.get('barcode', ''),
         name=data['name'],
         description=data.get('description', ''),
         category=data.get('category', ''),
         sku=data.get('sku', ''),
-        cost_price=float(data.get('cost_price', 0)),
-        wholesale_price=float(data.get('wholesale_price', 0)),
+        cost_price=cost_price,
+        retail_price=float(retail_price or 0),
+        wholesale_price=wholesale_price,
         stock_quantity=int(data.get('stock_quantity', 0)),
         min_stock_level=int(data.get('min_stock_level', 5)),
         added_by=current_user.id
@@ -128,6 +174,8 @@ def update_product(product_id):
     product.sku = data.get('sku', product.sku)
     product.cost_price = float(data.get('cost_price', product.cost_price))
     product.wholesale_price = float(data.get('wholesale_price', product.wholesale_price))
+    if 'retail_price' in data and data.get('retail_price') not in (None, ''):
+        product.retail_price = float(data.get('retail_price', product.retail_price))
     product.min_stock_level = int(data.get('min_stock_level', product.min_stock_level))
     
     db.session.commit()
@@ -419,6 +467,7 @@ def order_details(order_number):
         'total': order.total,
         'items': [{
             'id': item.id,
+            'order_item_id': item.id,
             'product_id': item.product_id,
             'name': item.product_name,
             'quantity': item.quantity,
@@ -548,6 +597,18 @@ def customer_details(customer_id):
         'total_purchases': customer.total_purchases,
         'total_paid': customer.total_paid,
         'payment_history': customer.get_payment_history(),
+        'linked_supplier': (lambda supplier: {
+            'id': supplier.id,
+            'name': supplier.name,
+            'phone': supplier.phone,
+            'nic': supplier.nic,
+            'balance': supplier.balance or 0,
+            'total_purchases': supplier.total_purchases or 0,
+            'total_paid': supplier.total_paid or 0,
+            'net_position': (customer.balance or 0) - (supplier.balance or 0),
+            'can_offset': (customer.balance or 0) > 0 and (supplier.balance or 0) > 0,
+            'max_offset': min(customer.balance or 0, supplier.balance or 0)
+        } if supplier else None)(Supplier.query.filter_by(linked_customer_id=customer.id, is_active=True).first()),
         'recent_orders': [{
             'order_number': o.order_number,
             'total': o.total,
@@ -749,7 +810,70 @@ def return_order(order_number):
     return_type = data.get('return_type', 'refund')  # refund, replacement, credit_note
     reason_type = data.get('reason_type', 'no_damage')
     
-    # Create return record
+    selected_items = data.get('items', [])
+    prepared_items = []
+    has_order_item_id_column = return_item_order_item_id_enabled()
+
+    if not selected_items:
+        return jsonify({'error': 'Select at least one item'}), 400
+
+    for item_data in selected_items:
+        return_qty = int(item_data.get('quantity', 1))
+        if return_qty <= 0:
+            return jsonify({'error': 'Return quantity must be greater than 0'}), 400
+
+        order_item_id = item_data.get('order_item_id')
+        original_item = None
+        if order_item_id:
+            original_item = OrderItem.query.filter_by(
+                id=order_item_id,
+                order_id=order.id
+            ).first()
+
+        if not original_item:
+            product_id = item_data.get('product_id')
+            original_item = OrderItem.query.filter_by(
+                order_id=order.id,
+                product_id=product_id
+            ).first()
+
+        if not original_item:
+            return jsonify({'error': 'Returned item was not found in this order'}), 400
+
+        if order_item_id and has_order_item_id_column:
+            already_returned = db.session.execute(
+                text(
+                    "SELECT COALESCE(SUM(ri.quantity), 0) "
+                    "FROM return_items ri JOIN returns r ON ri.return_id = r.id "
+                    "WHERE r.order_id = :order_id "
+                    "AND (ri.order_item_id = :order_item_id "
+                    "OR (ri.order_item_id IS NULL AND ri.product_name = :product_name))"
+                ),
+                {
+                    'order_id': order.id,
+                    'order_item_id': original_item.id,
+                    'product_name': original_item.product_name
+                }
+            ).scalar() or 0
+        else:
+            already_returned = db.session.query(db.func.sum(ReturnItem.quantity))\
+                .join(Return, ReturnItem.return_id == Return.id)\
+                .filter(Return.order_id == order.id)\
+                .filter(ReturnItem.product_name == original_item.product_name)\
+                .scalar() or 0
+        max_returnable = original_item.quantity - already_returned
+        if return_qty > max_returnable:
+            return jsonify({
+                'error': f'Cannot return {return_qty} x {original_item.product_name}. Only {max_returnable} remaining (original: {original_item.quantity}, already returned: {int(already_returned)})'
+            }), 400
+
+        prepared_items.append({
+            'order_item': original_item,
+            'quantity': return_qty,
+            'price': float(item_data.get('price', original_item.product_price or 0))
+        })
+
+    # Create return record after validation passes.
     ret = Return(
         order_id=order.id,
         return_type=return_type,
@@ -764,45 +888,23 @@ def return_order(order_number):
     
     db.session.add(ret)
     db.session.flush()  # Get ret.id without full commit
-    
-    # Save returned items to ReturnItem records
-    selected_items = data.get('items', [])
-    
-    # Validate: don't allow returning more than original order quantity
-    for item_data in selected_items:
-        product_id = item_data.get('product_id')
-        return_qty = int(item_data.get('quantity', 1))
-        
-        # Find the original order item
-        original_item = OrderItem.query.filter_by(
-            order_id=order.id,
-            product_id=product_id
-        ).first()
-        
-        if original_item:
-            # Sum all previously returned quantities for this order item
-            already_returned = db.session.query(db.func.sum(ReturnItem.quantity))\
-                .join(Return, ReturnItem.return_id == Return.id)\
-                .filter(Return.order_id == order.id)\
-                .filter(ReturnItem.product_name == original_item.product_name)\
-                .scalar() or 0
-            
-            max_returnable = original_item.quantity - already_returned
-            if return_qty > max_returnable:
-                return jsonify({
-                    'error': f'Cannot return {return_qty} x {original_item.product_name}. Only {max_returnable} remaining (original: {original_item.quantity}, already returned: {int(already_returned)})'
-                }), 400
-    
-    for item_data in selected_items:
-        product = Product.query.get(item_data.get('product_id'))
+
+    for item_data in prepared_items:
+        original_item = item_data['order_item']
         return_item = ReturnItem(
             return_id=ret.id,
-            product_name=product.name if product else 'Unknown Item',
-            product_price=float(item_data.get('price', 0)),
-            quantity=int(item_data.get('quantity', 1)),
+            product_name=original_item.product_name,
+            product_price=item_data['price'],
+            quantity=item_data['quantity'],
             is_damaged=(reason_type == 'damaged')
         )
         db.session.add(return_item)
+        db.session.flush()
+        if has_order_item_id_column:
+            db.session.execute(
+                text("UPDATE return_items SET order_item_id = :order_item_id WHERE id = :id"),
+                {'order_item_id': original_item.id, 'id': return_item.id}
+            )
     
     # Handle replacement
     if return_type == 'replacement':
@@ -827,12 +929,10 @@ def return_order(order_number):
     
     # Handle refund
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
-        for item_data in selected_items:
-            price = float(item_data.get('price', 0))
-            qty = int(item_data.get('quantity', 1))
-            
+        for item_data in prepared_items:
+            qty = item_data['quantity']
             if reason_type != 'damaged':
-                product = Product.query.get(item_data.get('product_id'))
+                product = Product.query.get(item_data['order_item'].product_id)
                 if product:
                     product.stock_quantity += qty
                     rtn_movement = StockMovement(
@@ -858,7 +958,9 @@ def return_order(order_number):
     
     # Build return bill data from saved items
     saved_items = ReturnItem.query.filter_by(return_id=ret.id).all()
+    saved_order_item_ids = return_item_order_item_ids([ri.id for ri in saved_items])
     returned_items = [{
+        'order_item_id': saved_order_item_ids.get(ri.id),
         'name': ri.product_name,
         'price': ri.product_price,
         'quantity': ri.quantity,
@@ -903,7 +1005,8 @@ def get_all_returns():
             'status': r.status,
             'created_at': r.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'processed_by': r.processor.username if r.processor else 'N/A',
-            'customer': r.order.customer_name if r.order else 'N/A'
+            'customer': r.order.customer_name if r.order else 'N/A',
+            'item_names': ' '.join([item.product_name for item in ReturnItem.query.filter_by(return_id=r.id).all()])
         } for r in returns]
     })
 
@@ -918,6 +1021,7 @@ def return_details(return_number):
     
     order = ret.order
     items = ReturnItem.query.filter_by(return_id=ret.id).all()
+    item_order_ids = return_item_order_item_ids([ri.id for ri in items])
     
     return jsonify({
         'return_number': ret.return_number,
@@ -930,6 +1034,7 @@ def return_details(return_number):
         'customer_phone': order.customer_phone if order else '',
         'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
         'items': [{
+            'order_item_id': item_order_ids.get(ri.id),
             'name': ri.product_name,
             'price': ri.product_price,
             'quantity': ri.quantity,

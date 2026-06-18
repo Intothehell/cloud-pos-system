@@ -67,12 +67,13 @@
                             <th class="px-3 py-3 text-left font-semibold">Product</th>
                             <th class="px-3 py-3 text-right font-semibold">Qty</th>
                             <th class="px-3 py-3 text-right font-semibold">Unit cost</th>
+                            <th class="px-3 py-3 text-right font-semibold">Retail</th>
                             <th class="px-3 py-3 text-right font-semibold">Wholesale</th>
                             <th class="px-3 py-3 text-right font-semibold">Line total</th>
                             <th class="px-3 py-3 text-center font-semibold"></th>
                         </tr></thead>
                         <tbody id="lineTable" class="divide-y divide-slate-100">
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>
+                            <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -244,7 +245,7 @@ function renderProductDropdown() {
             '<div class="flex justify-between gap-3">' +
                 '<div class="min-w-0"><p class="font-semibold text-sm text-slate-800 truncate">' + escapeHtml(p.name) + '</p>' +
                 '<p class="text-xs text-slate-500">' + escapeHtml(p.barcode || 'No barcode') + (p.sku ? ' | ' + escapeHtml(p.sku) : '') + ' | ' + escapeHtml(p.category || 'Uncategorized') + '</p></div>' +
-                '<div class="text-right shrink-0"><p class="text-xs font-semibold text-slate-700">Stock ' + p.stock_quantity + '</p><p class="text-xs text-slate-500">Cost ' + money(p.cost_price) + '</p><p class="text-xs text-slate-500">Wholesale ' + money(p.wholesale_price) + '</p></div>' +
+                '<div class="text-right shrink-0"><p class="text-xs font-semibold text-slate-700">Stock ' + p.stock_quantity + '</p><p class="text-xs text-slate-500">Cost ' + money(p.cost_price) + '</p><p class="text-xs text-slate-500">Retail ' + money(p.retail_price) + '</p><p class="text-xs text-slate-500">Wholesale ' + money(p.wholesale_price) + '</p></div>' +
             '</div>' +
         '</button>';
     }).join('');
@@ -303,6 +304,7 @@ function selectProductResult(index) {
         stock: p.stock_quantity,
         quantity: 1,
         unit_cost: Number(p.cost_price || 0),
+        retail_price: Number(p.retail_price || 0),
         wholesale_price: Number(p.wholesale_price || 0)
     });
     document.getElementById('productSearch').value = '';
@@ -340,7 +342,7 @@ function totals() {
 function renderLines() {
     var body = document.getElementById('lineTable');
     if (!lines.length) {
-        body.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>';
+        body.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">No products added</td></tr>';
     } else {
         body.innerHTML = lines.map(function(line, i){
             var lineTotal = Number(line.quantity || 0) * Number(line.unit_cost || 0);
@@ -348,6 +350,7 @@ function renderLines() {
                 '<td class="px-3 py-3"><p class="font-semibold">' + escapeHtml(line.name) + '</p><p class="text-xs text-slate-400">' + escapeHtml(line.barcode || 'No barcode') + ' | ' + escapeHtml(line.category || 'Uncategorized') + ' | Current stock: ' + line.stock + '</p></td>' +
                 '<td class="px-3 py-3 text-right"><input type="number" min="1" value="' + line.quantity + '" data-line-index="' + i + '" data-line-field="quantity" class="w-20 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
                 '<td class="px-3 py-3 text-right"><input type="number" min="0" step="0.01" value="' + line.unit_cost + '" data-line-index="' + i + '" data-line-field="unit_cost" class="w-28 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
+                '<td class="px-3 py-3 text-right"><input type="number" min="0" step="0.01" value="' + line.retail_price + '" data-line-index="' + i + '" data-line-field="retail_price" class="w-28 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
                 '<td class="px-3 py-3 text-right"><input type="number" min="0" step="0.01" value="' + line.wholesale_price + '" data-line-index="' + i + '" data-line-field="wholesale_price" class="w-28 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-right"></td>' +
                 '<td class="px-3 py-3 text-right font-semibold">' + money(lineTotal) + '</td>' +
                 '<td class="px-3 py-3 text-center"><button type="button" data-remove-index="' + i + '" class="text-red-500 hover:text-red-700">&times;</button></td>' +
@@ -406,6 +409,7 @@ function submitBill() {
                     product_id: line.product_id,
                     quantity: line.quantity,
                     unit_cost: line.unit_cost,
+                    retail_price: line.retail_price,
                     wholesale_price: line.wholesale_price
                 };
             })

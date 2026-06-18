@@ -34,6 +34,12 @@ def create_app():
     app.register_blueprint(customer_bp, url_prefix='/customer')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(inventory_bp, url_prefix='/inventory')
+
+    from flask import redirect, url_for
+
+    @app.route('/')
+    def home():
+        return redirect(url_for('pos.index'))
     
     # Block reviewer role from modifying data
     from flask import request, flash, redirect, url_for, jsonify

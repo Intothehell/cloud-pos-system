@@ -27,6 +27,43 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        .app-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 88px;
+            transform: translateX(-50%) translateY(12px);
+            background: #0f172a;
+            color: white;
+            padding: 10px 18px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+            z-index: 80;
+            opacity: 0;
+            animation: appToastInOut 2.2s ease forwards;
+            max-width: calc(100vw - 32px);
+            text-align: center;
+        }
+        .app-toast.error { background: #991b1b; }
+        .app-toast.success { background: #047857; }
+        .app-toast.warning { background: #92400e; }
+        @keyframes appToastInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(12px); }
+            12%, 82% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+        }
+        .skeleton-line {
+            background: linear-gradient(90deg, #e2e8f0 25%, #f8fafc 37%, #e2e8f0 63%);
+            background-size: 400% 100%;
+            animation: skeletonPulse 1.3s ease infinite;
+            border-radius: 999px;
+        }
+        @keyframes skeletonPulse {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
+        }
     </style>
     
     {% block extra_css %}{% endblock %}
@@ -132,9 +169,6 @@
                     <div class="hidden sm:block text-right">
                         <p class="text-sm font-medium leading-tight">{{ current_user.username|capitalize }}</p>
                         <p class="text-xs text-slate-400 leading-tight">{{ current_user.role }}</p>
-                    </div>
-                    <div class="w-9 h-9 bg-indigo-600 rounded-full flex items-center justify-center text-sm font-bold ring-2 ring-indigo-400">
-                        {{ current_user.username[0]|upper }}
                     </div>
                     <a href="{{ url_for('auth.logout') }}" class="text-slate-400 hover:text-red-400 transition" title="Logout">
                         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -262,6 +296,53 @@
             btn.classList.remove('flex');
         }
     });
+
+    window.escapeHtml = function(value) {
+        return String(value == null ? '' : value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    };
+    window.money = function(value) {
+        return 'Rs. ' + (Number(value) || 0).toLocaleString('en-LK', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    };
+    window.moneyInt = function(value) {
+        return 'Rs. ' + Math.round(Number(value) || 0).toLocaleString('en-LK');
+    };
+    window.showToast = function(message, type) {
+        var toast = document.createElement('div');
+        toast.className = 'app-toast ' + (type || 'info');
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(function(){ toast.remove(); }, 2300);
+    };
+    window.showCopyToast = function(message) {
+        window.showToast(message || 'Copied', 'success');
+    };
+    window.copyToClipboard = function(text) {
+        var done = function(){ window.showCopyToast('Copied: ' + text); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text, done); });
+        } else {
+            fallbackCopy(text, done);
+        }
+    };
+    function fallbackCopy(text, done) {
+        var input = document.createElement('input');
+        input.value = text;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        done();
+    }
     </script>
 
     {% block extra_js %}{% endblock %}

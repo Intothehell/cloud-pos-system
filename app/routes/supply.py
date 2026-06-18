@@ -456,6 +456,7 @@ def api_search_products():
         'category': p.category or 'Uncategorized',
         'sku': p.sku or '',
         'cost_price': p.cost_price or 0,
+        'retail_price': p.retail_price or 0,
         'wholesale_price': p.wholesale_price or 0,
         'stock_quantity': p.stock_quantity or 0,
         'min_stock_level': p.min_stock_level or 0,
@@ -498,12 +499,17 @@ def api_supplier_details(supplier_id):
         'method': p.payment_method,
         'reference': p.reference_number or '',
         'bill_number': p.supply_bill.bill_number if p.supply_bill else '',
-    } for p in supplier.payments]
+    } for p in sorted(supplier.payments, key=lambda payment: payment.created_at or datetime.min, reverse=True)]
     data['recent_bills'] = [
         bill.to_dict() for bill in SupplyBill.query.filter_by(
             supplier_id=supplier.id,
             is_cancelled=False
-        ).order_by(SupplyBill.created_at.desc()).limit(10).all()
+        ).order_by(SupplyBill.created_at.desc()).limit(60).all()
+    ]
+    data['recent_returns'] = [
+        ret.to_dict() for ret in SupplyReturn.query.filter_by(
+            supplier_id=supplier.id
+        ).order_by(SupplyReturn.created_at.desc()).limit(60).all()
     ]
     data['offset_history'] = [
         offset.to_dict() for offset in LedgerOffset.query.filter_by(
@@ -647,7 +653,13 @@ def api_bills():
 @supply_bp.route('/api/bills/<bill_number>')
 @login_required
 def api_bill_details(bill_number):
-    bill = SupplyBill.query.filter_by(bill_number=bill_number).first_or_404()
+    bill = SupplyBill.query.filter(
+        SupplyBill.is_cancelled == False,
+        db.or_(
+            SupplyBill.bill_number == bill_number,
+            SupplyBill.supplier_invoice == bill_number,
+        )
+    ).first_or_404()
     return jsonify(bill.to_dict(include_items=True))
 
 
@@ -709,6 +721,9 @@ def api_create_bill():
             wholesale_price = item_data.get('wholesale_price')
             if wholesale_price not in (None, ''):
                 product.wholesale_price = parse_float(wholesale_price, product.wholesale_price or 0)
+            retail_price = item_data.get('retail_price')
+            if retail_price not in (None, ''):
+                product.retail_price = parse_float(retail_price, product.retail_price or 0)
 
             line_total = quantity * unit_cost
             bill.items.append(SupplyBillItem(

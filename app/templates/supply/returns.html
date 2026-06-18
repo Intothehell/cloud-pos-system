@@ -9,9 +9,6 @@
             <h1 class="text-2xl font-bold text-slate-800">Returns to supplier</h1>
             <p class="text-sm text-slate-500 mt-1">Return received items, reduce stock, and record payable adjustments or supplier credit.</p>
         </div>
-        {% if can_write %}
-        <button onclick="showModal('returnModal')" class="gradient-rose text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg hover:opacity-90">Create return</button>
-        {% endif %}
     </div>
 
     {% if not can_write %}
@@ -21,6 +18,25 @@
     {% endif %}
 
     <div id="messageBox" class="hidden mb-4 border px-4 py-3 rounded-xl text-sm"></div>
+
+    {% if can_write %}
+    <div class="glass-card rounded-2xl p-5 mb-4">
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-2 flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            Search intake note to return
+        </label>
+        <div class="flex flex-col sm:flex-row gap-3">
+            <input id="returnBillSearch" class="flex-1 border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-rose-400 focus:outline-none" placeholder="SUP-20260612-0001 or supplier invoice">
+            <button onclick="loadReturnBill()" class="gradient-rose text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:opacity-90 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+                Search
+            </button>
+        </div>
+        <p id="returnSearchError" class="hidden mt-2 text-sm text-red-600"></p>
+    </div>
+
+    <div id="returnBillDetails" class="hidden glass-card rounded-2xl p-5 mb-4"></div>
+    {% endif %}
 
     <div class="glass-card rounded-2xl p-4 mb-4">
         <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search returns</label>
@@ -63,47 +79,6 @@
     </div>
 </div>
 
-{% if can_write %}
-<div id="returnModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-5">
-        <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-bold">Create supplier return</h3>
-            <button onclick="hideModal('returnModal')" class="text-slate-400 hover:text-red-500 text-xl">&times;</button>
-        </div>
-        <div class="space-y-3">
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Find supply note</label>
-                <input id="returnBillSearch" oninput="filterReturnBillOptions()" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm mb-2" placeholder="Paste or search SUP note number">
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Supply bill</label>
-                <select id="returnBill" onchange="populateReturnProducts()" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm">
-                    <option value="">Select bill</option>
-                    {% for bill in bills %}
-                    <option value="{{ bill.id }}" data-search="{{ (bill.bill_number ~ ' ' ~ (bill.supplier.name if bill.supplier else '') ~ ' ' ~ (bill.supplier_invoice or ''))|lower }}">{{ bill.bill_number }} | {{ bill.supplier.name if bill.supplier else 'N/A' }} | Rs.{{ "%.2f"|format(bill.total) }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Product</label>
-                <select id="returnProduct" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm">
-                    <option value="">Select bill first</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Quantity</label>
-                <input id="returnQty" type="number" min="1" value="1" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Reason</label>
-                <textarea id="returnReason" rows="3" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm" placeholder="Damaged, wrong item, supplier correction..."></textarea>
-            </div>
-        </div>
-        <div class="flex gap-2 mt-4">
-            <button onclick="hideModal('returnModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
-            <button onclick="submitReturn()" id="returnBtn" class="flex-1 gradient-rose text-white py-2.5 rounded-xl text-sm font-bold">Create return</button>
-        </div>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -116,15 +91,7 @@ function escapeHtml(value) {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 }
-var billItems = {
-    {% for bill in bills %}
-    "{{ bill.id }}": [
-        {% for item in bill.items %}
-        {"product_id": {{ item.product_id }}, "name": {{ item.product_name|tojson }}, "quantity": {{ item.quantity }}, "returned": {{ returned_by_item.get((bill.id, item.product_id), 0) }}, "remaining": {{ (item.quantity or 0) - returned_by_item.get((bill.id, item.product_id), 0) }}, "unit_cost": {{ item.unit_cost }} }{% if not loop.last %},{% endif %}
-        {% endfor %}
-    ]{% if not loop.last %},{% endif %}
-    {% endfor %}
-};
+var activeReturnBill = null;
 function setMessage(type, text) {
     var box = document.getElementById('messageBox');
     box.className = 'mb-4 border px-4 py-3 rounded-xl text-sm ' + (type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800');
@@ -137,65 +104,196 @@ function filterReturns() {
         row.style.display = row.dataset.search.indexOf(q) >= 0 ? '' : 'none';
     });
 }
-function filterReturnBillOptions() {
-    var q = (document.getElementById('returnBillSearch').value || '').toLowerCase().trim();
-    var select = document.getElementById('returnBill');
-    var exact = null;
-    Array.prototype.forEach.call(select.options, function(option){
-        if (!option.value) return;
-        var match = !q || (option.dataset.search || '').indexOf(q) >= 0;
-        option.hidden = !match;
-        if (q && (option.textContent || '').toLowerCase().split('|')[0].trim() === q) exact = option;
-    });
-    if (exact) {
-        select.value = exact.value;
-        populateReturnProducts();
+
+function setReturnSearchError(text) {
+    var el = document.getElementById('returnSearchError');
+    if (!el) return;
+    el.textContent = text || '';
+    el.classList.toggle('hidden', !text);
+}
+
+function returnedQuantityForProduct(bill, productId) {
+    return (bill.returns || []).filter(function(ret){
+        return Number(ret.product_id) === Number(productId);
+    }).reduce(function(sum, ret){ return sum + Number(ret.quantity || 0); }, 0);
+}
+
+function loadReturnBill() {
+    var noteNo = (document.getElementById('returnBillSearch').value || '').trim();
+    setReturnSearchError('');
+    if (!noteNo) {
+        setReturnSearchError('Enter an intake note number.');
+        return;
     }
+    var detail = document.getElementById('returnBillDetails');
+    detail.classList.remove('hidden');
+    detail.innerHTML = '<p class="text-sm text-slate-400 py-4 text-center">Loading intake note...</p>';
+
+    fetch('/supply/api/bills/' + encodeURIComponent(noteNo))
+        .then(function(r){ return r.json().then(function(data){ return {ok:r.ok, data:data}; }); })
+        .then(function(result){
+            if (!result.ok || result.data.error) {
+                detail.classList.add('hidden');
+                setReturnSearchError('Intake note not found.');
+                return;
+            }
+            activeReturnBill = result.data;
+            renderReturnBill(activeReturnBill);
+        })
+        .catch(function(){
+            detail.classList.add('hidden');
+            setReturnSearchError('Could not load intake note. Please try again.');
+        });
 }
-function populateReturnProducts() {
-    var billId = document.getElementById('returnBill').value;
-    var select = document.getElementById('returnProduct');
-    var items = (billItems[billId] || []).filter(function(item){ return Number(item.remaining || 0) > 0; });
-    select.innerHTML = items.length ? items.map(function(item){
-        return '<option value="' + item.product_id + '" data-max="' + item.remaining + '">' + escapeHtml(item.name) + ' | remaining ' + item.remaining + ' of ' + item.quantity + ' | cost ' + money(item.unit_cost) + '</option>';
-    }).join('') : '<option value="">No items found</option>';
-    document.getElementById('returnQty').value = items.length ? 1 : '';
-    document.getElementById('returnQty').max = items.length ? items[0].remaining : '';
+
+function renderReturnBill(bill) {
+    var detail = document.getElementById('returnBillDetails');
+    var rows = (bill.items || []).map(function(item, idx){
+        var returned = returnedQuantityForProduct(bill, item.product_id);
+        var remaining = Math.max(Number(item.quantity || 0) - returned, 0);
+        var disabled = remaining <= 0 ? ' disabled' : '';
+        var checked = remaining > 0 ? ' checked' : '';
+        return '<div class="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 ' + (remaining <= 0 ? 'opacity-60' : '') + '">' +
+            '<input type="checkbox" class="return-item-check w-4 h-4" data-idx="' + idx + '" data-product-id="' + item.product_id + '" data-cost="' + item.unit_cost + '" data-max="' + remaining + '"' + checked + disabled + ' onchange="updateReturnTotal()">' +
+            '<div class="flex-1 min-w-0">' +
+                '<p class="font-medium text-sm text-slate-800 truncate">' + escapeHtml(item.product_name) + '</p>' +
+                '<p class="text-xs text-slate-400">' + escapeHtml(item.product_barcode || '-') + ' | ' + money(item.unit_cost) + ' x ' +
+                    '<input type="number" class="return-qty w-14 text-center border rounded px-1 py-0.5 text-xs" value="' + (remaining > 0 ? 1 : 0) + '" min="1" max="' + remaining + '" data-idx="' + idx + '" onchange="updateReturnTotal()" ' + (remaining <= 0 ? 'disabled' : '') + '> (Max: ' + remaining + ')</p>' +
+            '</div>' +
+            '<span class="font-semibold text-sm whitespace-nowrap">' + money(Number(item.unit_cost || 0) * Math.max(remaining > 0 ? 1 : 0, 0)) + '</span>' +
+        '</div>';
+    }).join('');
+
+    detail.innerHTML =
+        '<div class="flex justify-between items-start mb-4">' +
+            '<h3 class="font-bold text-lg flex items-center gap-2">' +
+                '<svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>' +
+                'Intake note: <span class="text-indigo-600">' + escapeHtml(bill.bill_number) + '</span>' +
+            '</h3>' +
+            '<button onclick="document.getElementById(\'returnBillDetails\').classList.add(\'hidden\')" class="text-slate-400 hover:text-red-500">' +
+                '<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>' +
+            '</button>' +
+        '</div>' +
+        '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-4 bg-slate-50 rounded-xl">' +
+            '<div>' +
+                '<p class="text-sm"><strong>Supplier:</strong> ' + escapeHtml(bill.supplier_name) + '</p>' +
+                '<p class="text-sm"><strong>Supplier invoice:</strong> ' + escapeHtml(bill.supplier_invoice || '-') + '</p>' +
+                '<p class="text-sm"><strong>Date:</strong> ' + escapeHtml(bill.created_at || bill.bill_date || '-') + '</p>' +
+            '</div>' +
+            '<div>' +
+                '<p class="text-sm"><strong>Total:</strong> <span class="text-lg font-bold text-slate-800">' + money(bill.total) + '</span></p>' +
+                '<p class="text-sm"><strong>Paid:</strong> <span class="font-medium text-emerald-600">' + money(bill.paid_amount) + '</span></p>' +
+                '<p class="text-sm"><strong>Status:</strong> <span class="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800">' + escapeHtml(bill.payment_status) + '</span></p>' +
+            '</div>' +
+        '</div>' +
+        '<div class="border-t border-slate-200 pt-4">' +
+            '<h4 class="font-semibold text-slate-700 mb-3 flex items-center gap-2">' +
+                '<svg class="w-5 h-5 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>' +
+                'Select items to return' +
+            '</h4>' +
+            '<div class="mb-4 space-y-2">' +
+                '<div class="flex items-center gap-2 mb-2"><input type="checkbox" id="selectAllSupplyReturnItems" onchange="toggleAllReturnItems(this)" checked class="w-4 h-4"><label for="selectAllSupplyReturnItems" class="text-sm font-medium text-slate-600">Select all returnable</label></div>' +
+                (rows || '<p class="text-sm text-slate-400 text-center py-4">No items found on this intake note.</p>') +
+            '</div>' +
+            '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">' +
+                '<div><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Return treatment</label><select id="supplyReturnTreatment" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-rose-400 focus:outline-none"><option value="payable_adjustment">Adjust supplier payable</option><option value="supplier_credit">Supplier credit note</option></select></div>' +
+                '<div><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Estimated adjustment</label><input type="number" id="supplyReturnTotal" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80" readonly></div>' +
+            '</div>' +
+            '<div class="mb-3"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Return reason</label><select id="supplyReturnReasonType" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-rose-400 focus:outline-none mb-2"><option value="damaged">Damaged from supplier</option><option value="wrong_item">Wrong item supplied</option><option value="excess">Excess supply correction</option><option value="price_correction">Price/bill correction</option></select><textarea id="supplyReturnReason" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/80 focus:border-rose-400 focus:outline-none" rows="2" placeholder="Enter return note..."></textarea></div>' +
+            '<button onclick="processSupplyReturn()" id="returnBtn" class="w-full gradient-rose text-white py-3 rounded-xl font-bold hover:opacity-90 transition text-lg shadow-lg flex items-center justify-center gap-2"><svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>Process Return</button>' +
+            '<div id="returnFormError" class="hidden mt-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-sm"></div>' +
+        '</div>';
+    updateReturnTotal();
 }
-var returnProductSelect = document.getElementById('returnProduct');
-if (returnProductSelect) {
-    returnProductSelect.addEventListener('change', function() {
-        var option = this.selectedOptions.length ? this.selectedOptions[0] : null;
-        document.getElementById('returnQty').max = option ? option.dataset.max || '' : '';
+
+function toggleAllReturnItems(el) {
+    document.querySelectorAll('.return-item-check:not(:disabled)').forEach(function(check){
+        check.checked = el.checked;
+    });
+    updateReturnTotal();
+}
+
+function selectedReturnLines() {
+    return Array.prototype.map.call(document.querySelectorAll('.return-item-check:checked'), function(check){
+        var idx = check.dataset.idx;
+        var qtyInput = document.querySelector('.return-qty[data-idx="' + idx + '"]');
+        return {
+            product_id: Number(check.dataset.productId),
+            quantity: Number(qtyInput ? qtyInput.value || 0 : 0),
+            max: Number(check.dataset.max || 0),
+            cost: Number(check.dataset.cost || 0)
+        };
     });
 }
-function submitReturn() {
-    var billId = document.getElementById('returnBill').value;
-    var productSelect = document.getElementById('returnProduct');
-    var productId = productSelect.value;
-    var qty = Number(document.getElementById('returnQty').value || 0);
-    var maxQty = Number(productSelect.selectedOptions.length ? productSelect.selectedOptions[0].dataset.max || 0 : 0);
-    if (!billId || !productId) { setMessage('error', 'Select a bill and product.'); return; }
-    if (qty <= 0 || (maxQty && qty > maxQty)) { setMessage('error', 'Enter a return quantity from 1 to ' + maxQty + '.'); return; }
-    document.getElementById('returnBtn').disabled = true;
-    fetch('/supply/api/returns', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({
-            supply_bill_id: Number(billId),
-            product_id: Number(productId),
-            quantity: Number(qty),
-            reason: document.getElementById('returnReason').value
-        })
-    }).then(function(r){return r.json().then(function(data){return {ok:r.ok, data:data};});})
-    .then(function(result){
-        document.getElementById('returnBtn').disabled = false;
-        if (!result.ok || result.data.error) {
-            setMessage('error', result.data.error || 'Return could not be created.');
-            hideModal('returnModal');
+
+function updateReturnTotal() {
+    var total = selectedReturnLines().reduce(function(sum, line){
+        var qty = Math.min(Math.max(line.quantity, 0), line.max);
+        return sum + qty * line.cost;
+    }, 0);
+    var totalInput = document.getElementById('supplyReturnTotal');
+    if (totalInput) totalInput.value = total.toFixed(2);
+}
+
+function setReturnFormError(text) {
+    var el = document.getElementById('returnFormError');
+    if (!el) return;
+    el.textContent = text || '';
+    el.classList.toggle('hidden', !text);
+}
+
+function processSupplyReturn() {
+    setReturnFormError('');
+    if (!activeReturnBill) return;
+    var lines = selectedReturnLines();
+    if (!lines.length) {
+        setReturnFormError('Select at least one returnable item.');
+        return;
+    }
+    for (var i = 0; i < lines.length; i++) {
+        if (lines[i].quantity <= 0 || lines[i].quantity > lines[i].max) {
+            setReturnFormError('Each selected quantity must be between 1 and its Max value.');
             return;
         }
+    }
+    var reasonType = document.getElementById('supplyReturnReasonType').value;
+    var reasonNote = document.getElementById('supplyReturnReason').value || '';
+    var treatment = document.getElementById('supplyReturnTreatment').value;
+    var btn = document.getElementById('returnBtn');
+    btn.disabled = true;
+    Promise.all(lines.map(function(line){
+        return fetch('/supply/api/returns', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+                supply_bill_id: Number(activeReturnBill.id),
+                product_id: line.product_id,
+                quantity: line.quantity,
+                reason: reasonType + (reasonNote ? ' - ' + reasonNote : '') + ' | ' + treatment
+            })
+        }).then(function(r){ return r.json().then(function(data){ return {ok:r.ok, data:data}; }); });
+    })).then(function(results){
+        btn.disabled = false;
+        var failed = results.find(function(result){ return !result.ok || result.data.error; });
+        if (failed) {
+            setReturnFormError(failed.data.error || 'Return could not be processed.');
+            return;
+        }
+        setMessage('success', 'Supplier return processed successfully.');
         window.location.reload();
+    }).catch(function(){
+        btn.disabled = false;
+        setReturnFormError('Return could not be processed. Please try again.');
+    });
+}
+
+var returnBillSearchInput = document.getElementById('returnBillSearch');
+if (returnBillSearchInput) {
+    returnBillSearchInput.addEventListener('keydown', function(e){
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            loadReturnBill();
+        }
     });
 }
 </script>
