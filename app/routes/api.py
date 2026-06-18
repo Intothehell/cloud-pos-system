@@ -402,20 +402,20 @@ def today_orders():
 @api_bp.route('/orders/all')
 @login_required
 def get_all_orders():
-    """Get all orders for bill history page"""
+    """Get all sales and return documents for bill history page"""
     
     date = request.args.get('date', '')
-    sale_type = request.args.get('type', 'all')
     payment = request.args.get('payment', 'all')
+    search = request.args.get('q', '').strip().lower()
     
     query = Order.query
+    return_query = Return.query.join(Order, Return.order_id == Order.id)
     
     if date:
         # Use the date string directly to match the created_at date
         query = query.filter(db.func.date(Order.created_at) == date)
+        return_query = return_query.filter(db.func.date(Return.created_at) == date)
     
-    if sale_type != 'all':
-        query = query.filter(Order.order_type == sale_type)
     if payment != 'all':
         query = query.filter(
             db.or_(
@@ -423,11 +423,23 @@ def get_all_orders():
                 Order.balance_payment_method == payment
             )
         )
+        return_query = return_query.filter(Order.payment_method == payment)
     
     orders = query.order_by(Order.created_at.desc()).all()
-    
-    return jsonify({
-        'orders': [{
+    returns = return_query.order_by(Return.created_at.desc()).all()
+
+    def order_item_names(order):
+        return ' '.join([item.product_name for item in order.items])
+
+    def return_item_names(ret):
+        return ' '.join([item.product_name for item in ReturnItem.query.filter_by(return_id=ret.id).all()])
+
+    rows = []
+    for o in orders:
+        item_names = order_item_names(o)
+        row = {
+            'row_kind': 'order',
+            'invoice_number': o.order_number,
             'order_number': o.order_number,
             'created_at': o.created_at.strftime('%Y-%m-%d %H:%M:%S'),
             'customer_name': o.customer_name or 'Walk-in',
@@ -436,11 +448,62 @@ def get_all_orders():
             'item_count': len(o.items),
             'total': o.total,
             'payment_method': o.payment_method,
+            'type': o.payment_method,
             'payment_status': o.payment_status,
+            'status': o.payment_status,
             'balance_payment_method': o.balance_payment_method or '',
-            'item_names': ' '.join([item.product_name for item in o.items])
-        } for o in orders],
-        'total_sales': sum(o.total for o in orders)
+            'item_names': item_names,
+            'search_text': ' '.join([
+                o.order_number or '',
+                o.customer_name or '',
+                o.customer_phone or '',
+                item_names,
+            ]).lower(),
+        }
+        rows.append(row)
+
+    for ret in returns:
+        original_order = ret.order
+        item_names = return_item_names(ret)
+        original_payment = original_order.payment_method if original_order else ret.refund_method
+        row = {
+            'row_kind': 'return',
+            'invoice_number': ret.return_number,
+            'order_number': ret.return_number,
+            'return_number': ret.return_number,
+            'original_order_number': original_order.order_number if original_order else '',
+            'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'customer_name': original_order.customer_name if original_order else 'Walk-in',
+            'customer_phone': original_order.customer_phone if original_order else '',
+            'sale_type': 'return',
+            'item_count': len(ret.order.items) if original_order else 0,
+            'total': ret.refund_amount or 0,
+            'payment_method': original_payment or '',
+            'type': original_payment or '',
+            'payment_status': 'returned',
+            'status': 'returned',
+            'balance_payment_method': '',
+            'item_names': item_names,
+            'search_text': ' '.join([
+                ret.return_number or '',
+                original_order.order_number if original_order else '',
+                original_order.customer_name if original_order else '',
+                original_order.customer_phone if original_order else '',
+                item_names,
+            ]).lower(),
+        }
+        rows.append(row)
+
+    if search:
+        rows = [row for row in rows if search in row['search_text']]
+
+    rows.sort(key=lambda row: row['created_at'], reverse=True)
+    for row in rows:
+        row.pop('search_text', None)
+    
+    return jsonify({
+        'orders': rows,
+        'total_sales': sum(row['total'] or 0 for row in rows)
     })
 
 @api_bp.route('/orders/<order_number>/details')
