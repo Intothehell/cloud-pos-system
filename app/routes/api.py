@@ -29,6 +29,49 @@ def return_item_order_item_ids(return_item_ids):
     rows = db.session.execute(text(f"SELECT id, order_item_id FROM return_items WHERE id IN ({ids})")).fetchall()
     return {row[0]: row[1] for row in rows}
 
+
+def return_balance_columns_enabled():
+    try:
+        rows = db.session.execute(text("PRAGMA table_info(returns)")).fetchall()
+        columns = {row[1] for row in rows}
+        return {'previous_balance', 'new_balance'}.issubset(columns)
+    except Exception:
+        return False
+
+
+def set_return_balance_snapshot(return_id, previous_balance, new_balance):
+    if not return_balance_columns_enabled():
+        return False
+    db.session.execute(
+        text(
+            "UPDATE returns "
+            "SET previous_balance = :previous_balance, new_balance = :new_balance "
+            "WHERE id = :return_id"
+        ),
+        {
+            'return_id': return_id,
+            'previous_balance': previous_balance,
+            'new_balance': new_balance
+        }
+    )
+    return True
+
+
+def get_return_balance_snapshot(return_id):
+    if not return_balance_columns_enabled():
+        return None
+    row = db.session.execute(
+        text("SELECT previous_balance, new_balance FROM returns WHERE id = :return_id"),
+        {'return_id': return_id}
+    ).fetchone()
+    if not row:
+        return None
+    return {
+        'previous_balance': row[0],
+        'new_balance': row[1],
+        'has_balance_snapshot': row[0] is not None and row[1] is not None
+    }
+
 # ============ PRODUCTS ============
 @api_bp.route('/product/barcode/<barcode>')
 @login_required
@@ -405,6 +448,7 @@ def get_all_orders():
     """Get all sales and return documents for bill history page"""
     
     date = request.args.get('date', '')
+    sale_type = request.args.get('type', 'all')
     payment = request.args.get('payment', 'all')
     search = request.args.get('q', '').strip().lower()
     
@@ -415,6 +459,11 @@ def get_all_orders():
         # Use the date string directly to match the created_at date
         query = query.filter(db.func.date(Order.created_at) == date)
         return_query = return_query.filter(db.func.date(Return.created_at) == date)
+
+    include_orders = sale_type != 'return'
+    include_returns = sale_type in ('all', 'return')
+    if sale_type not in ('all', 'return'):
+        query = query.filter(Order.order_type == sale_type)
     
     if payment != 'all':
         query = query.filter(
@@ -425,8 +474,8 @@ def get_all_orders():
         )
         return_query = return_query.filter(Order.payment_method == payment)
     
-    orders = query.order_by(Order.created_at.desc()).all()
-    returns = return_query.order_by(Return.created_at.desc()).all()
+    orders = query.order_by(Order.created_at.desc()).all() if include_orders else []
+    returns = return_query.order_by(Return.created_at.desc()).all() if include_returns else []
 
     def order_item_names(order):
         return ' '.join([item.product_name for item in order.items])
@@ -641,6 +690,8 @@ def customer_details(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     
     orders = Order.query.filter_by(customer_id=customer_id)\
+        .filter(db.or_(Order.order_type.is_(None), Order.order_type != 'payment'))\
+        .filter(~Order.order_number.like('CPY-%'))\
         .order_by(Order.created_at.desc()).limit(20).all()
     
     # Get returns for this customer
@@ -991,6 +1042,9 @@ def return_order(order_number):
                 db.session.add(repl_movement)
     
     # Handle refund
+    return_previous_balance = None
+    return_new_balance = None
+    has_return_balance_snapshot = False
     if return_type in ['refund', 'credit_note'] and ret.refund_amount > 0:
         for item_data in prepared_items:
             qty = item_data['quantity']
@@ -1012,7 +1066,14 @@ def return_order(order_number):
         if order.customer_id and order.payment_method == 'credit':
             customer = Customer.query.get(order.customer_id)
             if customer:
+                return_previous_balance = customer.balance
                 customer.balance -= ret.refund_amount
+                return_new_balance = customer.balance
+                has_return_balance_snapshot = set_return_balance_snapshot(
+                    ret.id,
+                    return_previous_balance,
+                    return_new_balance
+                )
     
     order.is_returned = True
     order.return_date = datetime.now()
@@ -1045,6 +1106,10 @@ def return_order(order_number):
             'customer_name': order.customer_name or 'Walk-in Customer',
             'customer_phone': order.customer_phone or '',
             'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            'is_credit_return': bool(order.customer_id and order.payment_method == 'credit'),
+            'previous_balance': return_previous_balance,
+            'new_balance': return_new_balance,
+            'has_balance_snapshot': has_return_balance_snapshot or (return_previous_balance is not None and return_new_balance is not None),
             'items': returned_items
         }
     })
@@ -1085,6 +1150,8 @@ def return_details(return_number):
     order = ret.order
     items = ReturnItem.query.filter_by(return_id=ret.id).all()
     item_order_ids = return_item_order_item_ids([ri.id for ri in items])
+    balance_snapshot = get_return_balance_snapshot(ret.id) or {}
+    is_credit_return = bool(order and order.customer_id and order.payment_method == 'credit')
     
     return jsonify({
         'return_number': ret.return_number,
@@ -1096,6 +1163,10 @@ def return_details(return_number):
         'customer_name': order.customer_name if order else 'Walk-in Customer',
         'customer_phone': order.customer_phone if order else '',
         'created_at': ret.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        'is_credit_return': is_credit_return,
+        'previous_balance': balance_snapshot.get('previous_balance'),
+        'new_balance': balance_snapshot.get('new_balance'),
+        'has_balance_snapshot': bool(balance_snapshot.get('has_balance_snapshot')),
         'items': [{
             'order_item_id': item_order_ids.get(ri.id),
             'name': ri.product_name,

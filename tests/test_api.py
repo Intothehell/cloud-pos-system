@@ -338,3 +338,145 @@ def test_sales_bills_api_includes_return_documents(app, manager_client):
 
     search_response = manager_client.get(f'/api/orders/all?q={return_number}')
     assert [row['row_kind'] for row in search_response.get_json()['orders']] == ['return']
+
+    return_filter_response = manager_client.get('/api/orders/all?type=return')
+    assert [row['row_kind'] for row in return_filter_response.get_json()['orders']] == ['return']
+
+
+def test_customer_details_shows_only_purchase_orders(app, manager_client):
+    from datetime import datetime
+
+    from app import db
+    from app.models.customer import Customer
+    from app.models.order import Order
+
+    with app.app_context():
+        customer = Customer(
+            name='Ledger Customer',
+            phone='0711111111',
+            nic='900000000V',
+            customer_type='wholesale',
+            balance=500,
+        )
+        db.session.add(customer)
+        db.session.flush()
+        db.session.add_all([
+            Order(
+                order_number='WHO-20260618-0002',
+                order_type='wholesale',
+                customer_id=customer.id,
+                customer_name=customer.name,
+                customer_phone=customer.phone,
+                subtotal=500,
+                total=500,
+                payment_method='credit',
+                payment_status='pending',
+                created_at=datetime(2026, 6, 18, 9, 0, 0),
+            ),
+            Order(
+                order_number='CPY-20260618-0001',
+                order_type='payment',
+                sale_type='payment',
+                customer_id=customer.id,
+                customer_name=customer.name,
+                customer_phone=customer.phone,
+                subtotal=200,
+                total=200,
+                payment_method='cash',
+                payment_status='completed',
+                created_at=datetime(2026, 6, 18, 10, 0, 0),
+            ),
+        ])
+        db.session.commit()
+        customer_id = customer.id
+
+    response = manager_client.get(f'/api/customers/{customer_id}/details')
+
+    assert response.status_code == 200
+    order_numbers = [order['order_number'] for order in response.get_json()['recent_orders']]
+    assert order_numbers == ['WHO-20260618-0002']
+
+
+def test_credit_return_details_include_balance_snapshot_when_columns_exist(app, manager_client):
+    from app import db
+    from app.models.customer import Customer
+    from app.models.order import Order, OrderItem
+    from app.models.product import Product
+    from sqlalchemy import text
+
+    with app.app_context():
+        db.session.execute(text('ALTER TABLE returns ADD COLUMN previous_balance FLOAT'))
+        db.session.execute(text('ALTER TABLE returns ADD COLUMN new_balance FLOAT'))
+
+        customer = Customer(
+            name='Credit Return Customer',
+            phone='0722222222',
+            nic='910000000V',
+            customer_type='wholesale',
+            balance=1500,
+        )
+        product = Product(
+            barcode='RET-CREDIT-1',
+            sku='RET-CREDIT-1',
+            name='Credit Return Item',
+            category='Returns',
+            cost_price=100,
+            retail_price=500,
+            wholesale_price=500,
+            stock_quantity=4,
+            is_active=True,
+        )
+        db.session.add_all([customer, product])
+        db.session.flush()
+
+        order = Order(
+            order_number='WHO-20260618-0003',
+            order_type='wholesale',
+            customer_id=customer.id,
+            customer_name=customer.name,
+            customer_phone=customer.phone,
+            subtotal=500,
+            total=500,
+            payment_method='credit',
+            payment_status='pending',
+            previous_balance=1000,
+            new_balance=1500,
+        )
+        db.session.add(order)
+        db.session.flush()
+        db.session.add(OrderItem(
+            order_id=order.id,
+            product_id=product.id,
+            product_name=product.name,
+            product_price=500,
+            quantity=1,
+            line_total=500,
+        ))
+        db.session.commit()
+        order_number = order.order_number
+        product_id = product.id
+
+    response = manager_client.post(f'/api/orders/{order_number}/return', json={
+        'return_type': 'refund',
+        'reason_type': 'no_damage',
+        'reason': 'Customer return',
+        'refund_amount': 500,
+        'refund_method': 'credit_note',
+        'items': [{
+            'product_id': product_id,
+            'quantity': 1,
+            'price': 500,
+        }],
+    })
+
+    assert response.status_code == 200
+    return_number = response.get_json()['return_number']
+
+    details_response = manager_client.get(f'/api/returns/{return_number}/details')
+    details = details_response.get_json()
+
+    assert details_response.status_code == 200
+    assert details['is_credit_return'] is True
+    assert details['has_balance_snapshot'] is True
+    assert details['previous_balance'] == 1500
+    assert details['new_balance'] == 1000

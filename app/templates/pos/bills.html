@@ -86,6 +86,15 @@
             </div>
             <div>
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
+                <select id="filterType" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
+                    <option value="all">All Types</option>
+                    <option value="wholesale">Wholesale</option>
+                    <option value="retail">Retail</option>
+                    <option value="payment">Payment</option>
+                    <option value="return">Return</option>
+                </select>
+            </div>
+            <div class="hidden">
                 <select id="filterPayment" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
                     <option value="all">All Types</option>
                     <option value="cash">Cash</option>
@@ -251,20 +260,21 @@ function filterByCategory(cat){
 
 function loadBills(){
     var date=document.getElementById('filterDate').value;
-    var payment=document.getElementById('filterPayment').value;
+    var type=document.getElementById('filterType').value;
+    var payment='all';
     var search=(document.getElementById('searchQuery').value||'').toLowerCase();
     
-    var url='/api/orders/all?'; if(date) url+='date='+date+'&'; url+='payment='+payment+'&q='+encodeURIComponent(search);
+    var url='/api/orders/all?'; if(date) url+='date='+date+'&'; url+='type='+type+'&payment='+payment+'&q='+encodeURIComponent(search);
     document.getElementById('billsTable').innerHTML=billsSkeleton();
     
     fetch(url).then(function(r){return r.json();}).then(function(data){
         var allOrders=data.orders;
-        if(currentCategory!=='all'){ allOrders=allOrders.filter(function(o){return o.payment_method===currentCategory || o.balance_payment_method===currentCategory;}); }
+        if(currentCategory!=='all'){ allOrders=allOrders.filter(function(o){return matchesPaymentCategory(o, currentCategory);}); }
         
-        var cashOrders=data.orders.filter(function(o){return o.payment_method==='cash' || o.balance_payment_method==='cash';});
-        var cardOrders=data.orders.filter(function(o){return o.payment_method==='card' || o.balance_payment_method==='card';});
-        var creditOrders=data.orders.filter(function(o){return o.payment_method==='credit';});
-        var checkOrders=data.orders.filter(function(o){return o.payment_method==='check' || o.balance_payment_method==='check';});
+        var cashOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'cash');});
+        var cardOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'card');});
+        var creditOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'credit');});
+        var checkOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'check');});
         document.getElementById('cashCount').textContent=cashOrders.length;
         document.getElementById('cardCount').textContent=cardOrders.length;
         document.getElementById('creditCount').textContent=creditOrders.length;
@@ -299,6 +309,14 @@ function formatType(value) {
     if (!value) return '';
     var labels = {cash:'Cash', card:'Card', check:'Cheque', credit:'Credit', credit_note:'Credit Note', bank_transfer:'Bank Transfer'};
     return labels[value] || String(value).replace(/_/g, ' ');
+}
+
+function matchesPaymentCategory(row, category) {
+    if (category === 'card') {
+        return row.payment_method === 'card' || row.balance_payment_method === 'card' ||
+            row.payment_method === 'bank_transfer' || row.balance_payment_method === 'bank_transfer';
+    }
+    return row.payment_method === category || row.balance_payment_method === category;
 }
 
 function viewBill(orderNumber){
@@ -351,6 +369,10 @@ function viewReturn(returnNumber){
                 '<td style="text-align: right; font-size: 14px;">Rs.'+Number(i.total||0).toFixed(2)+'</td>'+
             '</tr>';
         }).join('');
+        var balanceInfo = '';
+        if (ret.is_credit_return && ret.has_balance_snapshot) {
+            balanceInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 14px;"><span>Previous Balance: Rs.'+Number(ret.previous_balance||0).toFixed(2)+'</span><span style="font-weight: 700;">New Balance: Rs.'+Number(ret.new_balance||0).toFixed(2)+'</span></p>';
+        }
 
         document.getElementById('viewInvoiceContent').innerHTML =
         '<div style="font-family: Arial, Helvetica, sans-serif; font-weight: 300; font-size: 14px; max-width: 800px; margin: 0 auto; color: #000000; line-height: 1.3; padding: 5px 0;">'+
@@ -372,6 +394,7 @@ function viewReturn(returnNumber){
         '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-top: 4px;"><span>REFUND AMOUNT</span><span>Rs.'+Number(ret.refund_amount||0).toFixed(2)+'</span></p></div>'+
         '<p style="margin: 3px 0; font-size: 14px;"><strong>Refund Method:</strong> '+escapeHtml((ret.refund_method||'').toUpperCase())+'</p>'+
         '<p style="margin: 3px 0; font-size: 14px;"><strong>Status:</strong> RETURNED</p>'+
+        balanceInfo+
         (ret.reason ? '<p style="margin: 3px 0; font-size: 14px;"><strong>Reason:</strong> '+escapeHtml(ret.reason)+'</p>' : '')+
         '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 12px; line-height: 1.1;">'+
         '<p style="margin: 0;">Return processed</p></div></div>';
