@@ -273,3 +273,68 @@ def test_supply_dashboard_flags_suppliers_without_recent_payment(app, manager_cl
     suppliers = list_response.get_json()['suppliers']
     assert suppliers[0]['name'] == 'Northline Imports'
     assert suppliers[0]['oldest_note'] == bill_response.get_json()['bill']['bill_number']
+
+
+def test_sales_bills_api_includes_return_documents(app, manager_client):
+    from datetime import datetime
+
+    from app import db
+    from app.models.order import Order, OrderItem, Return, ReturnItem
+
+    with app.app_context():
+        order = Order(
+            order_number='WHO-20260618-0001',
+            order_type='wholesale',
+            customer_name='Return Customer',
+            customer_phone='0712345678',
+            subtotal=1000,
+            total=1000,
+            payment_method='cash',
+            payment_status='completed',
+            created_at=datetime(2026, 6, 18, 10, 0, 0),
+        )
+        db.session.add(order)
+        db.session.flush()
+        db.session.add(OrderItem(
+            order_id=order.id,
+            product_name='Returned Chair',
+            product_price=1000,
+            quantity=1,
+            line_total=1000,
+        ))
+        ret = Return(
+            order_id=order.id,
+            return_type='refund',
+            reason='Customer return',
+            refund_amount=1000,
+            refund_method='cash',
+            processed_by=1,
+            status='completed',
+            created_at=datetime(2026, 6, 18, 11, 0, 0),
+        )
+        ret.generate_return_number()
+        db.session.add(ret)
+        db.session.flush()
+        db.session.add(ReturnItem(
+            return_id=ret.id,
+            product_name='Returned Chair',
+            product_price=1000,
+            quantity=1,
+        ))
+        db.session.commit()
+        return_number = ret.return_number
+
+    response = manager_client.get('/api/orders/all?date=2026-06-18&payment=cash')
+    assert response.status_code == 200
+    rows = response.get_json()['orders']
+    return_rows = [row for row in rows if row['row_kind'] == 'return']
+
+    assert return_rows
+    assert return_rows[0]['invoice_number'] == return_number
+    assert return_rows[0]['original_order_number'] == 'WHO-20260618-0001'
+    assert return_rows[0]['payment_method'] == 'cash'
+    assert return_rows[0]['payment_status'] == 'returned'
+    assert return_rows[0]['total'] == 1000
+
+    search_response = manager_client.get(f'/api/orders/all?q={return_number}')
+    assert [row['row_kind'] for row in search_response.get_json()['orders']] == ['return']
