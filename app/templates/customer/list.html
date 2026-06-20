@@ -207,10 +207,6 @@
                     <input type="text" name="phone" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" required>
                 </div>
                 <div>
-                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
-                    <input type="email" name="email" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm">
-                </div>
-                <div>
                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">NIC *</label>
                     <input type="text" name="nic" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" placeholder="ID Card Number" required>
                 </div>
@@ -252,10 +248,6 @@
                 <div>
                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Phone *</label>
                     <input type="text" name="phone" id="editPhone" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm" required>
-                </div>
-                <div>
-                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Email</label>
-                    <input type="email" name="email" id="editEmail" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm">
                 </div>
                 <div>
                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">NIC *</label>
@@ -300,7 +292,10 @@
             
             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Amount *</label>
             <input type="number" name="amount" id="paymentAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-1" required step="0.01" min="0.01">
-                <p class="text-[10px] text-slate-400 mb-2">Maximum: <span id="maxPaymentAmount"></span></p>
+            <div class="flex justify-between items-center mb-2">
+                <p class="text-[10px] text-slate-400">Maximum: <span id="maxPaymentAmount"></span></p>
+                <button type="button" onclick="payFullBalance()" class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700">Pay full</button>
+            </div>
 
             <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Method</label>
             <select name="payment_method" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-emerald-400 focus:outline-none mb-2">
@@ -320,7 +315,7 @@
 
 <!-- View Customer Modal -->
 <div id="viewCustomerModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
-    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto p-4 sm:p-6">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto p-4 sm:p-6">
         <div class="flex justify-between items-center mb-3 sm:mb-4">
             <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2">
                 <svg class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -328,9 +323,28 @@
                 </svg>
                 Customer Details
             </h3>
-            <button onclick="closeViewCustomer()" class="bg-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium">Close</button>
+            <div class="flex gap-2">
+                <button id="detailPayBtn" onclick="payFromDetail()" class="bg-emerald-50 text-emerald-600 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium">Pay</button>
+                <button onclick="closeViewCustomer()" class="bg-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium">Close</button>
+            </div>
         </div>
         <div id="customerDetails" class="text-sm">Loading...</div>
+    </div>
+</div>
+
+<!-- Customer Document Modal -->
+<div id="customerDocumentModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-[60] p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+        <div class="flex justify-between items-center mb-3 sm:mb-4">
+            <h3 class="text-lg sm:text-xl font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+                <span id="customerDocumentTitle">Bill Details</span>
+            </h3>
+            <button onclick="closeCustomerDocument()" class="bg-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium">Close</button>
+        </div>
+        <div id="customerDocumentContent" class="text-sm"></div>
     </div>
 </div>
 
@@ -362,14 +376,38 @@
     </div>
 </div>
 
+<!-- Offset Modal -->
+<div id="offsetModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-2 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-4 sm:p-6">
+        <h3 class="text-lg font-bold text-slate-800">Offset balances</h3>
+        <p class="text-sm text-slate-500 mt-1">Settle matching customer credit and supplier payable.</p>
+        <div id="offsetError" class="hidden mt-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3 py-2 text-xs"></div>
+        <label class="block text-xs font-semibold text-slate-500 uppercase mt-4 mb-1">Amount</label>
+        <input type="number" id="offsetAmount" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:border-indigo-400 focus:outline-none" step="0.01" min="0.01">
+        <p class="text-[10px] text-slate-400 mt-1">Maximum: <span id="offsetMax"></span></p>
+        <div class="flex gap-2 mt-4">
+            <button type="button" onclick="hideModal('offsetModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl font-medium text-sm">Cancel</button>
+            <button type="button" onclick="confirmOffsetLinkedSupplier()" class="flex-1 gradient-indigo text-white py-2.5 rounded-xl font-medium text-sm">Confirm</button>
+        </div>
+    </div>
+</div>
+
 <script>
+var currentPaymentBalance = 0;
+var currentDetailCustomer = null;
+var pendingOffsetSupplierId = null;
 function showModal(id){document.getElementById(id).classList.remove('hidden');document.getElementById(id).classList.add('flex');}
 function hideModal(id){document.getElementById(id).classList.add('hidden');document.getElementById(id).classList.remove('flex');}
 function showAddCustomer(){showModal('addCustomerModal');}
 function closeAddCustomer(){hideModal('addCustomerModal');}
 function closePayment(){hideModal('paymentModal');}
 function closeViewCustomer(){hideModal('viewCustomerModal');}
+function closeCustomerDocument(){hideModal('customerDocumentModal');}
 function closeDelete(){hideModal('deleteModal');}
+
+function jsString(value){
+    return String(value || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
 
 function confirmDelete(id,name){
     document.getElementById('deleteForm').action='/customer/delete/'+id;
@@ -388,16 +426,30 @@ function filterTable(){
 }
 
 function showPayment(id,name,balance){
+    currentPaymentBalance = Number(balance) || 0;
     document.getElementById('paymentForm').action='/customer/record-payment/'+id;
     document.getElementById('payCustName').textContent=name;
-    document.getElementById('payBalance').textContent='Rs.'+Number(balance).toFixed(2);
+    document.getElementById('payBalance').textContent=money(balance);
     document.getElementById('paymentAmount').max = balance;
-    document.getElementById('maxPaymentAmount').textContent = 'Rs.'+Number(balance).toFixed(2);
+    document.getElementById('paymentAmount').value = '';
+    document.querySelector('#paymentForm [name="reference"]').value = '';
+    document.getElementById('maxPaymentAmount').textContent = money(balance);
     showModal('paymentModal');
+}
+
+function payFullBalance(){
+    document.getElementById('paymentAmount').value = currentPaymentBalance.toFixed(2);
+}
+
+function payFromDetail(){
+    if(!currentDetailCustomer)return;
+    closeViewCustomer();
+    showPayment(currentDetailCustomer.id,currentDetailCustomer.name,currentDetailCustomer.balance);
 }
 
 function viewCustomer(id){
     fetch('/api/customers/'+id+'/details').then(r=>r.json()).then(c=>{
+        currentDetailCustomer = c;
         function groupByMonth(items, dateKey) {
             var groups = {};
             items.forEach(function(item){
@@ -438,26 +490,27 @@ function viewCustomer(id){
                     html += '<span>'+month+' ('+grouped[month].length+')</span>';
                     html += '<svg id="'+monthId+'Icon" class="w-3 h-3 text-slate-400 transition-transform" style="transform:rotate(-90deg)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
                     html += '</div>';
-                    html += '<div id="'+monthId+'" class="hidden">';
-                    html += '<table class="w-full text-xs"><tbody>';
+                    html += '<div id="'+monthId+'" class="hidden overflow-x-auto">';
+                    html += '<table class="w-full text-xs min-w-[520px]"><tbody>';
                     grouped[month].forEach(function(item){
                         html += '<tr class="border-b border-slate-100">';
                         columns.forEach(function(col){
                             var val = item[col.key];
                             if(col.key === 'order_number'){
-                                html += '<td class="px-3 py-2"><span class="font-medium text-indigo-600">'+val+'</span><button onclick="event.stopPropagation();copyToClipboard(\''+val+'\')" class="text-slate-300 hover:text-indigo-500 ml-1.5" title="Copy"><svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>';
+                                html += '<td class="px-3 py-2.5 w-[38%]"><button onclick="event.stopPropagation();viewCustomerOrderBill(\''+jsString(val)+'\')" class="font-medium text-indigo-600 hover:text-indigo-800 hover:underline whitespace-nowrap">'+escapeHtml(val)+'</button></td>';
                             } else if(col.key === 'return_number'){
-                                html += '<td class="px-3 py-2 font-medium text-red-600">'+val+'</td>';
+                                html += '<td class="px-3 py-2.5 w-[38%]"><button onclick="event.stopPropagation();viewCustomerReturnBill(\''+jsString(val)+'\')" class="font-medium text-red-600 hover:text-red-800 hover:underline whitespace-nowrap">'+escapeHtml(val)+'</button></td>';
                             } else if(col.key === 'method' || col.key === 'payment_status' || col.key === 'refund_method'){
-                                html += '<td class="px-3 py-2 text-slate-500">'+(val ? val.charAt(0).toUpperCase()+val.slice(1) : '')+'</td>';
+                                html += '<td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">'+(val ? val.charAt(0).toUpperCase()+val.slice(1).replace(/_/g, ' ') : '')+'</td>';
                             } else if(col.key === 'reference'){
-                                html += '<td class="px-3 py-2 text-slate-400 text-xs">'+(val||'-')+'</td>';
+                                html += '<td class="px-3 py-2.5 text-slate-400 text-xs break-words">'+(val||'-')+'</td>';
                             } else if(col.key === 'date'){
-                                html += '<td class="px-3 py-2 text-slate-500 whitespace-nowrap">'+val+'</td>';
+                                html += '<td class="px-3 py-2.5 text-slate-500 whitespace-nowrap">'+val+'</td>';
                             } else if(col.align === 'right'){
-                                html += '<td class="px-3 py-2 text-right font-medium '+(col.red?'text-red-600':'')+'">'+val+'</td>';
+                                if(col.money) val = money(val || 0);
+                                html += '<td class="px-3 py-2.5 text-right font-semibold whitespace-nowrap '+(col.red?'text-red-600':'')+'">'+val+'</td>';
                             } else {
-                                html += '<td class="px-3 py-2">'+val+'</td>';
+                                html += '<td class="px-3 py-2.5">'+val+'</td>';
                             }
                         });
                         html += '</tr>';
@@ -472,21 +525,119 @@ function viewCustomer(id){
         document.getElementById('customerDetails').innerHTML =
         '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4"><div><h4 class="text-lg font-bold">'+c.name+'</h4>'+
         '<p class="text-sm text-slate-600"><strong>Phone:</strong> '+c.phone+'</p>'+
-        '<p class="text-sm text-slate-600"><strong>Email:</strong> '+(c.email||'-')+'</p>'+
         '<p class="text-sm text-slate-600"><strong>NIC:</strong> '+(c.nic||'-')+'</p>'+
         '<p class="text-sm text-slate-600"><strong>Address:</strong> '+(c.address||'-')+'</p>'+
         '<p class="text-sm"><strong>Type:</strong> <span class="px-2 py-0.5 rounded-full text-xs '+(c.customer_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+c.customer_type+'</span></p></div>'+
         '<div class="bg-slate-50 rounded-xl p-4"><h5 class="font-semibold text-sm mb-2">Credit Summary</h5>'+
-        '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">Rs.'+c.balance.toLocaleString()+'</strong></p>'+
+        '<p class="text-sm">Balance: <strong class="'+(c.balance>0?'text-red-600':'text-emerald-600')+'">'+money(c.balance)+'</strong></p>'+
         (c.balance === 0 ? '<p class="text-xs text-amber-600 mt-1">⚠ Pending orders may exist</p>' : '')+
-        '<p class="text-sm">Total Purchases: Rs.'+c.total_purchases.toLocaleString()+'</p>'+
-        '<p class="text-sm">Total Paid: Rs.'+c.total_paid.toLocaleString()+'</p></div></div>'+
-        buildSection('Payment History', c.payment_history, [{key:'date'},{key:'amount',align:'right'},{key:'method'},{key:'reference'}], 'No payments', 'date')+
-        buildSection('Recent Orders', c.recent_orders, [{key:'order_number'},{key:'total',align:'right'},{key:'payment_status'}], 'No orders')+
-        buildSection('Recent Returns', c.recent_returns||[], [{key:'return_number'},{key:'refund_amount',align:'right',red:true},{key:'refund_method'}], 'No returns');
+        '<p class="text-sm">Total Purchases: '+money(c.total_purchases)+'</p>'+
+        '<p class="text-sm">Total Paid: '+money(c.total_paid)+'</p></div></div>'+
+        linkedSupplierPanel(c)+
+        buildSection('Payment History', c.payment_history, [{key:'date'},{key:'amount',align:'right',money:true},{key:'method'},{key:'reference'}], 'No payments', 'date')+
+        buildSection('Recent Orders', c.recent_orders, [{key:'order_number'},{key:'total',align:'right',money:true},{key:'payment_status'}], 'No orders')+
+        buildSection('Recent Returns', c.recent_returns||[], [{key:'return_number'},{key:'refund_amount',align:'right',money:true,red:true},{key:'refund_method'}], 'No returns');
         
         showModal('viewCustomerModal');
     });
+}
+
+function viewCustomerOrderBill(orderNumber){
+    document.getElementById('customerDocumentTitle').textContent = 'Invoice Details';
+    document.getElementById('customerDocumentContent').innerHTML = '<p class="text-center text-slate-400 py-6">Loading bill...</p>';
+    showModal('customerDocumentModal');
+    fetch('/api/orders/'+encodeURIComponent(orderNumber)+'/details')
+        .then(function(r){return r.json();})
+        .then(function(order){
+            if(order.error){throw new Error(order.error);}
+            var itemsHtml = (order.items || []).map(function(i){
+                return '<tr style="border-bottom: 0.5px solid #d1d5db;">'+
+                    '<td style="padding: 3px 0; font-size: 13px;">'+escapeHtml(i.name || '')+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+Number(i.quantity || 0)+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+money(i.price || 0)+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+money(i.total || 0)+'</td>'+
+                '</tr>';
+            }).join('');
+            var creditInfo = '';
+            if(order.payment_method === 'credit' || order.sale_type === 'payment'){
+                creditInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px;"><span>Previous Balance: '+money(order.previous_balance || 0)+'</span><span style="font-weight: 700;">New Balance: '+money(order.new_balance || 0)+'</span></p>';
+            }
+            document.getElementById('customerDocumentContent').innerHTML =
+                '<div style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #000; line-height: 1.3;">'+
+                '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">'+
+                '<h2 style="margin: 0; font-size: 18px; font-weight: 700;">EASY PAY</h2>'+
+                '<p style="margin: 1px 0;">Meegoda, Homagama</p>'+
+                '<p style="margin: 1px 0;">Tel: +(94)75 427 1371</p>'+
+                '<p style="margin: 1px 0; color: #64748b;">'+escapeHtml(order.created_at || '')+'</p></div>'+
+                '<p style="text-align: center; font-weight: 700; margin: 4px 0;">INVOICE #'+escapeHtml(order.order_number || '')+'</p>'+
+                '<div style="border-bottom: 0.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 4px;">'+
+                '<p style="margin: 1px 0;"><strong>Customer:</strong> '+escapeHtml(order.customer_name || 'Walk-in')+'</p>'+
+                '<p style="margin: 1px 0;"><strong>Phone:</strong> '+escapeHtml(order.customer_phone || 'N/A')+'</p>'+
+                '<p style="margin: 1px 0;"><strong>Sale Type:</strong> '+escapeHtml((order.sale_type || 'retail').toUpperCase())+'</p></div>'+
+                '<table style="width: 100%; border-collapse: collapse; margin: 3px 0;">'+
+                '<tr style="border-bottom: 0.5px solid #cbd5e1;"><th style="text-align: left; padding: 3px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>'+
+                itemsHtml+'</table>'+
+                '<div style="border-top: 1px solid #cbd5e1; border-bottom: 0.5px solid #cbd5e1; padding: 5px 0; margin: 5px 0;">'+
+                '<p style="display: flex; justify-content: space-between; margin: 1px 0;"><span>Subtotal</span><span>'+money(order.subtotal || 0)+'</span></p>'+
+                '<p style="display: flex; justify-content: space-between; margin: 1px 0;"><span>Discount</span><span>-'+money(order.discount || 0)+'</span></p>'+
+                '<p style="display: flex; justify-content: space-between; font-weight: 700; margin-top: 4px;"><span>TOTAL</span><span>'+money(order.total || 0)+'</span></p></div>'+
+                '<p style="margin: 3px 0;"><strong>Payment:</strong> '+escapeHtml((order.payment_method || '').toUpperCase())+'</p>'+
+                (order.credit_paid > 0 ? '<p style="margin: 3px 0;"><strong>Credit Paid:</strong> '+money(order.credit_paid || 0)+'</p>' : '')+
+                creditInfo+
+                '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 12px;"><p style="margin: 0;">Thank you for your purchase!</p></div></div>';
+        })
+        .catch(function(){
+            document.getElementById('customerDocumentContent').innerHTML = '<p class="text-center text-red-500 py-6">Could not load this bill.</p>';
+        });
+}
+
+function viewCustomerReturnBill(returnNumber){
+    document.getElementById('customerDocumentTitle').textContent = 'Return Details';
+    document.getElementById('customerDocumentContent').innerHTML = '<p class="text-center text-slate-400 py-6">Loading return bill...</p>';
+    showModal('customerDocumentModal');
+    fetch('/api/returns/'+encodeURIComponent(returnNumber)+'/details')
+        .then(function(r){return r.json();})
+        .then(function(ret){
+            if(ret.error){throw new Error(ret.error);}
+            var itemsHtml = (ret.items || []).map(function(i){
+                return '<tr style="border-bottom: 0.5px solid #d1d5db;">'+
+                    '<td style="padding: 3px 0; font-size: 13px;">'+escapeHtml(i.name || '')+(i.is_damaged ? ' <span style="color:#ef4444;font-size:10px;">(DAMAGED)</span>' : '')+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+Number(i.quantity || 0)+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+money(i.price || 0)+'</td>'+
+                    '<td style="text-align: right; font-size: 13px;">'+money(i.total || 0)+'</td>'+
+                '</tr>';
+            }).join('');
+            var balanceInfo = '';
+            if(ret.is_credit_return && ret.has_balance_snapshot){
+                balanceInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 13px;"><span>Previous Balance: '+money(ret.previous_balance || 0)+'</span><span style="font-weight: 700;">New Balance: '+money(ret.new_balance || 0)+'</span></p>';
+            }
+            document.getElementById('customerDocumentContent').innerHTML =
+                '<div style="font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #000; line-height: 1.3;">'+
+                '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">'+
+                '<h2 style="margin: 0; font-size: 18px; font-weight: 700;">EASY PAY</h2>'+
+                '<p style="margin: 1px 0;">Meegoda, Homagama</p>'+
+                '<p style="margin: 1px 0;">Tel: +(94)75 427 1371</p>'+
+                '<p style="margin: 1px 0; color: #64748b;">'+escapeHtml(ret.created_at || '')+'</p></div>'+
+                '<p style="text-align: center; font-weight: 700; margin: 4px 0;">RETURN #'+escapeHtml(ret.return_number || '')+'</p>'+
+                '<div style="border-bottom: 0.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 4px;">'+
+                '<p style="margin: 1px 0;"><strong>Original Invoice:</strong> '+escapeHtml(ret.order_number || 'N/A')+'</p>'+
+                '<p style="margin: 1px 0;"><strong>Customer:</strong> '+escapeHtml(ret.customer_name || 'Walk-in')+'</p>'+
+                '<p style="margin: 1px 0;"><strong>Phone:</strong> '+escapeHtml(ret.customer_phone || 'N/A')+'</p>'+
+                '<p style="margin: 1px 0;"><strong>Return Type:</strong> '+escapeHtml((ret.return_type || '').toUpperCase())+'</p></div>'+
+                '<table style="width: 100%; border-collapse: collapse; margin: 3px 0;">'+
+                '<tr style="border-bottom: 0.5px solid #cbd5e1;"><th style="text-align: left; padding: 3px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>'+
+                itemsHtml+'</table>'+
+                '<div style="border-top: 1px solid #cbd5e1; border-bottom: 0.5px solid #cbd5e1; padding: 5px 0; margin: 5px 0;">'+
+                '<p style="display: flex; justify-content: space-between; font-weight: 700; margin: 1px 0;"><span>REFUND AMOUNT</span><span>'+money(ret.refund_amount || 0)+'</span></p></div>'+
+                '<p style="margin: 3px 0;"><strong>Refund Method:</strong> '+escapeHtml((ret.refund_method || '').toUpperCase())+'</p>'+
+                '<p style="margin: 3px 0;"><strong>Status:</strong> RETURNED</p>'+
+                balanceInfo+
+                (ret.reason ? '<p style="margin: 3px 0;"><strong>Reason:</strong> '+escapeHtml(ret.reason)+'</p>' : '')+
+                '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 12px;"><p style="margin: 0;">Return processed</p></div></div>';
+        })
+        .catch(function(){
+            document.getElementById('customerDocumentContent').innerHTML = '<p class="text-center text-red-500 py-6">Could not load this return bill.</p>';
+        });
 }
 
 function toggleSection(id) {
@@ -508,7 +659,6 @@ function editCustomer(id){
         document.getElementById('editCustomerForm').action='/customer/edit/'+id;
         document.getElementById('editName').value=c.name;
         document.getElementById('editPhone').value=c.phone;
-        document.getElementById('editEmail').value=c.email||'';
         document.getElementById('editNic').value=c.nic||'';
         document.getElementById('editType').value=c.customer_type;
         document.getElementById('editAddress').value=c.address||'';
@@ -546,5 +696,57 @@ function confirmSettle(id, name){
 }
 
 function closeSettle(){ hideModal('settleModal'); }
+
+function linkedSupplierPanel(c){
+    var s = c.linked_supplier;
+    if(!s)return '';
+    var canOffset = s.can_offset && {{ 'true' if current_user.role in ['owner','manager'] else 'false' }};
+    return '<div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4">'+
+        '<div class="flex justify-between gap-3 items-start">'+
+            '<div><h5 class="font-semibold text-sm text-slate-800">Linked supplier</h5>'+
+            '<p class="text-sm font-bold text-slate-800">'+escapeHtml(s.name)+'</p>'+
+            '<p class="text-xs text-slate-500">'+escapeHtml(s.phone || '-')+' | '+escapeHtml(s.nic || '-')+'</p></div>'+
+            '<div class="text-right text-xs"><p>Supplier payable</p><p class="font-bold text-rose-600">'+money(s.balance)+'</p></div>'+
+        '</div>'+
+        '<div class="grid grid-cols-3 gap-2 mt-3 text-xs">'+
+            '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Customer due</p><p class="font-bold text-rose-600">'+money(c.balance)+'</p></div>'+
+            '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Supplier payable</p><p class="font-bold text-amber-600">'+money(s.balance)+'</p></div>'+
+            '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Net</p><p class="font-bold text-slate-800">'+money(s.net_position)+'</p></div>'+
+        '</div>'+
+        (canOffset ? '<button onclick="offsetLinkedSupplier('+s.id+','+s.max_offset+')" class="mt-3 w-full gradient-indigo text-white py-2 rounded-xl text-xs font-semibold">Offset balances up to '+money(s.max_offset)+'</button>' : '')+
+    '</div>';
+}
+
+function offsetLinkedSupplier(supplierId,maxOffset){
+    pendingOffsetSupplierId = supplierId;
+    document.getElementById('offsetError').classList.add('hidden');
+    document.getElementById('offsetAmount').value = Number(maxOffset || 0).toFixed(2);
+    document.getElementById('offsetAmount').max = maxOffset || 0;
+    document.getElementById('offsetMax').textContent = money(maxOffset || 0);
+    showModal('offsetModal');
+}
+
+function confirmOffsetLinkedSupplier(){
+    var amount = Number(document.getElementById('offsetAmount').value || 0);
+    var error = document.getElementById('offsetError');
+    error.classList.add('hidden');
+    if(!amount || amount <= 0){error.textContent='Enter a valid offset amount';error.classList.remove('hidden');return;}
+    fetch('/supply/api/suppliers/'+pendingOffsetSupplierId+'/offset',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({amount:amount,reference:'Customer page offset'})
+    }).then(r=>r.json()).then(function(result){
+        if(result.success){
+            hideModal('offsetModal');
+            showToast('Balances offset successfully','success');
+            if(currentDetailCustomer)viewCustomer(currentDetailCustomer.id);
+        }else{
+            error.textContent = result.error || 'Could not offset balances';
+            error.classList.remove('hidden');
+        }
+    }).catch(function(){error.textContent='Could not offset balances';error.classList.remove('hidden');});
+}
+
+setTimeout(function(){var s=document.getElementById('custSearch');if(s)s.focus();},50);
 </script>
 {% endblock %}

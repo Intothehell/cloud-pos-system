@@ -226,7 +226,7 @@ function saveAdjustment(){
     var qty = parseInt(document.getElementById('adjQty').value) || 0;
     var type = document.getElementById('adjType').value;
     
-    if(qty < 1){ alert('Enter quantity'); return; }
+    if(qty < 1){ showToast('Enter a valid quantity', 'warning'); return; }
     
     fetch('/api/returns/damaged-items/adjust', {
         method: 'POST',
@@ -243,9 +243,9 @@ function saveAdjustment(){
             hideModal('adjustModal');
             loadItems();
         } else {
-            alert(r.error);
+            showToast(r.error || 'Could not save adjustment', 'error');
         }
-    });
+    }).catch(function(){showToast('Could not save adjustment', 'error');});
 }
 
 loadItems();

@@ -13,6 +13,7 @@ class Product(db.Model):
     
     # Pricing
     cost_price = db.Column(db.Float, default=0.0)  # What warehouse paid
+    retail_price = db.Column(db.Float, default=0.0)  # Regular selling price
     wholesale_price = db.Column(db.Float, default=0.0)  # Price for credit/bulk customers
     
     # Inventory
@@ -36,6 +37,7 @@ class Product(db.Model):
             'barcode': self.barcode,
             'name': self.name,
             'category': self.category,
+            'retail_price': self.retail_price,
             'wholesale_price': self.wholesale_price,
             'stock_quantity': self.stock_quantity,
             'sku': self.sku

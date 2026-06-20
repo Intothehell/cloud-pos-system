@@ -1,0 +1,431 @@
+{% extends "supply/base_supply.html" %}
+
+{% block title %}Suppliers{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-5">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Supplier ledger</h1>
+            <p class="text-sm text-slate-500 mt-1">Manage suppliers, payable balances, and payment follow-up.</p>
+        </div>
+        {% if can_write %}
+        <button onclick="showAddSupplier()" class="gradient-indigo text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-lg hover:opacity-90">Add supplier</button>
+        {% endif %}
+    </div>
+
+    <div class="glass-card rounded-2xl p-4 mb-4">
+        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Search suppliers</label>
+        <input id="supplierFilter" oninput="filterSuppliers()" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-white/85 focus:border-indigo-400 focus:outline-none" placeholder="Name, phone, NIC or email">
+    </div>
+
+    <div id="supplierMessage" class="hidden mb-4 border px-4 py-3 rounded-xl text-sm"></div>
+
+    <div class="hidden lg:block glass-card rounded-2xl overflow-hidden">
+        <table class="w-full text-sm" id="supplierTable">
+            <thead><tr class="bg-slate-900 text-white">
+                <th class="px-4 py-3 text-left font-medium">Supplier</th>
+                <th class="px-4 py-3 text-left font-medium">NIC</th>
+                <th class="px-4 py-3 text-right font-medium">Purchases</th>
+                <th class="px-4 py-3 text-right font-medium">Paid</th>
+                <th class="px-4 py-3 text-right font-medium">Payable</th>
+                <th class="px-4 py-3 text-center font-medium">Actions</th>
+            </tr></thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for supplier in suppliers %}
+                <tr class="supplier-row hover:bg-slate-50" data-search="{{ (supplier.name ~ ' ' ~ supplier.phone ~ ' ' ~ supplier.nic ~ ' ' ~ (supplier.email or ''))|lower }}">
+                    <td class="px-4 py-3"><p class="font-semibold">{{ supplier.name }}</p><p class="text-xs text-slate-400">{{ supplier.phone }}{% if supplier.email %} | {{ supplier.email }}{% endif %}</p></td>
+                    <td class="px-4 py-3 text-slate-500">{{ supplier.nic }}</td>
+                    <td class="px-4 py-3 text-right">Rs.{{ "%.2f"|format(supplier.total_purchases or 0) }}</td>
+                    <td class="px-4 py-3 text-right text-emerald-600 font-semibold">Rs.{{ "%.2f"|format(supplier.total_paid or 0) }}</td>
+                    <td class="px-4 py-3 text-right text-amber-600 font-bold">Rs.{{ "%.2f"|format(supplier.balance or 0) }}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex justify-center gap-1.5">
+                            <button onclick="viewSupplier({{ supplier.id }})" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold hover:bg-indigo-100">View</button>
+                            {% if can_write and supplier.balance > 0 %}
+                            <button onclick='showPayment({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.balance or 0 }})' class="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-semibold hover:bg-emerald-100">Pay</button>
+                            {% endif %}
+                            {% if can_write %}
+                            <button onclick='editSupplier({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.phone|tojson }}, {{ supplier.nic|tojson }}, {{ (supplier.email or "")|tojson }}, {{ (supplier.address or "")|tojson }}, {{ (supplier.notes or "")|tojson }})' class="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-semibold hover:bg-amber-100">Edit</button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">No suppliers yet</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="lg:hidden space-y-2">
+        {% for supplier in suppliers %}
+        <div class="supplier-row glass-card rounded-2xl p-4" data-search="{{ (supplier.name ~ ' ' ~ supplier.phone ~ ' ' ~ supplier.nic ~ ' ' ~ (supplier.email or ''))|lower }}">
+            <div class="flex justify-between gap-3">
+                <div><p class="font-semibold">{{ supplier.name }}</p><p class="text-xs text-slate-500">{{ supplier.phone }} | {{ supplier.nic }}</p></div>
+                <p class="font-bold text-amber-600">Rs.{{ "%.2f"|format(supplier.balance or 0) }}</p>
+            </div>
+            <div class="flex gap-2 mt-3">
+                <button onclick="viewSupplier({{ supplier.id }})" class="flex-1 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-semibold">View</button>
+                {% if can_write and supplier.balance > 0 %}
+                <button onclick='showPayment({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.balance or 0 }})' class="flex-1 px-3 py-2 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-semibold">Pay</button>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if can_write %}
+<div id="supplierModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h3 id="supplierModalTitle" class="text-lg font-bold">Add supplier</h3>
+            <button onclick="hideModal('supplierModal')" class="text-slate-400 hover:text-red-500 text-xl">&times;</button>
+        </div>
+        <form id="supplierForm" method="POST" action="{{ url_for('supply.add_supplier') }}">
+            <div class="grid grid-cols-2 gap-3">
+                <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Name *</label><input name="name" id="supName" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" required></div>
+                <div><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Phone *</label><input name="phone" id="supPhone" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" required></div>
+                <div><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">NIC *</label><input name="nic" id="supNic" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" required></div>
+                <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label><input name="email" id="supEmail" type="email" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
+                <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label><textarea name="address" id="supAddress" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></textarea></div>
+                <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label><textarea name="notes" id="supNotes" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></textarea></div>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="button" onclick="hideModal('supplierModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
+                <button class="flex-1 gradient-indigo text-white py-2.5 rounded-xl text-sm font-bold">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="paymentModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">Record supplier payment</h3>
+            <button onclick="hideModal('paymentModal')" class="text-slate-400 hover:text-red-500 text-xl">&times;</button>
+        </div>
+        <form id="paymentForm" method="POST">
+            <p id="paySupplierName" class="text-sm text-slate-500 mb-3"></p>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 mb-3 text-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="text-slate-600">Current payable</span>
+                    <strong id="payBalanceText" class="text-emerald-700">Rs.0.00</strong>
+                </div>
+                <button type="button" onclick="payFullAmount()" class="mt-2 w-full bg-white border border-emerald-200 text-emerald-700 rounded-lg py-2 text-xs font-bold hover:bg-emerald-100">Pay full payable</button>
+            </div>
+            <div class="space-y-3">
+                <input id="payAmount" name="amount" type="number" min="0.01" step="0.01" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Amount" required>
+                <select name="payment_method" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm">
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="check">Cheque</option>
+                    <option value="bank_transfer">Bank transfer</option>
+                </select>
+                <input name="reference" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Reference">
+                <textarea name="notes" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Notes"></textarea>
+            </div>
+            <div class="flex gap-2 mt-4">
+                <button type="button" onclick="hideModal('paymentModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
+                <button class="flex-1 gradient-indigo text-white py-2.5 rounded-xl text-sm font-bold">Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<div id="detailModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto p-5">
+        <div class="flex justify-between items-start gap-4 mb-4">
+            <h3 id="detailTitle" class="text-lg font-bold">Supplier details</h3>
+            <button onclick="hideModal('detailModal')" class="text-slate-400 hover:text-red-500 text-xl">&times;</button>
+        </div>
+        <div id="detailContent" class="text-sm"></div>
+    </div>
+</div>
+
+{% if can_write %}
+<div id="offsetModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-bold">Offset linked balances</h3>
+            <button onclick="hideModal('offsetModal')" class="text-slate-400 hover:text-red-500 text-xl">&times;</button>
+        </div>
+        <div id="offsetSummary" class="bg-slate-50 rounded-xl p-3 text-sm space-y-1 mb-3"></div>
+        <div class="space-y-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Offset amount</label>
+                <input id="offsetAmount" type="number" min="0.01" step="0.01" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Reference</label>
+                <input id="offsetReference" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Optional reference">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label>
+                <textarea id="offsetNotes" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm" placeholder="Why this offset is being made"></textarea>
+            </div>
+        </div>
+        <div class="flex gap-2 mt-4">
+            <button type="button" onclick="hideModal('offsetModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
+            <button type="button" onclick="submitOffset()" id="offsetBtn" class="flex-1 gradient-indigo text-white py-2.5 rounded-xl text-sm font-bold">Confirm offset</button>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+var canWrite = {{ 'true' if can_write else 'false' }};
+var currentSupplierDetail = null;
+var offsetSupplierId = null;
+var offsetMax = 0;
+var currentPaymentBalance = 0;
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function setSupplierMessage(type, text) {
+    var box = document.getElementById('supplierMessage');
+    box.className = 'mb-4 border px-4 py-3 rounded-xl text-sm ' + (type === 'success' ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-red-50 border-red-300 text-red-800');
+    box.textContent = text;
+    box.classList.remove('hidden');
+}
+
+function filterSuppliers() {
+    var q = (document.getElementById('supplierFilter').value || '').toLowerCase();
+    document.querySelectorAll('.supplier-row').forEach(function(row){
+        row.style.display = row.dataset.search.indexOf(q) >= 0 ? '' : 'none';
+    });
+}
+function showAddSupplier() {
+    document.getElementById('supplierModalTitle').textContent = 'Add supplier';
+    document.getElementById('supplierForm').action = '{{ url_for("supply.add_supplier") }}';
+    ['supName','supPhone','supNic','supEmail','supAddress','supNotes'].forEach(function(id){document.getElementById(id).value='';});
+    showModal('supplierModal');
+}
+function editSupplier(id, name, phone, nic, email, address, notes) {
+    document.getElementById('supplierModalTitle').textContent = 'Edit supplier';
+    document.getElementById('supplierForm').action = '/supply/suppliers/edit/' + id;
+    document.getElementById('supName').value = name;
+    document.getElementById('supPhone').value = phone;
+    document.getElementById('supNic').value = nic;
+    document.getElementById('supEmail').value = email;
+    document.getElementById('supAddress').value = address;
+    document.getElementById('supNotes').value = notes;
+    showModal('supplierModal');
+}
+function showPayment(id, name, balance) {
+    currentPaymentBalance = Number(balance || 0);
+    document.getElementById('paymentForm').action = '/supply/suppliers/record-payment/' + id;
+    document.getElementById('paySupplierName').textContent = name + ' | Payable: ' + money(balance);
+    document.getElementById('payBalanceText').textContent = money(balance);
+    document.getElementById('payAmount').value = '';
+    document.getElementById('payAmount').max = balance;
+    showModal('paymentModal');
+}
+function showCurrentPayment() {
+    if (!currentSupplierDetail) return;
+    showPayment(currentSupplierDetail.id, currentSupplierDetail.name, currentSupplierDetail.balance);
+}
+function payFullAmount() {
+    document.getElementById('payAmount').value = currentPaymentBalance > 0 ? currentPaymentBalance.toFixed(2) : '';
+}
+
+function groupByMonth(items, dateKey) {
+    var groups = {};
+    (items || []).forEach(function(item){
+        var val = item[dateKey] || item.created_at || item.date || '';
+        var month = 'Unknown';
+        if (val && val.length >= 7) {
+            var yyyy = val.substring(0, 4);
+            var mm = parseInt(val.substring(5, 7));
+            var names = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            if (mm >= 1 && mm <= 12) month = names[mm - 1] + ' ' + yyyy;
+        }
+        if (!groups[month]) groups[month] = [];
+        groups[month].push(item);
+    });
+    return groups;
+}
+
+function buildSupplierSection(title, items, columns, emptyMsg, dateKey) {
+    items = items || [];
+    var sectionId = 'supplier' + title.replace(/\s+/g, '');
+    var html = '<div class="border border-slate-200 rounded-xl mb-3 overflow-hidden">';
+    html += '<div class="flex items-center justify-between p-3 bg-slate-50 cursor-pointer" onclick="toggleSection(\'' + sectionId + '\')">';
+    html += '<h5 class="font-semibold text-sm">' + title + ' (' + items.length + ')</h5>';
+    html += '<svg id="' + sectionId + 'Icon" class="w-4 h-4 text-slate-400 transition-transform" style="transform:rotate(-90deg)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+    html += '</div><div id="' + sectionId + '" class="hidden">';
+    if (!items.length) {
+        html += '<p class="px-3 py-4 text-center text-slate-400 text-xs">' + emptyMsg + '</p>';
+    } else {
+        var grouped = groupByMonth(items, dateKey || 'created_at');
+        Object.keys(grouped).sort().reverse().forEach(function(month, index){
+            var monthId = sectionId + '_' + index;
+            html += '<div class="bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-500 cursor-pointer flex items-center justify-between" onclick="toggleSection(\'' + monthId + '\')">';
+            html += '<span>' + month + ' (' + grouped[month].length + ')</span>';
+            html += '<svg id="' + monthId + 'Icon" class="w-3 h-3 text-slate-400 transition-transform" style="transform:rotate(-90deg)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+            html += '</div><div id="' + monthId + '" class="hidden"><table class="w-full text-xs"><tbody>';
+            grouped[month].forEach(function(item){
+                html += '<tr class="border-b border-slate-100">';
+                columns.forEach(function(col){
+                    var val = item[col.key];
+                    var cls = 'px-3 py-2 ' + (col.align === 'right' ? 'text-right font-medium ' : '') + (col.color || '');
+                    if (col.money) val = money(val || 0);
+                    if (col.key === 'bill_number') {
+                        html += '<td class="' + cls + '"><a href="/supply/bills/' + encodeURIComponent(val) + '" class="font-medium text-indigo-600">' + escapeHtml(val) + '</a><button onclick="event.stopPropagation();copyToClipboard(\'' + escapeHtml(val) + '\')" class="text-slate-300 hover:text-indigo-500 ml-1.5" title="Copy"><svg class="w-3 h-3 inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>';
+                    } else if (col.key === 'return_number') {
+                        html += '<td class="' + cls + ' font-medium text-rose-600">' + escapeHtml(val || '') + '</td>';
+                    } else {
+                        html += '<td class="' + cls + '">' + escapeHtml(val == null ? '' : val) + '</td>';
+                    }
+                });
+                html += '</tr>';
+            });
+            html += '</tbody></table></div>';
+        });
+    }
+    html += '</div></div>';
+    return html;
+}
+
+function toggleSection(id) {
+    var el = document.getElementById(id);
+    var icon = document.getElementById(id + 'Icon');
+    if (!el) return;
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        if (icon) icon.style.transform = 'rotate(0deg)';
+    } else {
+        el.classList.add('hidden');
+        if (icon) icon.style.transform = 'rotate(-90deg)';
+    }
+}
+
+function viewSupplier(id) {
+    fetch('/supply/api/suppliers/' + id + '/details').then(function(r){return r.json();}).then(function(s){
+        currentSupplierDetail = s;
+        document.getElementById('detailTitle').innerHTML =
+            '<span class="flex items-center gap-2"><svg class="w-5 h-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>Supplier Details</span>';
+        var linked = s.linked_customer;
+        var matches = (s.customer_matches || []).filter(function(c){ return !linked || c.id !== linked.id; });
+        var offsetAvailable = s.net_position ? Number(s.net_position.offset_available || 0) : 0;
+        var samePersonPanel = '';
+
+        if (linked) {
+            samePersonPanel =
+                '<div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-4">' +
+                    '<div class="flex justify-between gap-3 items-start">' +
+                        '<div><h5 class="font-semibold text-sm text-slate-800">Linked customer</h5>' +
+                        '<p class="text-sm font-bold text-slate-800">' + escapeHtml(linked.name) + '</p>' +
+                        '<p class="text-xs text-slate-500">' + escapeHtml(linked.phone || '-') + ' | ' + escapeHtml(linked.nic || '-') + '</p></div>' +
+                        '<div class="text-right text-xs"><p>Customer due</p><p class="font-bold text-rose-600">' + money(linked.balance) + '</p></div>' +
+                    '</div>' +
+                    '<div class="grid grid-cols-3 gap-2 mt-3 text-xs">' +
+                        '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Customer due</p><p class="font-bold text-rose-600">' + money(linked.balance) + '</p></div>' +
+                        '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Supplier payable</p><p class="font-bold text-amber-600">' + money(s.balance) + '</p></div>' +
+                        '<div class="bg-white/70 rounded-lg p-2"><p class="text-slate-400">Net</p><p class="font-bold text-slate-800">' + money(Math.abs(Number(linked.balance || 0) - Number(s.balance || 0))) + '</p></div>' +
+                    '</div>' +
+                    (canWrite && offsetAvailable > 0 ? '<button onclick="showOffsetModal()" class="mt-3 w-full gradient-indigo text-white py-2 rounded-xl text-xs font-semibold">Offset balances up to ' + money(offsetAvailable) + '</button>' : '') +
+                '</div>';
+        } else {
+            samePersonPanel =
+                '<div class="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4">' +
+                    '<p class="text-xs uppercase text-amber-600 font-semibold">Same person check</p>' +
+                    (matches.length ? '<p class="text-sm text-slate-600 mt-1">Possible customer matches found. Link only after confirming identity.</p>' : '<p class="text-sm text-slate-500 mt-1">No matching active customer by NIC, phone, or name.</p>') +
+                    (matches.length ? '<div class="mt-2 divide-y divide-amber-100 border border-amber-100 rounded-xl overflow-hidden">' + matches.map(function(c){return '<div class="p-2 flex justify-between gap-2 bg-white/70"><span><strong>' + escapeHtml(c.name) + '</strong><br><span class="text-xs text-slate-500">' + escapeHtml((c.match_type || '').toUpperCase()) + ' match | ' + escapeHtml(c.phone || '-') + ' | Due ' + money(c.balance) + '</span></span>' + (canWrite ? '<button onclick="linkCustomer(' + s.id + ',' + c.id + ')" class="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold">Link</button>' : '') + '</div>';}).join('') + '</div>' : '') +
+                '</div>';
+        }
+
+        document.getElementById('detailContent').innerHTML =
+            '<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">' +
+                '<div><h4 class="text-lg font-bold">' + escapeHtml(s.name) + '</h4>' +
+                '<p class="text-sm text-slate-600"><strong>Phone:</strong> ' + escapeHtml(s.phone || '-') + '</p>' +
+                '<p class="text-sm text-slate-600"><strong>NIC:</strong> ' + escapeHtml(s.nic || '-') + '</p>' +
+                '<p class="text-sm text-slate-600"><strong>Address:</strong> ' + escapeHtml(s.address || '-') + '</p></div>' +
+                '<div class="bg-slate-50 rounded-xl p-4"><div class="flex items-start justify-between gap-2"><div><h5 class="font-semibold text-sm mb-2">Payable Summary</h5>' +
+                '<p class="text-sm">Payable: <strong class="text-amber-600">' + money(s.balance) + '</strong></p>' +
+                '<p class="text-sm">Total Purchases: ' + money(s.total_purchases) + '</p>' +
+                '<p class="text-sm">Total Paid: ' + money(s.total_paid) + '</p></div>' +
+                (canWrite && Number(s.balance || 0) > 0 ? '<button onclick="showCurrentPayment()" class="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-bold">Pay</button>' : '') + '</div></div>' +
+            '</div>' +
+            samePersonPanel +
+            buildSupplierSection('Payment History', s.payment_history, [{key:'date'},{key:'amount', align:'right', money:true, color:'text-emerald-600'},{key:'method'},{key:'reference'}], 'No payments', 'date') +
+            buildSupplierSection('Intake Notes', s.recent_bills, [{key:'bill_number'},{key:'created_at'},{key:'total', align:'right', money:true},{key:'payment_status'}], 'No intake notes', 'created_at') +
+            buildSupplierSection('Supplier Returns', s.recent_returns || [], [{key:'return_number'},{key:'created_at'},{key:'product_name'},{key:'total', align:'right', money:true, color:'text-rose-600'}], 'No returns', 'created_at') +
+            buildSupplierSection('Offset History', s.offset_history || [], [{key:'offset_number'},{key:'created_at'},{key:'amount', align:'right', money:true, color:'text-indigo-600'}], 'No offsets', 'created_at') +
+            '<div class="flex justify-end gap-2 pt-1"><button onclick="hideModal(\'detailModal\')" class="bg-slate-200 px-4 py-2 rounded-xl text-sm font-medium">Close</button>' +
+            (canWrite && Number(s.balance || 0) > 0 ? '<button onclick="showCurrentPayment()" class="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-sm font-bold">Pay</button>' : '') + '</div>';
+        showModal('detailModal');
+    });
+}
+
+function linkCustomer(supplierId, customerId) {
+    fetch('/supply/api/suppliers/' + supplierId + '/link-customer', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({customer_id: customerId})
+    }).then(function(r){return r.json().then(function(data){return {ok:r.ok, data:data};});})
+    .then(function(result){
+        if (!result.ok || result.data.error) {
+            setSupplierMessage('error', result.data.error || 'Customer link failed.');
+            return;
+        }
+        setSupplierMessage('success', 'Customer linked to supplier.');
+        viewSupplier(supplierId);
+    });
+}
+
+function showOffsetModal() {
+    if (!currentSupplierDetail || !currentSupplierDetail.linked_customer) return;
+    offsetSupplierId = currentSupplierDetail.id;
+    offsetMax = Number(currentSupplierDetail.net_position.offset_available || 0);
+    document.getElementById('offsetAmount').value = offsetMax.toFixed(2);
+    document.getElementById('offsetAmount').max = offsetMax;
+    document.getElementById('offsetReference').value = '';
+    document.getElementById('offsetNotes').value = '';
+    document.getElementById('offsetSummary').innerHTML =
+        '<p class="flex justify-between"><span>Customer credit due</span><strong class="text-rose-600">' + money(currentSupplierDetail.linked_customer.balance) + '</strong></p>' +
+        '<p class="flex justify-between"><span>Supplier payable</span><strong class="text-amber-600">' + money(currentSupplierDetail.balance) + '</strong></p>' +
+        '<p class="flex justify-between border-t border-slate-200 pt-2"><span>Maximum offset</span><strong class="text-indigo-600">' + money(offsetMax) + '</strong></p>';
+    showModal('offsetModal');
+}
+
+function submitOffset() {
+    var amount = Number(document.getElementById('offsetAmount').value || 0);
+    if (!offsetSupplierId || amount <= 0 || amount > offsetMax) {
+        setSupplierMessage('error', 'Enter an offset amount up to ' + money(offsetMax) + '.');
+        return;
+    }
+    document.getElementById('offsetBtn').disabled = true;
+    fetch('/supply/api/suppliers/' + offsetSupplierId + '/offset', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            amount: amount,
+            reference: document.getElementById('offsetReference').value,
+            notes: document.getElementById('offsetNotes').value
+        })
+    }).then(function(r){return r.json().then(function(data){return {ok:r.ok, data:data};});})
+    .then(function(result){
+        document.getElementById('offsetBtn').disabled = false;
+        if (!result.ok || result.data.error) {
+            setSupplierMessage('error', result.data.error || 'Offset failed.');
+            return;
+        }
+        hideModal('offsetModal');
+        setSupplierMessage('success', 'Balances offset successfully.');
+        viewSupplier(offsetSupplierId);
+    });
+}
+</script>
+{% endblock %}

@@ -71,7 +71,7 @@
 
     <!-- Filters -->
     <div class="glass-card rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-3 sm:mb-4">
-        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <div>
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Search</label>
                 <input type="text" id="searchQuery" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" placeholder="Invoice, name, phone or item..." onkeyup="loadBills()">
@@ -87,16 +87,16 @@
             <div>
                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Type</label>
                 <select id="filterType" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
-                    <option value="all">All Sales</option>
-                    <option value="retail">Retail</option>
+                    <option value="all">All Types</option>
                     <option value="wholesale">Wholesale</option>
+                    <option value="retail">Retail</option>
                     <option value="payment">Payment</option>
+                    <option value="return">Return</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Payment</label>
+            <div class="hidden">
                 <select id="filterPayment" class="w-full border-2 border-slate-200 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 text-xs sm:text-sm bg-white/80 focus:border-indigo-400 focus:outline-none" onchange="loadBills()">
-                    <option value="all">All Payments</option>
+                    <option value="all">All Types</option>
                     <option value="cash">Cash</option>
                     <option value="card">Card</option>
                     <option value="check">Cheque</option>
@@ -115,7 +115,10 @@
         <!-- Mobile Date -->
         <div class="sm:hidden mt-2">
             <label class="block text-[10px] font-semibold text-slate-500 uppercase mb-1">Date</label>
-            <input type="date" id="filterDateMobile" class="w-full border-2 border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white/80" onchange="syncDate()">
+            <div class="flex gap-1">
+                <input type="date" id="filterDateMobile" class="flex-1 border-2 border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-white/80" onchange="syncDate()">
+                <button onclick="document.getElementById('filterDateMobile').value='';document.getElementById('filterDate').value='';loadBills()" class="bg-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-slate-300">All</button>
+            </div>
         </div>
     </div>
     
@@ -199,14 +202,13 @@
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium">Invoice #</th>
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Date</th>
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium">Customer</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden lg:table-cell">Type</th>
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-right font-medium">Total</th>
-                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Payment</th>
+                    <th class="px-3 sm:px-4 py-2 sm:py-3 text-left font-medium hidden md:table-cell">Type</th>
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-center font-medium">Status</th>
                     <th class="px-3 sm:px-4 py-2 sm:py-3 text-center font-medium">View</th>
                 </tr></thead>
                 <tbody id="billsTable" class="divide-y divide-slate-100">
-                    <tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
+                    <tr><td colspan="7" class="px-4 py-8 text-center text-slate-400">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -221,7 +223,7 @@
                 <span class="w-8 h-8 gradient-indigo rounded-lg flex items-center justify-center">
                     <svg class="w-4 h-4 sm:w-5 sm:h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path></svg>
                 </span>
-                Invoice Details
+                <span id="documentModalTitle">Invoice Details</span>
             </h3>
             <div class="flex gap-2">
                 <button onclick="printBill()" class="bg-slate-100 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium hover:bg-slate-200 flex items-center gap-1.5">
@@ -242,6 +244,12 @@ var currentCategory = 'all';
 function syncDate(){ document.getElementById('filterDate').value = document.getElementById('filterDateMobile').value; loadBills(); }
 function closeInvoiceModal(){ var m=document.getElementById('viewInvoiceModal'); m.classList.add('hidden'); m.classList.remove('flex'); }
 
+function billsSkeleton(){
+    return Array.from({length:5}).map(function(){
+        return '<tr><td colspan="7" class="px-4 py-3"><div class="space-y-2"><div class="skeleton-line h-4 w-1/3"></div><div class="skeleton-line h-3 w-2/3"></div></div></td></tr>';
+    }).join('');
+}
+
 function filterByCategory(cat){
     currentCategory=cat;
     document.querySelectorAll('.category-btn').forEach(function(b){b.classList.remove('tab-active');b.classList.add('bg-white','border-2','border-slate-200','text-slate-700');});
@@ -253,50 +261,67 @@ function filterByCategory(cat){
 function loadBills(){
     var date=document.getElementById('filterDate').value;
     var type=document.getElementById('filterType').value;
-    var payment=document.getElementById('filterPayment').value;
+    var payment='all';
     var search=(document.getElementById('searchQuery').value||'').toLowerCase();
     
-    var url='/api/orders/all?'; if(date) url+='date='+date+'&'; url+='type='+type+'&payment='+payment;
+    var url='/api/orders/all?'; if(date) url+='date='+date+'&'; url+='type='+type+'&payment='+payment+'&q='+encodeURIComponent(search);
+    document.getElementById('billsTable').innerHTML=billsSkeleton();
     
     fetch(url).then(function(r){return r.json();}).then(function(data){
         var allOrders=data.orders;
-        if(currentCategory!=='all'){ allOrders=allOrders.filter(function(o){return o.payment_method===currentCategory || o.balance_payment_method===currentCategory;}); }
-        // Search filter
-        if(search){ allOrders=allOrders.filter(function(o){return (o.order_number||'').toLowerCase().includes(search)||(o.customer_name||'').toLowerCase().includes(search)||(o.customer_phone||'').toLowerCase().includes(search)||(o.item_names||'').toLowerCase().includes(search);}); }
+        if(currentCategory!=='all'){ allOrders=allOrders.filter(function(o){return matchesPaymentCategory(o, currentCategory);}); }
         
-        var cashOrders=data.orders.filter(function(o){return o.payment_method==='cash' || o.balance_payment_method==='cash';});
-        var cardOrders=data.orders.filter(function(o){return o.payment_method==='card' || o.balance_payment_method==='card';});
-        var creditOrders=data.orders.filter(function(o){return o.payment_method==='credit';});
-        var checkOrders=data.orders.filter(function(o){return o.payment_method==='check' || o.balance_payment_method==='check';});
+        var cashOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'cash');});
+        var cardOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'card');});
+        var creditOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'credit');});
+        var checkOrders=data.orders.filter(function(o){return matchesPaymentCategory(o, 'check');});
         document.getElementById('cashCount').textContent=cashOrders.length;
         document.getElementById('cardCount').textContent=cardOrders.length;
         document.getElementById('creditCount').textContent=creditOrders.length;
         document.getElementById('checkCount').textContent=checkOrders.length;
         
         document.getElementById('totalBills').textContent=allOrders.length;
-        document.getElementById('totalSales').textContent='Rs.'+allOrders.reduce(function(s,o){return s+(o.total||0);},0).toFixed(2);
+        document.getElementById('totalSales').textContent=money(allOrders.reduce(function(s,o){return s+(o.total||0);},0));
         var pending=allOrders.filter(function(o){return o.payment_status==='pending';});
         document.getElementById('pendingPayments').textContent=pending.length;
-        document.getElementById('pendingAmount').textContent='Rs.'+pending.reduce(function(s,o){return s+(o.total||0);},0).toFixed(2);
+        document.getElementById('pendingAmount').textContent=money(pending.reduce(function(s,o){return s+(o.total||0);},0));
         
         var tbody=document.getElementById('billsTable');
-        if(!allOrders.length){tbody.innerHTML='<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">No bills found</td></tr>';return;}
+        if(!allOrders.length){tbody.innerHTML='<tr><td colspan="7" class="px-4 py-8 text-center text-slate-400"><p class="font-medium text-slate-600">No bills found</p><p class="text-xs mt-1">Try another date, type, or search term.</p></td></tr>';return;}
         tbody.innerHTML=allOrders.map(function(o){
+            var invoiceNumber = o.invoice_number || o.order_number;
+            var isReturn = o.row_kind === 'return';
+            var typeText = formatType(o.payment_method) + (o.balance_payment_method ? ' + ' + formatType(o.balance_payment_method) : '');
+            var statusClass = isReturn ? 'bg-rose-50 text-rose-700 border border-rose-100' : (o.payment_status==='completed'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800');
             return '<tr class="hover:bg-slate-50 transition">'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-semibold text-indigo-600 flex items-center gap-1">'+o.order_number+' <button onclick="event.stopPropagation();copyToClipboard(\''+o.order_number+'\')" title="Copy" class="text-slate-300 hover:text-indigo-500 transition"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-semibold '+(isReturn?'text-rose-600':'text-indigo-600')+' flex items-center gap-1">'+escapeHtml(invoiceNumber)+' <button onclick="event.stopPropagation();copyToClipboard(\''+escapeHtml(invoiceNumber)+'\')" title="Copy" class="text-slate-300 hover:text-indigo-500 transition"><svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>'+
                 '<td class="px-3 sm:px-4 py-2 sm:py-3 text-xs text-slate-500 hidden md:table-cell">'+o.created_at+'</td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-medium">'+(o.customer_name||'Walk-in')+'</td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden lg:table-cell"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+(o.sale_type==='wholesale'?'bg-amber-100 text-amber-800':'bg-blue-100 text-blue-800')+'">'+(o.sale_type||'retail')+'</span></td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-right font-bold">Rs.'+(o.total||0).toFixed(2)+'</td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden md:table-cell"><span class="text-xs font-semibold uppercase">'+o.payment_method+(o.balance_payment_method ? ' + '+(o.balance_payment_method==='check'?'Cheque':o.balance_payment_method==='card'?'Card':o.balance_payment_method==='cash'?'Cash':o.balance_payment_method) : '')+'</span></td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+(o.payment_status==='completed'?'bg-emerald-100 text-emerald-800':'bg-amber-100 text-amber-800')+'">'+o.payment_status+'</span></td>'+
-                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><button onclick="viewBill(\''+o.order_number+'\')" class="text-indigo-600 hover:text-indigo-800 font-medium text-xs sm:text-sm hover:underline">View</button></td></tr>';
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 font-medium">'+escapeHtml(o.customer_name||'Walk-in')+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-right font-bold">'+money(o.total||0)+'</td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 hidden md:table-cell"><span class="text-xs font-semibold uppercase">'+escapeHtml(typeText)+'</span></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><span class="px-2 py-0.5 rounded-full text-xs font-medium '+statusClass+'">'+escapeHtml(o.payment_status||o.status||'')+'</span></td>'+
+                '<td class="px-3 sm:px-4 py-2 sm:py-3 text-center"><button onclick="'+(isReturn?'viewReturn':'viewBill')+'(\''+escapeHtml(invoiceNumber)+'\')" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-medium text-xs sm:text-sm px-3 py-1.5 rounded-lg transition">View</button></td></tr>';
         }).join('');
-    });
+    }).catch(function(){document.getElementById('billsTable').innerHTML='<tr><td colspan="7" class="px-4 py-8 text-center text-red-500">Could not load bills. <button onclick="loadBills()" class="underline font-medium">Retry</button></td></tr>';});
+}
+
+function formatType(value) {
+    if (!value) return '';
+    var labels = {cash:'Cash', card:'Card', check:'Cheque', credit:'Credit', credit_note:'Credit Note', bank_transfer:'Bank Transfer'};
+    return labels[value] || String(value).replace(/_/g, ' ');
+}
+
+function matchesPaymentCategory(row, category) {
+    if (category === 'card') {
+        return row.payment_method === 'card' || row.balance_payment_method === 'card' ||
+            row.payment_method === 'bank_transfer' || row.balance_payment_method === 'bank_transfer';
+    }
+    return row.payment_method === category || row.balance_payment_method === category;
 }
 
 function viewBill(orderNumber){
     fetch('/api/orders/'+orderNumber+'/details').then(function(r){return r.json();}).then(function(order){
+        document.getElementById('documentModalTitle').textContent = 'Invoice Details';
         var itemsHtml = (order.items||[]).map(function(i){return '<tr style="border-bottom: 0.5px solid #d1d5db;"><td style="padding: 1px 0; font-size: 14px;">'+i.name+'</td><td style="text-align: right; font-size: 14px;">'+i.quantity+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.price.toFixed(2)+'</td><td style="text-align: right; font-size: 14px;">Rs.'+i.total.toFixed(2)+'</td></tr>';}).join('');
         
         var creditInfo = '';
@@ -333,6 +358,50 @@ function viewBill(orderNumber){
     });
 }
 
+function viewReturn(returnNumber){
+    fetch('/api/returns/'+returnNumber+'/details').then(function(r){return r.json();}).then(function(ret){
+        document.getElementById('documentModalTitle').textContent = 'Return Details';
+        var itemsHtml = (ret.items||[]).map(function(i){
+            return '<tr style="border-bottom: 0.5px solid #d1d5db;">'+
+                '<td style="padding: 1px 0; font-size: 14px;">'+escapeHtml(i.name)+'</td>'+
+                '<td style="text-align: right; font-size: 14px;">'+i.quantity+'</td>'+
+                '<td style="text-align: right; font-size: 14px;">Rs.'+Number(i.price||0).toFixed(2)+'</td>'+
+                '<td style="text-align: right; font-size: 14px;">Rs.'+Number(i.total||0).toFixed(2)+'</td>'+
+            '</tr>';
+        }).join('');
+        var balanceInfo = '';
+        if (ret.is_credit_return && ret.has_balance_snapshot) {
+            balanceInfo = '<p style="display: flex; justify-content: space-between; margin: 3px 0; font-size: 14px;"><span>Previous Balance: Rs.'+Number(ret.previous_balance||0).toFixed(2)+'</span><span style="font-weight: 700;">New Balance: Rs.'+Number(ret.new_balance||0).toFixed(2)+'</span></p>';
+        }
+
+        document.getElementById('viewInvoiceContent').innerHTML =
+        '<div style="font-family: Arial, Helvetica, sans-serif; font-weight: 300; font-size: 14px; max-width: 800px; margin: 0 auto; color: #000000; line-height: 1.3; padding: 5px 0;">'+
+        '<div style="text-align: center; border-bottom: 0.5px solid #cbd5e1; padding-bottom: 6px; margin-bottom: 6px;">'+
+        '<h2 style="margin: 0; font-size: 18px; font-weight: 700;">EASY PAY</h2>'+
+        '<p style="margin: 1px 0; font-size: 14px;">Meegoda, Homagama</p>'+
+        '<p style="margin: 1px 0; font-size: 14px;">Tel: +(94)75 427 1371</p>'+
+        '<p style="margin: 1px 0; color: #64748b; font-size: 14px;">'+escapeHtml(ret.created_at||'')+'</p></div>'+
+        '<p style="text-align: center; font-weight: 700; font-size: 14px; margin: 4px 0;">RETURN #'+escapeHtml(ret.return_number||'')+'</p>'+
+        '<div style="border-bottom: 0.5px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 4px; font-size: 14px; line-height: 1.3;">'+
+        '<p style="margin: 1px 0;"><strong>Original Invoice:</strong> '+escapeHtml(ret.order_number||'N/A')+'</p>'+
+        '<p style="margin: 1px 0;"><strong>Customer:</strong> '+escapeHtml(ret.customer_name||'Walk-in')+'</p>'+
+        '<p style="margin: 1px 0;"><strong>Phone:</strong> '+escapeHtml(ret.customer_phone||'N/A')+'</p>'+
+        '<p style="margin: 1px 0;"><strong>Return Type:</strong> '+escapeHtml((ret.return_type||'').toUpperCase())+'</p></div>'+
+        '<table style="width: 100%; border-collapse: collapse; margin: 3px 0; font-size: 14px; line-height: 1.3;">'+
+        '<tr style="border-bottom: 0.5px solid #cbd5e1;"><th style="text-align: left; padding: 3px 0;">Item</th><th style="text-align: right;">Qty</th><th style="text-align: right;">Price</th><th style="text-align: right;">Total</th></tr>'+
+        itemsHtml+'<tr style="border-bottom: 1.5px solid #606A74;"><td colspan="4" style="padding: 0;"></td></tr></table>'+
+        '<div style="border-bottom: 0.5px solid #cbd5e1; padding: 5px 0; margin: 5px 0; font-size: 14px; line-height: 1.3;">'+
+        '<p style="display: flex; justify-content: space-between; font-weight: 700; font-size: 14px; margin-top: 4px;"><span>REFUND AMOUNT</span><span>Rs.'+Number(ret.refund_amount||0).toFixed(2)+'</span></p></div>'+
+        '<p style="margin: 3px 0; font-size: 14px;"><strong>Refund Method:</strong> '+escapeHtml((ret.refund_method||'').toUpperCase())+'</p>'+
+        '<p style="margin: 3px 0; font-size: 14px;"><strong>Status:</strong> RETURNED</p>'+
+        balanceInfo+
+        (ret.reason ? '<p style="margin: 3px 0; font-size: 14px;"><strong>Reason:</strong> '+escapeHtml(ret.reason)+'</p>' : '')+
+        '<div style="text-align: center; margin-top: 8px; border-top: 0.5px solid #cbd5e1; padding-top: 4px; font-size: 12px; line-height: 1.1;">'+
+        '<p style="margin: 0;">Return processed</p></div></div>';
+        var modal=document.getElementById('viewInvoiceModal');modal.classList.remove('hidden');modal.classList.add('flex');
+    }).catch(function(){showToast('Could not load return details', 'error');});
+}
+
 
 function printBill(){
     var c = document.getElementById('viewInvoiceContent').innerHTML;
@@ -351,28 +420,8 @@ function printBill(){
 }
 
 loadBills();setInterval(loadBills,10000);window.addEventListener('focus',loadBills);
+setTimeout(function(){var s=document.getElementById('searchQuery');if(s)s.focus();},50);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)loadBills();});
 
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(function() {
-        showCopyToast('Copied: ' + text);
-    }).catch(function() {
-        var input = document.createElement('input');
-        input.value = text;
-        document.body.appendChild(input);
-        input.select();
-        document.execCommand('copy');
-        document.body.removeChild(input);
-        showCopyToast('Copied: ' + text);
-    });
-}
-
-function showCopyToast(msg) {
-    var toast = document.createElement('div');
-    toast.className = 'copy-toast';
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    setTimeout(function(){ toast.remove(); }, 1600);
-}
 </script>
 {% endblock %}
