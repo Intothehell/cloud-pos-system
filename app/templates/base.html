@@ -75,13 +75,37 @@
         <div class="flex justify-between items-center px-4 lg:px-6 h-16">
             <!-- Logo & Nav Links -->
             <div class="flex items-center gap-6">
-                <!-- Logo -->
-                <a href="{{ url_for('pos.dashboard') }}" class="flex items-center gap-2 text-lg font-bold tracking-tight">
-                    <img src="{{ url_for('static', filename='img/easypay-logo.png') }}" 
-                        alt="EASY PAY" 
-                        class="w-8 h-8 object-contain">
-                    <span class="text-indigo-400">EASY</span>Pay
-                </a>
+                <!-- Logo / Mode Switcher -->
+                <div class="relative">
+                    <button onclick="toggleModeMenu()" class="flex items-center gap-2 text-lg font-bold tracking-tight hover:opacity-80 transition cursor-pointer">
+                        <img src="{{ url_for('static', filename='img/easypay-logo.png') }}" 
+                            alt="EASY PAY" 
+                            class="w-8 h-8 object-contain">
+                        <span class="text-indigo-400">EASY</span>Pay
+                        <svg class="w-4 h-4 text-slate-400 ml-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6 9 12 15 18 9"></polyline>
+                        </svg>
+                    </button>
+                    
+                    <!-- Dropdown -->
+                    <div id="modeMenu" class="hidden absolute top-full left-0 mt-2 w-52 glass-card rounded-2xl overflow-hidden z-50" style="background: rgba(255,255,255,0.6); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 0px solid rgba(255,255,255,0.3); box-shadow: 0 16px 48px rgba(0,0,0,0.12);">
+                        <a href="{{ url_for('pos.dashboard') }}" class="flex items-center gap-3 px-5 py-3.5 text-base font-bold text-slate-700 hover:bg-slate-50 transition">
+                            <svg class="w-6 h-6 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                <line x1="6" y1="8" x2="6" y2="8"></line>
+                            </svg>
+                            Sales Mode
+                        </a>
+                        {% if current_user.role in ['owner','manager'] %}
+                        <a href="{{ url_for('supply.dashboard') }}" class="flex items-center gap-3 px-5 py-3.5 text-base font-bold text-slate-700 hover:bg-slate-50 transition border-t border-slate-100">
+                            <svg class="w-6 h-6 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                            </svg>
+                            Supply Mode
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
                 
                 {% if current_user.is_authenticated %}
                 <!-- Desktop Nav -->
@@ -343,6 +367,20 @@
         document.body.removeChild(input);
         done();
     }
+
+    function toggleModeMenu() {
+        var menu = document.getElementById('modeMenu');
+        menu.classList.toggle('hidden');
+    }
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        var menu = document.getElementById('modeMenu');
+        var btn = e.target.closest('button');
+        if (menu && !menu.contains(e.target) && !btn) {
+            menu.classList.add('hidden');
+        }
+    });
     </script>
 
     {% block extra_js %}{% endblock %}
