@@ -419,9 +419,9 @@ function printBill(){
     w.document.close();
 }
 
-loadBills();setInterval(loadBills,10000);window.addEventListener('focus',loadBills);
+loadBills();
+window.addEventListener('focus',loadBills);
 setTimeout(function(){var s=document.getElementById('searchQuery');if(s)s.focus();},50);
-document.addEventListener('visibilitychange',function(){if(!document.hidden)loadBills();});
 
 </script>
 {% endblock %}
