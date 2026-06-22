@@ -397,6 +397,7 @@ def edit_supplier(supplier_id):
     supplier.email = request.form.get('email', '').strip()
     supplier.address = request.form.get('address', '').strip()
     supplier.notes = request.form.get('notes', '').strip()
+    supplier.balance = parse_float(request.form.get('balance'), supplier.balance or 0)
     db.session.commit()
     flash(f'Supplier {supplier.name} updated.', 'success')
     flash_customer_match_hint(supplier)

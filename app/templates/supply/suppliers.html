@@ -46,7 +46,7 @@
                             <button onclick='showPayment({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.balance or 0 }})' class="px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-lg text-xs font-semibold hover:bg-emerald-100">Pay</button>
                             {% endif %}
                             {% if can_write %}
-                            <button onclick='editSupplier({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.phone|tojson }}, {{ supplier.nic|tojson }}, {{ (supplier.email or "")|tojson }}, {{ (supplier.address or "")|tojson }}, {{ (supplier.notes or "")|tojson }})' class="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-semibold hover:bg-amber-100">Edit</button>
+                            <button onclick='editSupplier({{ supplier.id }}, {{ supplier.name|tojson }}, {{ supplier.phone|tojson }}, {{ supplier.nic|tojson }}, {{ (supplier.email or "")|tojson }}, {{ (supplier.address or "")|tojson }}, {{ (supplier.notes or "")|tojson }}, {{ supplier.balance or 0 }})' class="px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-xs font-semibold hover:bg-amber-100">Edit</button>
                             {% endif %}
                         </div>
                     </td>
@@ -91,6 +91,7 @@
                 <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Email</label><input name="email" id="supEmail" type="email" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
                 <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Address</label><textarea name="address" id="supAddress" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></textarea></div>
                 <div class="col-span-2"><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Notes</label><textarea name="notes" id="supNotes" rows="2" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></textarea></div>
+                <div><label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Payable (Rs)</label><input name="balance" id="supBalance" type="number" step="0.01" class="w-full border-2 border-slate-200 rounded-xl px-3 py-2 text-sm"></div>
             </div>
             <div class="flex gap-2 mt-4">
                 <button type="button" onclick="hideModal('supplierModal')" class="flex-1 bg-slate-200 py-2.5 rounded-xl text-sm font-semibold">Cancel</button>
@@ -212,7 +213,7 @@ function showAddSupplier() {
     ['supName','supPhone','supNic','supEmail','supAddress','supNotes'].forEach(function(id){document.getElementById(id).value='';});
     showModal('supplierModal');
 }
-function editSupplier(id, name, phone, nic, email, address, notes) {
+function editSupplier(id, name, phone, nic, email, address, notes, balance) {
     document.getElementById('supplierModalTitle').textContent = 'Edit supplier';
     document.getElementById('supplierForm').action = '/supply/suppliers/edit/' + id;
     document.getElementById('supName').value = name;
@@ -221,6 +222,7 @@ function editSupplier(id, name, phone, nic, email, address, notes) {
     document.getElementById('supEmail').value = email;
     document.getElementById('supAddress').value = address;
     document.getElementById('supNotes').value = notes;
+    document.getElementById('supBalance').value = Number(balance || 0).toFixed(2);
     showModal('supplierModal');
 }
 function showPayment(id, name, balance) {
